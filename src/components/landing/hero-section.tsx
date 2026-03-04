@@ -43,7 +43,7 @@ export function HeroSection() {
         style={{ animation: "landing-fade-up 0.7s ease-out 0.24s both" }}
       >
         <a
-          href="/app"
+          href="/dashboard"
           className="inline-flex items-center gap-2 px-7 py-3 rounded-[10px] border-none bg-gradient-to-br from-[#22c55e] to-[#16a34a] text-white text-[0.9rem] font-semibold font-[var(--font-body)] cursor-pointer transition-all duration-200 no-underline shadow-[0_2px_16px_rgba(34,197,94,0.3)] hover:from-[#16a34a] hover:to-[#15803d] hover:shadow-[0_0_32px_rgba(34,197,94,0.4)]"
         >
           Launch Orchestrator

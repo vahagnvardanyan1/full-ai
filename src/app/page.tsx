@@ -23,7 +23,7 @@ function BottomCTA({ visible }: { visible: boolean }) {
         Ready to ship faster?
       </span>
       <a
-        href="/app"
+        href="/dashboard"
         className="inline-flex items-center gap-[0.4rem] py-[0.45rem] px-[1.15rem] rounded-full bg-gradient-to-br from-[#22c55e] to-[#16a34a] text-white text-[0.78rem] font-semibold no-underline transition-all duration-200 shadow-[0_2px_12px_rgba(34,197,94,0.3)] hover:from-[#16a34a] hover:to-[#15803d] hover:shadow-[0_2px_20px_rgba(34,197,94,0.5)]"
       >
         Launch App
@@ -74,7 +74,7 @@ export default function LandingPage() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <a
-            href="/app"
+            href="/dashboard"
             className="py-[0.45rem] px-[1.15rem] rounded-full bg-gradient-to-br from-[#22c55e] to-[#16a34a] text-white text-[0.78rem] font-semibold no-underline transition-all duration-200 shadow-[0_2px_12px_rgba(34,197,94,0.3)] hover:from-[#16a34a] hover:to-[#15803d] hover:shadow-[0_2px_20px_rgba(34,197,94,0.5)]"
           >
             Launch App
