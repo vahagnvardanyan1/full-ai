@@ -215,7 +215,7 @@ export async function createJiraIssue(
     url: `${baseUrl}/browse/${data.key}`,
   };
 
-  logger.info("Jira issue created", result);
+  logger.info("Jira issue created", result as unknown as Record<string, unknown>);
   return result;
 }
 

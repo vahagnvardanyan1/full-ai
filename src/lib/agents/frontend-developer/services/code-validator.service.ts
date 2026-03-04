@@ -41,7 +41,8 @@ export class CodeValidatorService {
    *   4. Run whichever applies: project scripts first (they know their own config),
    *      then direct tool invocations as fallback.
    */
-  async autoFix(repoDir: string, repoKnowledge?: RepoKnowledge): Promise<string[]> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async autoFix(repoDir: string, _repoKnowledge?: RepoKnowledge): Promise<string[]> {
     const fixes: string[] = [];
     const execOpts = {
       cwd: repoDir, timeout: this.timeout,
@@ -163,8 +164,10 @@ export class CodeValidatorService {
     } else if (step.name === "lint") {
       // ESLint output format: /path/src/foo.ts
       //   10:5  error  Some message  rule-name
-      const eslintLineRegex = /^\s*(\d+):(\d+)\s+(error|warning)\s+(.+?)\s{2,}(\S+)\s*$/gm;
-      const eslintFileRegex = /^(\/[^\s]+?\.\w+)$/gm;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _eslintLineRegex = /^\s*(\d+):(\d+)\s+(error|warning)\s+(.+?)\s{2,}(\S+)\s*$/gm;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _eslintFileRegex = /^(\/[^\s]+?\.\w+)$/gm;
       let currentFile = "";
 
       // Parse file headers first

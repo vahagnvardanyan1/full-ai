@@ -165,7 +165,8 @@ export class ContextGathererService {
     return null;
   }
 
-  private extractPublicAPI(code: string, ext: string): string {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private extractPublicAPI(code: string, _ext: string): string {
     const lines = code.split("\n");
     const apiLines = lines.filter((line) => {
       const t = line.trim();

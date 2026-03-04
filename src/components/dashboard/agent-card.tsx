@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { glassCard, pillBase } from "@/lib/styles";
 import type { IAgent } from "@/lib/dashboard/types";
@@ -23,9 +24,11 @@ export function AgentCard({ agent }: { agent: IAgent }) {
         {/* Header */}
         <div className="flex items-center gap-3">
           {agent.avatar ? (
-            <img
+            <Image
               src={agent.avatar}
               alt={agent.name}
+              width={44}
+              height={44}
               className="size-11 rounded-full shrink-0 bg-[var(--surface-raised)] border border-[var(--surface-border)]"
             />
           ) : (

@@ -302,6 +302,183 @@ export const MOCK_TEAMS: ITeam[] = [
       },
     ],
   },
+  {
+    id: "team-pixelcraft",
+    name: "PixelCraft Studio",
+    category: "Design",
+    description:
+      "Design-first AI team that delivers stunning interfaces, brand identities, and design systems. From wireframes to production-ready assets, PixelCraft handles it all.",
+    agents: [
+      MOCK_AGENTS[0], // PM
+      MOCK_AGENTS[1], // Designer
+      MOCK_AGENTS[2], // Frontend
+    ],
+    rating: 4.8,
+    reviewCount: 267,
+    services: [
+      "UI/UX design",
+      "Design systems",
+      "Brand identity",
+      "Prototyping",
+      "Design-to-code",
+    ],
+    pricing: [
+      {
+        name: "Starter",
+        price: 349,
+        period: "month",
+        features: [
+          "2 AI agents",
+          "Up to 40 tasks/month",
+          "Figma deliverables",
+          "Email support",
+        ],
+      },
+      {
+        name: "Studio",
+        price: 649,
+        period: "month",
+        features: [
+          "3 AI agents",
+          "Unlimited tasks",
+          "Design system setup",
+          "Priority support",
+          "Code handoff",
+        ],
+        highlighted: true,
+      },
+      {
+        name: "Agency",
+        price: 999,
+        period: "month",
+        features: [
+          "4 AI agents",
+          "Unlimited tasks",
+          "Brand guidelines",
+          "Dedicated designer",
+          "Motion design",
+        ],
+      },
+    ],
+  },
+  {
+    id: "team-dataforge",
+    name: "DataForge Analytics",
+    category: "Consulting",
+    description:
+      "Data-driven AI consulting team that builds dashboards, automates reporting, and delivers actionable insights. Transform raw data into strategic decisions.",
+    agents: [
+      MOCK_AGENTS[0], // PM
+      MOCK_AGENTS[4], // Backend
+      MOCK_AGENTS[7], // Data Analyst
+    ],
+    rating: 4.6,
+    reviewCount: 154,
+    services: [
+      "Dashboard creation",
+      "Data pipeline setup",
+      "KPI tracking",
+      "Predictive analytics",
+      "Report automation",
+    ],
+    pricing: [
+      {
+        name: "Insights",
+        price: 449,
+        period: "month",
+        features: [
+          "2 AI agents",
+          "Up to 60 tasks/month",
+          "3 dashboards",
+          "Email support",
+        ],
+      },
+      {
+        name: "Intelligence",
+        price: 799,
+        period: "month",
+        features: [
+          "3 AI agents",
+          "Unlimited tasks",
+          "Unlimited dashboards",
+          "Priority support",
+          "Custom integrations",
+        ],
+        highlighted: true,
+      },
+      {
+        name: "Enterprise",
+        price: 1199,
+        period: "month",
+        features: [
+          "4 AI agents",
+          "Unlimited everything",
+          "Predictive models",
+          "24/7 support",
+          "SLA guarantee",
+        ],
+      },
+    ],
+  },
+  {
+    id: "team-shieldops",
+    name: "ShieldOps Security",
+    category: "IT",
+    description:
+      "Security-focused DevOps team that hardens infrastructure, automates compliance, and runs penetration tests. Keep your systems secure and your deployments bulletproof.",
+    agents: [
+      MOCK_AGENTS[4], // Backend
+      MOCK_AGENTS[5], // QA
+      MOCK_AGENTS[6], // DevOps
+    ],
+    rating: 4.9,
+    reviewCount: 89,
+    services: [
+      "Security audits",
+      "CI/CD hardening",
+      "Compliance automation",
+      "Incident response",
+      "Infrastructure monitoring",
+    ],
+    pricing: [
+      {
+        name: "Shield",
+        price: 599,
+        period: "month",
+        features: [
+          "2 AI agents",
+          "Monthly audit",
+          "Basic monitoring",
+          "Email support",
+        ],
+      },
+      {
+        name: "Fortress",
+        price: 999,
+        period: "month",
+        features: [
+          "3 AI agents",
+          "Weekly audits",
+          "24/7 monitoring",
+          "Priority support",
+          "Incident playbooks",
+        ],
+        highlighted: true,
+      },
+      {
+        name: "Citadel",
+        price: 1599,
+        period: "month",
+        features: [
+          "4 AI agents",
+          "Continuous audits",
+          "SOC2 compliance",
+          "Dedicated engineer",
+          "SLA guarantee",
+        ],
+      },
+    ],
+  },
 ];
 
 export const MOCK_WORKSPACE: IWorkspaceTeam[] = [
