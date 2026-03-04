@@ -141,7 +141,7 @@ function FileItem({ file }: { file: GeneratedFile }) {
           </span>
         </div>
         <div style={rightGroup}>
-          <AgentAvatar role={file.createdBy} size={16} />
+          <AgentAvatar role={file.createdBy} size={24} />
           <span
             style={{
               ...pill,

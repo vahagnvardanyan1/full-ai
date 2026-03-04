@@ -186,7 +186,7 @@ function TaskRow({ task }: { task: TaskItem }) {
         borderLeft: `2px solid ${assigneeColor}`,
       }}
     >
-      <AgentAvatar role={task.assignedTo} size={16} />
+      <AgentAvatar role={task.assignedTo} size={24} />
       <span style={{ fontSize: "0.75rem", fontWeight: 500, flex: 1, lineHeight: 1.3 }}>
         {task.title}
       </span>
@@ -298,7 +298,7 @@ export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPa
     <div style={overlay}>
       {/* Header */}
       <div style={panelHeader}>
-        <AgentAvatar role={agent} size={32} status="done" />
+        <AgentAvatar role={agent} size={48} status="done" />
         <div>
           <div style={{ fontSize: "0.9rem", fontWeight: 600 }}>{formatName(agent)}</div>
           <div style={{ fontSize: "0.65rem", color: "var(--success)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>

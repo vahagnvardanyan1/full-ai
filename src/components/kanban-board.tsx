@@ -218,7 +218,7 @@ function TaskCard({ task, accentColor }: { task: TaskItem; accentColor: string }
         </span>
       </div>
       <div style={cardMeta}>
-        <AgentAvatar role={task.assignedTo} size={14} />
+        <AgentAvatar role={task.assignedTo} size={22} />
         <span style={{ color: "var(--text-muted)" }}>
           {formatAssignee(task.assignedTo)}
         </span>

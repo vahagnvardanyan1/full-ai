@@ -178,7 +178,7 @@ function AgentNode({ data, selected }: NodeProps<Node<AgentNodeData>>) {
 
         {/* Header row */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <AgentAvatar role={role} size={30} status={status} />
+          <AgentAvatar role={role} size={46} status={status} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text)" }}>{label}</div>
             <div
@@ -266,8 +266,8 @@ function StartNode({ data }: NodeProps<Node<AgentNodeData>>) {
     <>
       <div
         style={{
-          width: 48,
-          height: 48,
+          width: 56,
+          height: 56,
           borderRadius: "50%",
           background: `${color}18`,
           border: `1.5px solid ${color}50`,
@@ -277,7 +277,7 @@ function StartNode({ data }: NodeProps<Node<AgentNodeData>>) {
           boxShadow: `0 0 20px ${color}20`,
         }}
       >
-        <AgentAvatar role="orchestrator" size={28} status="done" />
+        <AgentAvatar role="orchestrator" size={42} status="done" />
       </div>
       <Handle type="source" position={Position.Right} style={{ background: color, width: 8, height: 8, border: "2px solid var(--bg)" }} />
     </>
@@ -289,7 +289,7 @@ const nodeTypes = { agentNode: AgentNode, startNode: StartNode };
 // ── Layout ─────────────────────────────────────────────
 
 const X_SPACING = 280;
-const Y_SPACING = 130;
+const Y_SPACING = 200;
 const START_X = 60;
 
 function buildNodesAndEdges(
@@ -311,12 +311,12 @@ function buildNodesAndEdges(
   nodes.push({
     id: "start",
     type: "startNode",
-    position: { x: START_X, y: centerY - 24 },
+    position: { x: START_X, y: centerY - 28 },
     data: { role: "orchestrator", label: "Start", status: "done" as AvatarStatus, color: AGENT_COLORS.orchestrator },
     draggable: false,
     selectable: false,
-    width: 48,
-    height: 48,
+    width: 56,
+    height: 56,
   });
 
   let prevPhaseIds: string[] = ["start"];

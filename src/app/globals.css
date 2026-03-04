@@ -219,20 +219,62 @@ pre {
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* ── React Flow Overrides ────────────────────────────── */
+/* ── Landing Page Dot Grid ──────────────────────────── */
 
-.react-flow__edge-path {
-  stroke: var(--border) !important;
-  stroke-width: 2px;
+.landing-dot-grid {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
+[data-theme="light"] .landing-dot-grid {
+  background-image: radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px);
+}
+
+/* ── Landing Page Animations ─────────────────────────── */
+
+@keyframes landing-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes landing-scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+
+@keyframes landing-scroll-right {
+  0% { transform: translateX(-33.333%); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes landing-progress {
+  0% { width: 30%; }
+  50% { width: 75%; }
+  100% { width: 30%; }
+}
+
+/* ── Avatar Animations ──────────────────────────────── */
+
+@keyframes avatar-ring-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes avatar-badge-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ── React Flow Overrides ────────────────────────────── */
+
 .react-flow__edge.animated .react-flow__edge-path {
-  stroke-dasharray: 6;
-  animation: react-flow-dash 0.6s linear infinite;
+  stroke-dasharray: 8;
+  animation: react-flow-dash 0.5s linear infinite;
 }
 
 @keyframes react-flow-dash {
-  to { stroke-dashoffset: -12; }
+  to { stroke-dashoffset: -16; }
 }
 
 .react-flow__attribution {

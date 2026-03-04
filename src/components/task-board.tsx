@@ -92,7 +92,7 @@ export function TaskBoard({ tasks }: { tasks: TaskItem[] }) {
 
             return (
               <div key={task.id} style={{ ...taskRow, borderLeft: `2px solid ${assigneeColor}` }}>
-                <AgentAvatar role={task.assignedTo} size={18} />
+                <AgentAvatar role={task.assignedTo} size={28} />
                 <span style={{ fontSize: "0.78rem", fontWeight: 500, flex: 1, lineHeight: 1.3 }}>
                   {task.title}
                 </span>
