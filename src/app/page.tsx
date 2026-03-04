@@ -586,12 +586,7 @@ export default function Home() {
               color: showKanban ? "var(--accent)" : "var(--text-muted)",
               borderColor: showKanban ? "var(--accent)" : "var(--surface-border)",
             }}
-            onClick={() => {
-              setShowKanban((v) => {
-                if (!v) setSelectedAgent(null); // close agent panel when opening tasks
-                return !v;
-              });
-            }}
+            onClick={() => setShowKanban((v) => !v)}
           >
             <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
               <rect x="1" y="2" width="4" height="12" rx="1" stroke="currentColor" strokeWidth="1.2" />
@@ -732,12 +727,16 @@ export default function Home() {
             selectedAgent={selectedAgent}
             onSelectAgent={(agent) => {
               setSelectedAgent(agent);
-              if (agent) setShowKanban(false); // close tasks panel when opening agent
             }}
           />
         )}
 
-        {/* Detail panel — auto-opens on agent completion */}
+        {/* Kanban overlay */}
+        {showKanban && (
+          <KanbanBoard tasks={allTasks} onClose={() => setShowKanban(false)} />
+        )}
+
+        {/* Detail panel — layers on top of kanban */}
         {selectedOutput && selectedAgent && (
           <DetailPanel
             key={selectedAgent}
@@ -747,11 +746,6 @@ export default function Home() {
             files={selectedOutput.files}
             onClose={() => setSelectedAgent(null)}
           />
-        )}
-
-        {/* Kanban overlay */}
-        {showKanban && (
-          <KanbanBoard tasks={allTasks} onClose={() => setShowKanban(false)} />
         )}
 
         {/* Bottom bar — floating inside main area */}
@@ -802,7 +796,7 @@ export default function Home() {
               key={t.id}
               toast={t}
               onDone={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
-              onClick={() => { setSelectedAgent(t.agent); setShowKanban(false); }}
+              onClick={() => setSelectedAgent(t.agent)}
             />
           ))}
         </div>

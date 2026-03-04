@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, useState, useMemo } from "react";
+import { CSSProperties, useState, useMemo, useEffect } from "react";
 import type { AgentResponse, TaskItem, GeneratedFile } from "@/lib/agents/types";
 import { AgentAvatar } from "@/components/agent-avatar";
 
@@ -42,10 +42,10 @@ function formatName(role: string): string {
 const overlay: CSSProperties = {
   position: "absolute",
   top: 10,
-  right: 10,
-  bottom: 10,
-  width: 360,
-  maxWidth: "calc(100% - 20px)",
+  left: "50%",
+  transform: "translateX(-50%)",
+  width: "min(560px, calc(100% - 2rem))",
+  maxHeight: "50vh",
   background: "var(--panel-bg)",
   backdropFilter: "blur(24px)",
   WebkitBackdropFilter: "blur(24px)",
@@ -53,8 +53,8 @@ const overlay: CSSProperties = {
   borderRadius: 16,
   display: "flex",
   flexDirection: "column",
-  zIndex: 50,
-  animation: "panel-slide-in 0.25s ease-out",
+  zIndex: 55,
+  animation: "panel-slide-down 0.25s ease-out",
   overflowY: "auto",
   boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
 };
@@ -285,6 +285,14 @@ function FileRow({ file }: { file: GeneratedFile }) {
 
 export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPanelProps) {
   const color = AGENT_COLORS[agent] ?? "#888";
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
 
   return (
     <div style={overlay}>
