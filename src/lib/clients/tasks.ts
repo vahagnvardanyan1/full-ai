@@ -8,6 +8,7 @@
 
 import { logger } from "@/lib/logger";
 import type { TaskStatus } from "@/lib/agents/types";
+import { syncTaskToJira, syncTaskStatusToJira } from "@/lib/clients/jira-sync";
 
 export const TASK_STATUSES: TaskStatus[] = [
   "open",
@@ -28,6 +29,10 @@ export interface Task {
   status: TaskStatus;
   labels: string[];
   createdAt: string;
+  /** Jira issue key (e.g. "KAN-42") when synced to Jira */
+  jiraKey?: string;
+  /** Browsable Jira issue URL */
+  jiraUrl?: string;
 }
 
 let counter = 0;
@@ -85,6 +90,9 @@ export function createTask(params: CreateTaskParams, agentRole: string): Task {
     assignedTo: task.assignedTo,
   });
 
+  // Fire-and-forget: sync to Jira if connected
+  syncTaskToJira(task).catch(() => {});
+
   return task;
 }
 
@@ -94,6 +102,8 @@ export function updateTaskStatus(taskId: string, newStatus: TaskStatus): Task | 
     if (task) {
       task.status = newStatus;
       logger.info("Task status updated", { id: taskId, status: newStatus });
+      // Fire-and-forget: sync status to Jira
+      syncTaskStatusToJira(taskId, newStatus).catch(() => {});
       return task;
     }
   }
@@ -122,6 +132,8 @@ export function updateTasksByAssignee(
         from: fromStatus,
         to: toStatus,
       });
+      // Fire-and-forget: sync status to Jira
+      syncTaskStatusToJira(task.id, toStatus).catch(() => {});
     }
   }
   return updated;
@@ -144,6 +156,8 @@ export function updateTasksByRequestStatus(
         from: fromStatus,
         to: toStatus,
       });
+      // Fire-and-forget: sync status to Jira
+      syncTaskStatusToJira(task.id, toStatus).catch(() => {});
     }
   }
   return updated;

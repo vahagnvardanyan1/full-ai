@@ -42,6 +42,10 @@ export interface TaskItem {
   status: TaskStatus;
   labels: string[];
   createdAt: string;
+  /** Jira issue key (e.g. "KAN-42") when synced to Jira */
+  jiraKey?: string;
+  /** Browsable Jira issue URL */
+  jiraUrl?: string;
 }
 
 /** A generated code file produced by an agent */

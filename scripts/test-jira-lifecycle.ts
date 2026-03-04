@@ -119,10 +119,10 @@ const getAvailableTransitions = async (issueKey: string) => {
 
 // ── Test Functions ─────────────────────────────────────────
 
-const testConfiguration = () => {
+const testConfiguration = async () => {
   console.log("\n1️⃣  Test: Jira Configuration");
 
-  const configured = isJiraConfigured();
+  const configured = await isJiraConfigured();
   assert(configured, "JIRA_* env vars are all present");
 
   if (!configured) {
@@ -345,7 +345,7 @@ const main = async () => {
 
   try {
     // Phase 1: Configuration checks
-    testConfiguration();
+    await testConfiguration();
 
     // Phase 2: Pure mapping tests (no API calls)
     testStatusMappings();

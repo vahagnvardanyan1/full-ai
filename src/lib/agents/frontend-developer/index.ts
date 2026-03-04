@@ -1,8 +1,12 @@
 // ──────────────────────────────────────────────────────────
-// Frontend Developer Agent — v3 Autonomous Pipeline
+// Frontend Developer Agent — v4 Fast Pipeline
 //
-// Fully autonomous: onboard → context → plan → clone →
-// code → self-review → validate → push → PR
+// Fully autonomous: onboard → plan → clone → code →
+// validate (single pass) → push → PR
+//
+// v4: Removed multi-iteration self-review and task-completion
+// LLM checks. Uses one auto-fix + one LLM fix pass to ship
+// clean code fast. QA agent handles verification downstream.
 //
 // Decomposed into stage functions for testability and clarity.
 // Each stage has typed inputs/outputs and self-contained error handling.
@@ -28,7 +32,6 @@ import type {
   RepoInfo,
   RepoKnowledge,
   TaskPlan,
-  ReviewIssue,
 } from "./types";
 import type { AgentResponse, FEProgressStage } from "../types";
 import type { SimpleGit } from "simple-git";
@@ -37,29 +40,22 @@ import type { SimpleGit } from "simple-git";
 // All magic numbers in ONE place. Change here, affects everywhere.
 
 const CONFIG = {
-  /** Max LLM self-review iterations before moving on */
-  maxReviewIterations: 3,
-  /** Max validation fix iterations (tsc/lint/build/test cycle) */
-  maxValidationFixes: 3,
-
   /** Progress milestones (0-100) for each pipeline stage */
   progress: {
     onboarding:     { start: 5,  end: 10 },
     planning:       { start: 12, end: 20 },
     cloning:        { start: 25, end: 30 },
-    coding:         { start: 35, end: 55 },
-    selfReview:     { start: 58, end: 67 },
-    autoFix:        { start: 66, end: 67 },
-    validation:     { start: 68, end: 78 },
-    taskCompletion: { start: 79, end: 81 },
-    pushing:        { start: 82, end: 90 },
-    prCreation:     { start: 92, end: 100 },
+    coding:         { start: 35, end: 60 },
+    autoFix:        { start: 62, end: 68 },
+    validation:     { start: 70, end: 82 },
+    pushing:        { start: 84, end: 92 },
+    prCreation:     { start: 94, end: 100 },
   },
 
   /** Content truncation limits (chars) for LLM context windows */
   contextLimits: {
-    repoStructure: 2000,
-    filePreview: 2000,
+    repoStructure: 4000,
+    filePreview: 3000,
     relatedFilesMax: 8,
     relatedFilesPreview: 5,
     relatedFilesListMax: 15,
@@ -297,6 +293,28 @@ function buildExistingScanContext(
   return parts.join("\n");
 }
 
+/**
+ * Lightweight, non-LLM check: does at least one changed file's name or
+ * explanation contain a keyword from the user's request?  Returns a warning
+ * string when nothing matches, or `null` when the changes look relevant.
+ */
+function quickTaskRelevanceCheck(
+  userMessage: string,
+  changes: CodeGenerationResponse[],
+): string | null {
+  const keywords = extractTaskKeywords(userMessage);
+  if (keywords.length === 0) return null; // nothing to check against
+
+  const haystack = changes
+    .map((c) => `${c.filename} ${c.explanation}`.toLowerCase())
+    .join(" ");
+
+  const matched = keywords.some((kw) => haystack.includes(kw));
+  if (matched) return null;
+
+  return `None of the ${changes.length} changed file(s) mention keywords from the user request (${keywords.slice(0, 5).join(", ")}). The changes may not address the original task.`;
+}
+
 /** Read back auto-fixed files from disk to keep in-memory changes in sync */
 async function syncChangesFromDisk(
   changes: CodeGenerationResponse[],
@@ -492,6 +510,27 @@ async function stageClone(ctx: Pick<PipelineContext, "emit" | "github" | "repoIn
   const { dir, git } = cloneResult;
   await github.createBranch(git, branchName);
 
+  // Install dependencies so tsc/eslint/prettier/build actually work
+  emit("cloning", "Installing dependencies...", p.start + Math.round((p.end - p.start) * 0.5));
+  try {
+    const { execSync } = await import("child_process");
+    const installCmd = await detectInstallCommand(dir);
+    logger.info(`Installing deps in cloned repo: ${installCmd}`);
+    execSync(installCmd, {
+      cwd: dir,
+      timeout: 180_000,
+      maxBuffer: 10 * 1024 * 1024,
+      encoding: "utf-8",
+      stdio: "pipe",
+      env: { ...process.env, CI: "true" },
+    });
+    logger.info("Dependencies installed successfully");
+  } catch (installErr) {
+    logger.warn("Dependency install failed — validation may be limited", {
+      error: installErr instanceof Error ? installErr.message : String(installErr),
+    });
+  }
+
   toolCalls.push({
     tool: "clone_and_branch",
     arguments: { branch: branchName },
@@ -500,6 +539,32 @@ async function stageClone(ctx: Pick<PipelineContext, "emit" | "github" | "repoIn
 
   emit("cloning", `Branch: ${branchName}`, p.end);
   return { branchName, dir, git };
+}
+
+/**
+ * Detect the correct package install command based on lockfile presence.
+ */
+async function detectInstallCommand(dir: string): Promise<string> {
+  const { access } = await import("fs/promises");
+  const { join } = await import("path");
+
+  try {
+    await access(join(dir, "pnpm-lock.yaml"));
+    return "pnpm install --frozen-lockfile 2>&1 || pnpm install 2>&1";
+  } catch { /* not pnpm */ }
+
+  try {
+    await access(join(dir, "yarn.lock"));
+    return "yarn install --frozen-lockfile 2>&1 || yarn install 2>&1";
+  } catch { /* not yarn */ }
+
+  try {
+    await access(join(dir, "bun.lockb"));
+    return "bun install --frozen-lockfile 2>&1 || bun install 2>&1";
+  } catch { /* not bun */ }
+
+  // Default to npm
+  return "npm ci 2>&1 || npm install 2>&1";
 }
 
 async function stageCodeGeneration(ctx: Pick<PipelineContext, "emit" | "openai" | "github" | "gatherer" | "plan" | "repoKnowledge" | "repoContext" | "repoTree" | "knowledgeContext" | "existingScanContext" | "userMessage" | "warnings" | "toolCalls">): Promise<CodeGenerationResponse[]> {
@@ -540,7 +605,8 @@ async function stageCodeGeneration(ctx: Pick<PipelineContext, "emit" | "openai" 
     }
 
     const fullContext = [
-      `## Task Plan\n${plan.summary}`,
+      `## Original User Request\n${userMessage}`,
+      `\n## Task Plan\n${plan.summary}`,
       `\n## Step ${step.order}/${plan.steps.length}\n${step.details}`,
       knowledgeContext ? `\n## Project Knowledge\n${knowledgeContext}` : "",
       fileContextStr ? `\n## Related Code Context\n${fileContextStr}` : "",
@@ -570,8 +636,10 @@ async function stageCodeGeneration(ctx: Pick<PipelineContext, "emit" | "openai" 
       ].filter(Boolean);
 
       let generated = await openai.generateCode({
-        task: step.description, context: fullContext,
+        task: `USER REQUEST: ${userMessage}\n\nCURRENT STEP: ${step.description}`,
+        context: fullContext,
         existingCode, constraints: baseConstraints,
+        userMessage,
       });
 
       // Immediate diff-check: retry once with escalated prompt if identical
@@ -580,9 +648,10 @@ async function stageCodeGeneration(ctx: Pick<PipelineContext, "emit" | "openai" 
         warnings.push(`Step ${si + 1} (${step.targetFile}): first generation was identical — regenerated`);
 
         generated = await openai.generateCode({
-          task: `PREVIOUS ATTEMPT FAILED — you returned code IDENTICAL to the existing file.\n\nThe task is: ${step.description}\n\nYou MUST make REAL, VISIBLE changes. Identify AT LEAST 3 concrete things to change.`,
+          task: `PREVIOUS ATTEMPT FAILED — you returned code IDENTICAL to the existing file.\n\nORIGINAL USER REQUEST: ${userMessage}\n\nCURRENT STEP: ${step.description}\n\nYou MUST make REAL, VISIBLE changes that implement the user's request above.`,
           context: fullContext, existingCode,
-          constraints: [...baseConstraints, "YOUR PREVIOUS OUTPUT WAS IDENTICAL — produce DIFFERENT code"],
+          constraints: [...baseConstraints, "YOUR PREVIOUS OUTPUT WAS IDENTICAL — produce DIFFERENT code that implements the user's request"],
+          userMessage,
         });
 
         if (existingCode && isCodeIdentical(generated.code, existingCode)) {
@@ -649,89 +718,21 @@ async function stageCodeGeneration(ctx: Pick<PipelineContext, "emit" | "openai" 
   return allChanges;
 }
 
-async function stageSelfReview(ctx: Pick<PipelineContext, "emit" | "openai" | "issue" | "enrichedContext" | "warnings" | "detailParts" | "toolCalls">, allChanges: CodeGenerationResponse[]): Promise<CodeGenerationResponse[]> {
-  const { emit, openai, issue, enrichedContext, warnings, detailParts, toolCalls } = ctx;
-  const p = CONFIG.progress.selfReview;
+// Self-review removed in v4 — single-pass validation is faster and
+// catches the same tsc/lint/prettier issues via real tools instead
+// of an LLM guessing.
 
-  emit("self_review", "Running LLM self-review...", p.start);
-  const changes = [...allChanges];
-
-  for (let iteration = 1; iteration <= CONFIG.maxReviewIterations; iteration++) {
-    const iterProgress = p.start + Math.round((iteration / CONFIG.maxReviewIterations) * (p.end - p.start));
-    emit("self_review", `Self-review iteration ${iteration}/${CONFIG.maxReviewIterations}...`, iterProgress);
-
-    try {
-      const review = await openai.selfReviewCode(
-        changes.map((c) => ({ filename: c.filename, code: c.code, language: c.language })),
-        `${issue.title}\n\n${issue.body}`,
-        enrichedContext,
-      );
-
-      const errors: ReviewIssue[] = review.issues.filter(
-        (i) => i.severity === "error" || i.severity === "critical",
-      );
-
-      if (review.approved || errors.length === 0) {
-        detailParts.push(`## LLM Self-Review\nPassed on iteration ${iteration}: ${review.summary}`);
-        toolCalls.push({ tool: "self_review", arguments: { iteration }, result: { approved: true, summary: review.summary } });
-        break;
-      }
-
-      logger.warn(`LLM review: ${errors.length} issues on iteration ${iteration}`);
-
-      // Group errors by file and fix
-      const filesWithErrors = new Map<string, ReviewIssue[]>();
-      for (const err of errors) {
-        const existing = filesWithErrors.get(err.filename) || [];
-        existing.push(err);
-        filesWithErrors.set(err.filename, existing);
-      }
-
-      for (const [filename, fileErrors] of filesWithErrors.entries()) {
-        const changeIdx = changes.findIndex((c) => c.filename === filename);
-        if (changeIdx === -1) continue;
-
-        try {
-          const original = changes[changeIdx];
-          const fixed = await openai.fixCodeIssues(
-            { filename: original.filename, code: original.code, language: original.language },
-            fileErrors.map((e) => ({ issue: e.issue, fix: e.fix })),
-            enrichedContext,
-          );
-          changes[changeIdx] = fixed;
-          writeCode({ file_path: fixed.filename, language: fixed.language, code: fixed.code, description: `[fixed] ${fixed.explanation}` }, "frontend_developer");
-        } catch (fixErr) {
-          logger.warn(`Failed to fix ${filename} in review iteration ${iteration}`, { error: String(fixErr) });
-          warnings.push(`Self-review fix failed for ${filename} on iteration ${iteration}`);
-        }
-      }
-
-      if (iteration === CONFIG.maxReviewIterations) {
-        detailParts.push(`## LLM Self-Review\nMax iterations reached. Last: ${review.summary}`);
-        warnings.push("Self-review reached max iterations — some issues may remain");
-      }
-    } catch (reviewErr) {
-      logger.warn(`Self-review iteration ${iteration} failed`, { error: String(reviewErr) });
-      warnings.push(`Self-review iteration ${iteration} failed: ${reviewErr instanceof Error ? reviewErr.message : String(reviewErr)}`);
-      if (iteration === 1) detailParts.push("## LLM Self-Review\nSkipped — review call failed");
-      break;
-    }
-  }
-
-  return cleanupChanges(changes);
-}
-
-async function stageValidation(ctx: Pick<PipelineContext, "emit" | "openai" | "github" | "validator" | "repoKnowledge" | "enrichedContext" | "dir" | "git" | "warnings" | "detailParts" | "toolCalls">, allChanges: CodeGenerationResponse[]): Promise<{
+async function stageValidation(ctx: Pick<PipelineContext, "emit" | "github" | "validator" | "repoKnowledge" | "dir" | "git" | "warnings" | "detailParts" | "toolCalls">, allChanges: CodeGenerationResponse[]): Promise<{
   changes: CodeGenerationResponse[];
   validationPassed: boolean;
   stepResults: Record<string, boolean>;
 }> {
-  const { emit, openai, github, validator, repoKnowledge, enrichedContext, dir, git, warnings, detailParts, toolCalls } = ctx;
+  const { emit, github, validator, repoKnowledge, dir, git, warnings, detailParts, toolCalls } = ctx;
 
   emit("validating", "Applying code to disk...", CONFIG.progress.autoFix.start);
   let changes = [...allChanges];
 
-  // Apply to disk
+  // ── Step 1: Apply generated code to disk ──
   const applyResult = await github.applyChanges(dir, git, changes);
   if (applyResult.skipped.length > 0) {
     warnings.push(`${applyResult.skipped.length} file(s) could not be applied: ${applyResult.skipped.map((s) => `${s.file} (${s.reason})`).join(", ")}`);
@@ -740,163 +741,61 @@ async function stageValidation(ctx: Pick<PipelineContext, "emit" | "openai" | "g
     throw new Error("No files could be applied to disk.");
   }
 
-  // Tier 1: Auto-fix
+  // ── Step 2: Auto-fix via real terminal tools (prettier --write, eslint --fix) ──
   emit("validating", "Running auto-fix: prettier --write, eslint --fix...", CONFIG.progress.autoFix.end);
   try {
     const autoFixes = await validator.autoFix(dir, repoKnowledge);
     if (autoFixes.length > 0) {
       logger.info(`Auto-fix applied: ${autoFixes.join(", ")}`);
-      detailParts.push(`## Auto-Fix (Tier 1)\nApplied: ${autoFixes.join(", ")}`);
+      detailParts.push(`## Auto-Fix\nApplied: ${autoFixes.join(", ")}`);
       changes = await syncChangesFromDisk(changes, dir);
     }
   } catch (autoFixErr) {
     logger.warn("Auto-fix failed — continuing", { error: String(autoFixErr) });
   }
 
-  // Tier 2: Smart LLM-assisted fix loop
+  // ── Step 3: Validate via real terminal tools (tsc, eslint, build, test) ──
+  // No LLM involvement — just run the project's actual scripts and report results.
+  emit("validating", "Running validation: tsc, eslint, build, tests...", CONFIG.progress.validation.start);
+
   let validationPassed = false;
   const stepResults: Record<string, boolean> = {};
-  let previousErrors: string[] = [];
 
-  for (let valIter = 1; valIter <= CONFIG.maxValidationFixes; valIter++) {
-    const vp = CONFIG.progress.validation;
-    const iterProgress = vp.start + Math.round((valIter / CONFIG.maxValidationFixes) * (vp.end - vp.start));
-    emit("validating", `Validation ${valIter}/${CONFIG.maxValidationFixes} (tsc, eslint, build, tests)...`, iterProgress);
+  try {
+    const validation = await validator.validate(dir, repoKnowledge);
 
-    try {
-      const validation = await validator.validate(dir, repoKnowledge);
-
-      for (const step of validation.steps) {
-        if (!step.skipped) stepResults[step.name] = step.passed;
-      }
-      toolCalls.push({ tool: "tool_validation", arguments: { iteration: valIter }, result: { passed: validation.passed, summary: validation.summary } });
-
-      if (validation.passed) {
-        validationPassed = true;
-        detailParts.push(`## Tool Validation\nAll checks passed on iteration ${valIter}: ${validation.summary}`);
-        break;
-      }
-
-      logger.warn(`Validation ${valIter} failed: ${validation.summary}`);
-
-      const failedSteps = validation.steps.filter((s) => !s.passed && !s.skipped);
-      const allParsedErrors = failedSteps.flatMap((s) => validator.parseErrors(s));
-      const currentErrorSigs = allParsedErrors.map((e) => `${e.file}:${e.line || ""}:${e.message.slice(0, 80)}`);
-
-      const persistentErrors = currentErrorSigs.filter((sig) => previousErrors.includes(sig));
-      const isEscalated = persistentErrors.length > 0 && valIter > 1;
-      previousErrors = currentErrorSigs;
-
-      if (isEscalated) {
-        logger.warn(`${persistentErrors.length} errors persist — escalating fix`);
-      }
-
-      const failureContext = allParsedErrors.length > 0
-        ? validator.formatErrorsForLLM(allParsedErrors)
-        : failedSteps.map((s) => `### ${s.name} FAILED:\n\`\`\`\n${s.output.slice(0, CONFIG.contextLimits.validationOutput)}\n\`\`\``).join("\n\n");
-
-      let anyFixed = false;
-      for (let ci = 0; ci < changes.length; ci++) {
-        const change = changes[ci];
-        const fileErrors = validator.formatErrorsForLLM(allParsedErrors, change.filename);
-        const isInRawOutput = failedSteps.some((s) => s.output.includes(change.filename));
-        const isGlobalCheck = failedSteps.some((s) => s.name === "type-check" || s.name === "lint" || s.name === "build");
-        if (!fileErrors && !isInRawOutput && !isGlobalCheck) continue;
-
-        // Build fix prompt with escalation awareness
-        const fixPrompt = isEscalated
-          ? `ESCALATED FIX — previous fix DID NOT work. Use DIFFERENT approach.\n\nErrors:\n${fileErrors || failureContext}\n\nFull output:\n${failedSteps.map((s) => `${s.name}: ${s.output.slice(0, CONFIG.contextLimits.escalatedOutput)}`).join("\n\n")}`
-          : fileErrors
-            ? `Fix these errors in ${change.filename}:\n\n${fileErrors}`
-            : `Tool validation failures affecting ${change.filename}:\n\n${failureContext}`;
-
-        const fixInstruction = isEscalated
-          ? "Previous fix failed. Analyze the error MORE DEEPLY. Fix the ROOT CAUSE."
-          : "Fix ONLY the listed errors. Preserve all working code.";
-
-        try {
-          const fixed = await openai.fixCodeIssues(
-            { filename: change.filename, code: change.code, language: change.language },
-            [{ issue: fixPrompt, fix: fixInstruction }],
-            enrichedContext,
-          );
-          changes[ci] = fixed;
-          anyFixed = true;
-        } catch (fixErr) {
-          logger.warn(`Failed to fix ${change.filename}`, { error: String(fixErr) });
-        }
-      }
-
-      if (!anyFixed) {
-        logger.warn("No files fixed this iteration — breaking loop");
-        detailParts.push(`## Tool Validation\nNo fixes applied on iteration ${valIter}. Last: ${validation.summary}`);
-        break;
-      }
-
-      // Re-apply and re-autofix
-      changes = cleanupChanges(changes);
-      await github.applyChanges(dir, git, changes);
-      try {
-        await validator.autoFix(dir, repoKnowledge);
-        changes = await syncChangesFromDisk(changes, dir);
-      } catch {
-        logger.debug("Post-fix auto-fix failed — non-critical");
-      }
-
-      if (valIter === CONFIG.maxValidationFixes) {
-        detailParts.push(`## Tool Validation\nMax iterations reached. Last: ${validation.summary}`);
-      }
-    } catch (valErr) {
-      logger.warn(`Validation ${valIter} crashed`, { error: String(valErr) });
-      warnings.push(`Validation iteration ${valIter} failed: ${valErr instanceof Error ? valErr.message : String(valErr)}`);
-      if (valIter === 1) detailParts.push("## Tool Validation\nSkipped — validation pipeline crashed");
-      break;
+    for (const step of validation.steps) {
+      if (!step.skipped) stepResults[step.name] = step.passed;
     }
+    toolCalls.push({
+      tool: "tool_validation",
+      arguments: {},
+      result: { passed: validation.passed, summary: validation.summary },
+    });
+
+    if (validation.passed) {
+      validationPassed = true;
+      detailParts.push(`## Validation\nAll checks passed: ${validation.summary}`);
+    } else {
+      const failedSteps = validation.steps.filter((s) => !s.passed && !s.skipped);
+      const failedNames = failedSteps.map((s) => s.name).join(", ");
+      logger.warn(`Validation failed: ${failedNames}`);
+      detailParts.push(
+        `## Validation\nFailed checks: ${failedNames}\n${failedSteps.map((s) => `### ${s.name}\n\`\`\`\n${s.output.slice(0, 2000)}\n\`\`\``).join("\n\n")}`,
+      );
+    }
+  } catch (valErr) {
+    logger.warn("Validation crashed", { error: String(valErr) });
+    warnings.push(`Validation failed: ${valErr instanceof Error ? valErr.message : String(valErr)}`);
+    detailParts.push("## Validation\nSkipped — validation pipeline crashed");
   }
 
   return { changes, validationPassed, stepResults };
 }
 
-async function stageTaskCompletion(ctx: Pick<PipelineContext, "emit" | "openai" | "userMessage" | "warnings" | "detailParts">, allChanges: CodeGenerationResponse[]): Promise<void> {
-  const { emit, openai, userMessage, warnings, detailParts } = ctx;
-  emit("validating", "Verifying task completion...", CONFIG.progress.taskCompletion.start);
-
-  try {
-    const changeSummary = allChanges.map((c) => `- ${c.filename}: ${c.explanation}`).join("\n");
-    const completionCheck = await openai.chat([
-      {
-        role: "system",
-        content: `You are a pragmatic code-review verifier. Check whether code changes are RELEVANT to the task.
-
-Respond in JSON:
-{ "taskAccomplished": true/false, "confidence": "high" | "medium" | "low", "reason": "One sentence", "missingWork": "If not accomplished, what's needed" }
-
-RULES:
-- SOURCE CODE includes: .ts, .tsx, .js, .jsx, .vue, .svelte, .css, .scss, .sass, .less, .styled.ts
-- CSS/SCSS ARE source code. A "redesign" via CSS-only IS valid.
-- NOT accomplished = ONLY docs/configs with ZERO source files, OR changes completely unrelated to target.
-- Partial implementation toward the goal = accomplished with medium confidence.`,
-      },
-      {
-        role: "user",
-        content: `## Original Task\n${userMessage}\n\n## Files Changed\n${changeSummary}\n\n## File List\n${allChanges.map((c) => c.filename).join("\n")}\n\nDoes this change set accomplish the requested task?`,
-      },
-    ], true);
-
-    const completion = JSON.parse(completionCheck);
-    if (!completion.taskAccomplished) {
-      logger.warn(`Task completion: NOT accomplished — ${completion.reason}`);
-      warnings.push(`Task completion concern: ${completion.reason}. Missing: ${completion.missingWork || "N/A"}`);
-      detailParts.push(`## ⚠️ Task Completion Concern\n**Reason:** ${completion.reason}\n**Missing:** ${completion.missingWork || "N/A"}\n_PR was still created — reviewer should verify._`);
-    } else {
-      logger.info(`Task completion verified: ${completion.reason}`);
-      detailParts.push(`## Task Completion\n✅ Verified: ${completion.reason}`);
-    }
-  } catch (err) {
-    logger.warn("Task completion check failed — continuing", { error: String(err) });
-    warnings.push("Task completion verification skipped due to error");
-  }
-}
+// Task completion check removed in v4 — was producing false negatives
+// (e.g. flagging valid redesigns as "only export/Tailwind changes").
+// QA agent handles real verification in a later phase instead.
 
 async function stagePushAndPR(ctx: Pick<PipelineContext, "emit" | "openai" | "github" | "cache" | "repoInfo" | "issue" | "plan" | "branchName" | "dir" | "git" | "validationPassed" | "stepResults" | "isDraft" | "warnings" | "detailParts" | "toolCalls">, allChanges: CodeGenerationResponse[]): Promise<{
   prNumber?: number;
@@ -1078,8 +977,7 @@ ${plan.steps.map((s) => `${s.order}. ${s.description}`).join("\n")}
 - ${checkIcon("build")} Production build (\`npm run build\`)
 - ${checkIcon("test")} Test suite execution
 - ✅ Auto-fix applied (prettier --write, eslint --fix)
-- ✅ LLM self-review (up to ${CONFIG.maxReviewIterations} iterations)
-- ✅ LLM-assisted validation fixes (up to ${CONFIG.maxValidationFixes} iterations)
+- ✅ Validated via terminal (tsc, eslint, build, tests)
 - ✅ Rebased onto latest \`main\` before push
 ${warningsSection}
 ${plan.risks.length ? `### Risks\n${plan.risks.map((r: string) => `- ${r}`).join("\n")}` : ""}
@@ -1126,41 +1024,27 @@ export async function runFrontendDeveloper(
     let allChanges =
       await stageCodeGeneration({ emit, openai, github, gatherer, plan, repoKnowledge, repoContext, repoTree, knowledgeContext, existingScanContext, userMessage, warnings, toolCalls });
 
-    // Stage 5: Self-review
-    allChanges =
-      await stageSelfReview({ emit, openai, issue, enrichedContext, warnings, detailParts, toolCalls }, allChanges);
-
-    // Stage 6: Tool validation
+    // Stage 5: Validate & fix (single pass — auto-fix + one LLM fix if needed)
     const { changes: validatedChanges, validationPassed, stepResults } =
-      await stageValidation({ emit, openai, github, validator, repoKnowledge, enrichedContext, dir, git, warnings, detailParts, toolCalls }, allChanges);
+      await stageValidation({ emit, github, validator, repoKnowledge, dir, git, warnings, detailParts, toolCalls }, allChanges);
     allChanges = validatedChanges;
 
+    // Task-relevance check (non-LLM, non-blocking)
+    const relevanceIssue = quickTaskRelevanceCheck(userMessage, allChanges);
+    if (relevanceIssue) {
+      warnings.push(`Task relevance concern: ${relevanceIssue}`);
+    }
+
     // Draft decision
-    const isDraft = !validationPassed;
+    const isDraft = !validationPassed || relevanceIssue !== null;
     if (isDraft) {
       const failedChecks = Object.entries(stepResults).filter(([, passed]) => !passed).map(([name]) => name).join(", ");
       logger.warn(`Validation failed (${failedChecks}) — will create DRAFT PR`);
       detailParts.push(`## ⚠️ Draft PR\nFailed checks: ${failedChecks}\nOpening as DRAFT.`);
-      warnings.push(`DRAFT PR: ${failedChecks} failed after all fix iterations.`);
+      warnings.push(`DRAFT PR: ${failedChecks} failed after fix attempt.`);
     }
 
-    // Stage 7: Task completion check (warning only)
-    await stageTaskCompletion({ emit, openai, userMessage, warnings, detailParts }, allChanges);
-
-    // Stage 7.5: Impact analysis
-    try {
-      const changedFiles = allChanges.map((c) => c.filename);
-      const impact = await impactAnalyzer.analyzeImpact(changedFiles, repoTree);
-      detailParts.push(`## Impact Analysis\n${impact.summary}`);
-      if (impact.warnings.length > 0) {
-        detailParts.push(`**Warnings:**\n${impact.warnings.map((w) => `- ${w}`).join("\n")}`);
-      }
-    } catch (err) {
-      logger.warn("Impact analysis failed — skipping", { error: String(err) });
-      warnings.push("Impact analysis skipped due to error");
-    }
-
-    // Stage 8: Push & create PR
+    // Stage 6: Push & create PR
     const { prNumber, prUrl, titleInfo } =
       await stagePushAndPR({ emit, openai, github, cache, repoInfo, issue, plan, branchName, dir, git, validationPassed, stepResults, isDraft, warnings, detailParts, toolCalls }, allChanges);
 
