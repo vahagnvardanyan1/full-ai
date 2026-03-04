@@ -1,10 +1,9 @@
 "use client";
 
-import { CSSProperties, useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { AgentResponse, TaskItem, GeneratedFile } from "@/lib/agents/types";
 import { AgentAvatar } from "@/components/agent-avatar";
-
-// ── Types ──────────────────────────────────────────────
+import { panelBase, sectionLabel, pillBase, closeBtnBase } from "@/lib/styles";
 
 interface DetailPanelProps {
   agent: string;
@@ -13,8 +12,6 @@ interface DetailPanelProps {
   files: GeneratedFile[];
   onClose: () => void;
 }
-
-// ── Colors ─────────────────────────────────────────────
 
 const AGENT_COLORS: Record<string, string> = {
   product_manager: "#a78bfa",
@@ -37,84 +34,6 @@ function formatName(role: string): string {
     .join(" ");
 }
 
-// ── Styles ─────────────────────────────────────────────
-
-const overlay: CSSProperties = {
-  position: "absolute",
-  top: 10,
-  left: "50%",
-  transform: "translateX(-50%)",
-  width: "min(560px, calc(100% - 2rem))",
-  maxHeight: "50vh",
-  background: "var(--panel-bg)",
-  backdropFilter: "blur(24px)",
-  WebkitBackdropFilter: "blur(24px)",
-  border: "1px solid var(--panel-border)",
-  borderRadius: 16,
-  display: "flex",
-  flexDirection: "column",
-  zIndex: 55,
-  animation: "panel-slide-down 0.25s ease-out",
-  overflowY: "auto",
-  boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-};
-
-const panelHeader: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "0.6rem",
-  padding: "1rem 1.25rem",
-  borderBottom: "1px solid var(--panel-border)",
-  position: "sticky",
-  top: 0,
-  background: "var(--panel-bg)",
-  backdropFilter: "blur(12px)",
-  borderRadius: "16px 16px 0 0",
-  zIndex: 2,
-};
-
-const closeBtn: CSSProperties = {
-  marginLeft: "auto",
-  background: "var(--surface-raised)",
-  border: "1px solid var(--surface-border)",
-  borderRadius: 8,
-  width: 28,
-  height: 28,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  cursor: "pointer",
-  color: "var(--text-muted)",
-  fontSize: "0.85rem",
-  transition: "background 0.15s",
-};
-
-const section: CSSProperties = {
-  padding: "0.875rem 1.25rem",
-  borderBottom: "1px solid var(--surface-border)",
-};
-
-const sectionLabel: CSSProperties = {
-  fontSize: "0.65rem",
-  fontWeight: 600,
-  textTransform: "uppercase",
-  letterSpacing: "0.08em",
-  color: "var(--text-muted)",
-  marginBottom: "0.5rem",
-};
-
-const pill: CSSProperties = {
-  display: "inline-block",
-  padding: "0.1rem 0.4rem",
-  borderRadius: "9999px",
-  fontSize: "0.6rem",
-  fontWeight: 600,
-  textTransform: "uppercase",
-  letterSpacing: "0.03em",
-};
-
-// ── Summary renderer ───────────────────────────────────
-
 function SummaryBlock({ text }: { text: string }) {
   const segments = useMemo(() => {
     const parts: { type: "text" | "code"; content: string; lang?: string }[] = [];
@@ -135,29 +54,16 @@ function SummaryBlock({ text }: { text: string }) {
   }, [text]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+    <div className="flex flex-col gap-1.5">
       {segments.map((seg, i) =>
         seg.type === "text" ? (
-          <p key={i} style={{ fontSize: "0.82rem", lineHeight: 1.55, color: "var(--text)", whiteSpace: "pre-wrap", margin: 0 }}>
+          <p key={i} className="text-[0.82rem] leading-relaxed text-[var(--text)] whitespace-pre-wrap m-0">
             {seg.content.trim()}
           </p>
         ) : (
           <pre
             key={i}
-            style={{
-              margin: 0,
-              padding: "0.6rem 0.75rem",
-              background: "var(--code-bg)",
-              border: "1px solid var(--surface-border)",
-              borderRadius: 8,
-              fontSize: "0.72rem",
-              lineHeight: 1.45,
-              maxHeight: 200,
-              overflowY: "auto",
-              overflowX: "auto",
-              color: "var(--text)",
-              whiteSpace: "pre",
-            }}
+            className="m-0 px-3 py-2.5 bg-[var(--code-bg)] border border-[var(--surface-border)] rounded-lg text-[0.72rem] leading-snug max-h-[200px] overflow-auto text-[var(--text)] whitespace-pre"
           >
             <code>{seg.content}</code>
           </pre>
@@ -167,44 +73,28 @@ function SummaryBlock({ text }: { text: string }) {
   );
 }
 
-// ── Task row ───────────────────────────────────────────
-
 function TaskRow({ task }: { task: TaskItem }) {
   const assigneeColor = AGENT_COLORS[task.assignedTo] ?? "#888";
   const priorityColor = PRIORITY_COLORS[task.priority] ?? "#888";
 
   return (
     <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "0.5rem",
-        padding: "0.4rem 0.5rem",
-        borderRadius: 8,
-        background: "var(--surface-hover)",
-        border: "1px solid var(--surface-border)",
-        borderLeft: `2px solid ${assigneeColor}`,
-      }}
+      className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[var(--surface-hover)] border border-[var(--surface-border)]"
+      style={{ borderLeft: `2px solid ${assigneeColor}` }}
     >
       <AgentAvatar role={task.assignedTo} size={24} />
-      <span style={{ fontSize: "0.75rem", fontWeight: 500, flex: 1, lineHeight: 1.3 }}>
+      <span className="text-[0.75rem] font-medium flex-1 leading-tight">
         {task.title}
       </span>
       <span
-        style={{
-          ...pill,
-          color: priorityColor,
-          background: `${priorityColor}12`,
-          border: `1px solid ${priorityColor}25`,
-        }}
+        className={pillBase}
+        style={{ color: priorityColor, background: `${priorityColor}12`, border: `1px solid ${priorityColor}25` }}
       >
         {task.priority}
       </span>
     </div>
   );
 }
-
-// ── File row ───────────────────────────────────────────
 
 function FileRow({ file }: { file: GeneratedFile }) {
   const [open, setOpen] = useState(false);
@@ -217,71 +107,31 @@ function FileRow({ file }: { file: GeneratedFile }) {
   }
 
   return (
-    <div
-      style={{
-        borderRadius: 8,
-        background: "var(--surface-hover)",
-        border: "1px solid var(--surface-border)",
-        overflow: "hidden",
-      }}
-    >
+    <div className="rounded-lg bg-[var(--surface-hover)] border border-[var(--surface-border)] overflow-hidden">
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.4rem",
-          padding: "0.4rem 0.6rem",
-          cursor: "pointer",
-          userSelect: "none",
-        }}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 cursor-pointer select-none"
         onClick={() => setOpen((v) => !v)}
       >
-        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>{open ? "\u25BE" : "\u25B8"}</span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--accent)", fontWeight: 600, flex: 1 }}>
+        <span className="text-[0.65rem] text-[var(--text-muted)]">{open ? "\u25BE" : "\u25B8"}</span>
+        <span className="font-mono text-[0.72rem] text-[var(--accent)] font-semibold flex-1">
           {file.filePath}
         </span>
-        <span style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>{file.code.split("\n").length}L</span>
+        <span className="text-[0.6rem] text-[var(--text-muted)]">{file.code.split("\n").length}L</span>
         <button
           onClick={(e) => { e.stopPropagation(); handleCopy(); }}
-          style={{
-            padding: "1px 6px",
-            borderRadius: 4,
-            border: "1px solid var(--surface-border)",
-            background: "var(--surface-hover)",
-            color: "var(--text-muted)",
-            fontSize: "0.58rem",
-            cursor: "pointer",
-            fontFamily: "var(--font-mono)",
-          }}
+          className="px-1.5 py-px rounded border border-[var(--surface-border)] bg-[var(--surface-hover)] text-[var(--text-muted)] text-[0.58rem] cursor-pointer font-mono"
         >
           {copied ? "\u2713" : "Copy"}
         </button>
       </div>
       {open && (
-        <pre
-          style={{
-            margin: 0,
-            padding: "0.6rem",
-            background: "var(--code-bg)",
-            borderTop: "1px solid var(--surface-border)",
-            fontFamily: "var(--font-mono)",
-            fontSize: "0.7rem",
-            lineHeight: 1.45,
-            maxHeight: 240,
-            overflowY: "auto",
-            overflowX: "auto",
-            whiteSpace: "pre",
-            color: "var(--text)",
-          }}
-        >
+        <pre className="m-0 p-2.5 bg-[var(--code-bg)] border-t border-[var(--surface-border)] font-mono text-[0.7rem] leading-snug max-h-[240px] overflow-auto whitespace-pre text-[var(--text)]">
           <code>{file.code}</code>
         </pre>
       )}
     </div>
   );
 }
-
-// ── Main Component ─────────────────────────────────────
 
 export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPanelProps) {
   const color = AGENT_COLORS[agent] ?? "#888";
@@ -295,17 +145,17 @@ export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPa
   }, [onClose]);
 
   return (
-    <div style={overlay}>
+    <div className={`${panelBase} absolute top-2.5 left-1/2 -translate-x-1/2 w-[min(560px,calc(100%-2rem))] max-h-[50vh] rounded-2xl flex flex-col z-[55] animate-panel-slide-down overflow-y-auto shadow-[0_8px_32px_rgba(0,0,0,0.12)]`}>
       {/* Header */}
-      <div style={panelHeader}>
+      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[var(--panel-border)] sticky top-0 bg-[var(--panel-bg)] backdrop-blur-[12px] rounded-t-2xl z-2">
         <AgentAvatar role={agent} size={48} status="done" />
         <div>
-          <div style={{ fontSize: "0.9rem", fontWeight: 600 }}>{formatName(agent)}</div>
-          <div style={{ fontSize: "0.65rem", color: "var(--success)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <div className="text-[0.9rem] font-semibold">{formatName(agent)}</div>
+          <div className="text-[0.65rem] text-[var(--success)] font-medium uppercase tracking-wide">
             Complete
           </div>
         </div>
-        <button style={closeBtn} onClick={onClose} title="Close">
+        <button className={closeBtnBase} onClick={onClose} title="Close">
           <svg width={12} height={12} viewBox="0 0 12 12" fill="none">
             <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
@@ -313,16 +163,16 @@ export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPa
       </div>
 
       {/* Summary */}
-      <div style={section}>
-        <div style={sectionLabel}>Summary</div>
+      <div className="px-5 py-3.5 border-b border-[var(--surface-border)]">
+        <div className={sectionLabel}>Summary</div>
         <SummaryBlock text={response.summary} />
       </div>
 
       {/* Tasks */}
       {tasks.length > 0 && (
-        <div style={section}>
-          <div style={sectionLabel}>{tasks.length} {tasks.length === 1 ? "Task" : "Tasks"}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+        <div className="px-5 py-3.5 border-b border-[var(--surface-border)]">
+          <div className={sectionLabel}>{tasks.length} {tasks.length === 1 ? "Task" : "Tasks"}</div>
+          <div className="flex flex-col gap-1.5">
             {tasks.map((task) => (
               <TaskRow key={task.id} task={task} />
             ))}
@@ -332,9 +182,9 @@ export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPa
 
       {/* Files */}
       {files.length > 0 && (
-        <div style={section}>
-          <div style={sectionLabel}>{files.length} {files.length === 1 ? "File" : "Files"} Generated</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+        <div className="px-5 py-3.5 border-b border-[var(--surface-border)]">
+          <div className={sectionLabel}>{files.length} {files.length === 1 ? "File" : "Files"} Generated</div>
+          <div className="flex flex-col gap-1.5">
             {files.map((file) => (
               <FileRow key={file.id} file={file} />
             ))}
@@ -344,23 +194,15 @@ export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPa
 
       {/* Tool calls */}
       {response.toolCalls.length > 0 && (
-        <div style={{ ...section, borderBottom: "none" }}>
-          <div style={sectionLabel}>{response.toolCalls.length} Tool Calls</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+        <div className="px-5 py-3.5">
+          <div className={sectionLabel}>{response.toolCalls.length} Tool Calls</div>
+          <div className="flex flex-col gap-1">
             {response.toolCalls.map((tc, i) => (
               <div
                 key={i}
-                style={{
-                  fontSize: "0.7rem",
-                  padding: "0.3rem 0.5rem",
-                  borderRadius: 6,
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  fontFamily: "var(--font-mono)",
-                  color: "var(--text-muted)",
-                }}
+                className="text-[0.7rem] px-2 py-1 rounded-md bg-white/[0.02] border border-white/[0.05] font-mono text-[var(--text-muted)]"
               >
-                <span style={{ color: "var(--accent)" }}>{tc.tool}</span>
+                <span className="text-[var(--accent)]">{tc.tool}</span>
               </div>
             ))}
           </div>

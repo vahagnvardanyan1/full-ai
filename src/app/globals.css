@@ -1,3 +1,6 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+
 /* ── Theme System ─────────────────────────────────────── */
 
 :root {
@@ -49,6 +52,37 @@
   /* React Flow */
   --rf-dot-color: rgba(255, 255, 255, 0.03);
   --rf-edge-idle: rgba(255, 255, 255, 0.06);
+
+  /* shadcn mappings */
+  --background: #0a0a0a;
+  --foreground: #e0e4ed;
+  --card: rgba(0, 0, 0, 0.94);
+  --card-foreground: #e0e4ed;
+  --popover: rgba(0, 0, 0, 0.94);
+  --popover-foreground: #e0e4ed;
+  --primary: #0ea5e9;
+  --primary-foreground: #ffffff;
+  --secondary: #141414;
+  --secondary-foreground: #e0e4ed;
+  --muted: #141414;
+  --muted-foreground: #586578;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --ring: rgba(14, 165, 233, 0.25);
+  --input: #1c1c1c;
+  --chart-1: #a78bfa;
+  --chart-2: #34d399;
+  --chart-3: #facc15;
+  --chart-4: #f97316;
+  --chart-5: #0ea5e9;
+  --sidebar-background: #0f0f0f;
+  --sidebar-foreground: #e0e4ed;
+  --sidebar-primary: #0ea5e9;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #141414;
+  --sidebar-accent-foreground: #e0e4ed;
+  --sidebar-border: #1c1c1c;
+  --sidebar-ring: rgba(14, 165, 233, 0.25);
 }
 
 /* ── Light Theme ─────────────────────────────────────── */
@@ -86,60 +120,91 @@
 
   --rf-dot-color: rgba(0, 0, 0, 0.04);
   --rf-edge-idle: rgba(0, 0, 0, 0.08);
+
+  /* shadcn mappings */
+  --background: #f4f1ec;
+  --foreground: #1a1d24;
+  --card: rgba(244, 241, 236, 0.96);
+  --card-foreground: #1a1d24;
+  --popover: rgba(244, 241, 236, 0.96);
+  --popover-foreground: #1a1d24;
+  --primary: #0284c7;
+  --primary-foreground: #ffffff;
+  --secondary: #dfdcd4;
+  --secondary-foreground: #1a1d24;
+  --muted: #dfdcd4;
+  --muted-foreground: #6b6f78;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --ring: rgba(2, 132, 199, 0.2);
+  --input: #ccc8be;
+  --chart-1: #a78bfa;
+  --chart-2: #34d399;
+  --chart-3: #facc15;
+  --chart-4: #f97316;
+  --chart-5: #0284c7;
+  --sidebar-background: #eae7e0;
+  --sidebar-foreground: #1a1d24;
+  --sidebar-primary: #0284c7;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #dfdcd4;
+  --sidebar-accent-foreground: #1a1d24;
+  --sidebar-border: #ccc8be;
+  --sidebar-ring: rgba(2, 132, 199, 0.2);
 }
 
-/* ── Base Reset ──────────────────────────────────────── */
+/* ── Base Reset & Typography (in @layer base so Tailwind utilities override) */
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-html {
-  height: 100%;
-  color-scheme: dark light;
-}
+  html {
+    height: 100%;
+    color-scheme: dark light;
+  }
 
-body {
-  height: 100%;
-  font-family: var(--font-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
-  background: var(--bg);
-  color: var(--text);
-  -webkit-font-smoothing: antialiased;
-  transition: background-color 0.35s ease, color 0.25s ease;
-}
+  body {
+    height: 100%;
+    font-family: var(--font-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.35s ease, color 0.25s ease;
+  }
 
-body > * {
-  position: relative;
-  z-index: 1;
-}
+  body > * {
+    position: relative;
+    z-index: 1;
+  }
 
-/* ── Typography ──────────────────────────────────────── */
+  h1, h2, h3, h4 {
+    font-family: var(--font-display, var(--font-body, sans-serif));
+  }
 
-h1, h2, h3, h4 {
-  font-family: var(--font-display, var(--font-body, sans-serif));
-}
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
-}
-a:hover {
-  text-decoration: underline;
-}
+  code, pre {
+    font-family: var(--font-mono, "SF Mono", "Fira Code", Menlo, monospace);
+    font-size: 0.85rem;
+  }
 
-code, pre {
-  font-family: var(--font-mono, "SF Mono", "Fira Code", Menlo, monospace);
-  font-size: 0.85rem;
-}
-
-pre {
-  background: var(--code-bg);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius);
-  padding: 1rem;
-  overflow-x: auto;
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    overflow-x: auto;
+  }
 }
 
 /* ── Keyframes ──────────────────────────────────────── */

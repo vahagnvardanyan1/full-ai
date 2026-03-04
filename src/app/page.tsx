@@ -12,54 +12,19 @@ import { ThemeToggle } from "@/components/theme-toggle";
 function BottomCTA({ visible }: { visible: boolean }) {
   return (
     <div
-      className="landing-nav landing-bottom-cta"
+      className="landing-nav landing-bottom-cta fixed left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 pl-5 pr-[0.6rem] py-2 bg-[rgba(10,10,10,0.8)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)_saturate(1.4)] border border-[rgba(255,255,255,0.1)] rounded-full shadow-[0_4px_30px_rgba(0,0,0,0.3),0_0_0_0.5px_rgba(255,255,255,0.05)_inset] whitespace-nowrap"
       style={{
-        position: "fixed",
         bottom: visible ? 16 : -80,
-        left: "50%",
-        transform: "translateX(-50%)",
-        zIndex: 50,
-        display: "flex",
-        alignItems: "center",
-        gap: "1rem",
-        padding: "0.5rem 0.6rem 0.5rem 1.25rem",
-        background: "rgba(10, 10, 10, 0.8)",
-        backdropFilter: "blur(20px) saturate(1.4)",
-        WebkitBackdropFilter: "blur(20px) saturate(1.4)",
-        border: "1px solid rgba(255,255,255,0.1)",
-        borderRadius: 50,
-        boxShadow: "0 4px 30px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(255,255,255,0.05) inset",
         transition: "bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
-        whiteSpace: "nowrap" as const,
+        backdropFilter: "blur(20px) saturate(1.4)",
       }}
     >
-      <span className="landing-bottom-cta-text" style={{ fontSize: "0.8rem", fontWeight: 500, color: "var(--text-muted)" }}>
+      <span className="landing-bottom-cta-text text-[0.8rem] font-medium text-[var(--text-muted)]">
         Ready to ship faster?
       </span>
       <a
         href="/app"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "0.4rem",
-          padding: "0.45rem 1.15rem",
-          borderRadius: 50,
-          background: "linear-gradient(135deg, #22c55e, #16a34a)",
-          color: "#fff",
-          fontSize: "0.78rem",
-          fontWeight: 600,
-          textDecoration: "none",
-          transition: "all 0.2s",
-          boxShadow: "0 2px 12px rgba(34,197,94,0.3)",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "linear-gradient(135deg, #16a34a, #15803d)";
-          e.currentTarget.style.boxShadow = "0 2px 20px rgba(34,197,94,0.5)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "linear-gradient(135deg, #22c55e, #16a34a)";
-          e.currentTarget.style.boxShadow = "0 2px 12px rgba(34,197,94,0.3)";
-        }}
+        className="inline-flex items-center gap-[0.4rem] py-[0.45rem] px-[1.15rem] rounded-full bg-gradient-to-br from-[#22c55e] to-[#16a34a] text-white text-[0.78rem] font-semibold no-underline transition-all duration-200 shadow-[0_2px_12px_rgba(34,197,94,0.3)] hover:from-[#16a34a] hover:to-[#15803d] hover:shadow-[0_2px_20px_rgba(34,197,94,0.5)]"
       >
         Launch App
         <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -81,40 +46,19 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="landing-dot-grid" style={{ minHeight: "100vh" }}>
+    <div className="landing-dot-grid min-h-screen">
       {/* Fixed nav bar */}
       <nav
+        className="landing-nav fixed top-3.5 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between py-[0.55rem] pl-5 pr-[0.6rem] border border-[rgba(255,255,255,0.1)] rounded-full shadow-[0_4px_30px_rgba(0,0,0,0.25),0_0_0_0.5px_rgba(255,255,255,0.05)_inset]"
         style={{
-          position: "fixed",
-          top: 14,
-          left: "50%",
-          transform: "translateX(-50%)",
           width: "min(720px, calc(100% - 32px))",
-          zIndex: 50,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0.55rem 0.6rem 0.55rem 1.25rem",
           background: "rgba(10, 10, 10, 0.75)",
           backdropFilter: "blur(20px) saturate(1.4)",
           WebkitBackdropFilter: "blur(20px) saturate(1.4)",
-          border: "1px solid rgba(255,255,255,0.1)",
-          borderRadius: 50,
-          boxShadow: "0 4px 30px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(255,255,255,0.05) inset",
         }}
-        className="landing-nav"
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-          <div style={{
-            width: 28,
-            height: 28,
-            borderRadius: "50%",
-            background: "rgba(34,197,94,0.12)",
-            border: "1px solid rgba(34,197,94,0.25)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}>
+        <div className="flex items-center gap-[0.6rem]">
+          <div className="size-7 rounded-full bg-[rgba(34,197,94,0.12)] border border-[rgba(34,197,94,0.25)] flex items-center justify-center">
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="3" stroke="#22c55e" strokeWidth="2" />
               <circle cx="12" cy="4" r="1.5" fill="#22c55e" opacity="0.7" />
@@ -123,42 +67,15 @@ export default function LandingPage() {
               <circle cx="4" cy="12" r="1.5" fill="#22c55e" opacity="0.7" />
             </svg>
           </div>
-          <span
-            style={{
-              fontSize: "0.88rem",
-              fontWeight: 700,
-              fontFamily: "var(--font-display)",
-              color: "var(--text)",
-              letterSpacing: "-0.01em",
-            }}
-          >
+          <span className="text-[0.88rem] font-bold font-[var(--font-display)] text-[var(--text)] tracking-[-0.01em]">
             AI Team
           </span>
-          {/* className applied via parent nav.landing-nav */}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div className="flex items-center gap-2">
           <ThemeToggle />
           <a
             href="/app"
-            style={{
-              padding: "0.45rem 1.15rem",
-              borderRadius: 50,
-              background: "linear-gradient(135deg, #22c55e, #16a34a)",
-              color: "#fff",
-              fontSize: "0.78rem",
-              fontWeight: 600,
-              textDecoration: "none",
-              transition: "all 0.2s",
-              boxShadow: "0 2px 12px rgba(34,197,94,0.3)",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "linear-gradient(135deg, #16a34a, #15803d)";
-              e.currentTarget.style.boxShadow = "0 2px 20px rgba(34,197,94,0.5)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "linear-gradient(135deg, #22c55e, #16a34a)";
-              e.currentTarget.style.boxShadow = "0 2px 12px rgba(34,197,94,0.3)";
-            }}
+            className="py-[0.45rem] px-[1.15rem] rounded-full bg-gradient-to-br from-[#22c55e] to-[#16a34a] text-white text-[0.78rem] font-semibold no-underline transition-all duration-200 shadow-[0_2px_12px_rgba(34,197,94,0.3)] hover:from-[#16a34a] hover:to-[#15803d] hover:shadow-[0_2px_20px_rgba(34,197,94,0.5)]"
           >
             Launch App
           </a>
@@ -169,9 +86,9 @@ export default function LandingPage() {
       <AgentVisualization />
       <IntegrationStrip />
       <AiProviders />
-      <div style={{ height: "3rem" }} />
+      <div className="h-12" />
       <FeaturesSection />
-      <div style={{ height: "3rem" }} />
+      <div className="h-12" />
       <LandingFooter />
       <BottomCTA visible={showBottom} />
     </div>

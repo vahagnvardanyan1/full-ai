@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, ReactNode } from "react";
+import { ReactNode } from "react";
 
 interface Tool {
   name: string;
@@ -24,46 +24,10 @@ const TOOLS_ROW_1: Tool[] = [
 
 const TOOLS_ROW_2: Tool[] = [...TOOLS_ROW_1].reverse();
 
-const section: CSSProperties = {
-  padding: "2rem 0",
-  overflow: "hidden",
-  position: "relative",
-};
-
-const sectionLabel: CSSProperties = {
-  textAlign: "center",
-  fontSize: "0.72rem",
-  fontWeight: 600,
-  color: "var(--text-muted)",
-  textTransform: "uppercase",
-  letterSpacing: "0.12em",
-  marginBottom: "1.25rem",
-};
-
-const row: CSSProperties = {
-  display: "flex",
-  gap: "0.75rem",
-  width: "max-content",
-  padding: "0.4rem 0",
-};
-
-const card: CSSProperties = {
-  width: 60,
-  height: 60,
-  borderRadius: 14,
-  border: "1px solid var(--glass-border)",
-  background: "var(--surface-raised)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flexShrink: 0,
-  transition: "all 0.2s ease",
-};
-
 function ToolIcon({ tool }: { tool: Tool }) {
   return (
-    <div className="landing-strip-card" style={card}>
-      <div style={{ color: tool.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div className="landing-strip-card w-[60px] h-[60px] rounded-[14px] border border-[var(--glass-border)] bg-[var(--surface-raised)] flex items-center justify-center shrink-0 transition-all duration-200">
+      <div className="flex items-center justify-center" style={{ color: tool.color }}>
         {tool.icon}
       </div>
     </div>
@@ -75,25 +39,23 @@ export function IntegrationStrip() {
   const tripled2 = [...TOOLS_ROW_2, ...TOOLS_ROW_2, ...TOOLS_ROW_2];
 
   return (
-    <section className="landing-integration-strip" style={section}>
-      <p style={sectionLabel}>Connects to everything you use</p>
+    <section className="landing-integration-strip py-8 overflow-hidden relative">
+      <p className="text-center text-[0.72rem] font-semibold text-[var(--text-muted)] uppercase tracking-[0.12em] mb-5">
+        Connects to everything you use
+      </p>
 
       {/* Fade masks */}
-      <div style={{
-        position: "relative",
-        maskImage: "linear-gradient(to right, transparent, black 15%, black 85%, transparent)",
-        WebkitMaskImage: "linear-gradient(to right, transparent, black 15%, black 85%, transparent)",
-      }}>
+      <div className="relative [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
         {/* Row 1 — scroll left */}
-        <div style={{ overflow: "hidden", marginBottom: "0.75rem" }}>
-          <div style={{ ...row, animation: "landing-scroll-left 40s linear infinite" }}>
+        <div className="overflow-hidden mb-3">
+          <div className="flex gap-3 w-max py-[0.4rem] animate-landing-scroll-left">
             {tripled1.map((t, i) => <ToolIcon key={`r1-${i}`} tool={t} />)}
           </div>
         </div>
 
         {/* Row 2 — scroll right */}
-        <div style={{ overflow: "hidden" }}>
-          <div style={{ ...row, animation: "landing-scroll-right 40s linear infinite" }}>
+        <div className="overflow-hidden">
+          <div className="flex gap-3 w-max py-[0.4rem] animate-landing-scroll-right">
             {tripled2.map((t, i) => <ToolIcon key={`r2-${i}`} tool={t} />)}
           </div>
         </div>

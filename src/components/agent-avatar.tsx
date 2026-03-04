@@ -1,6 +1,7 @@
 "use client";
 
-import { CSSProperties, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import type { AgentRole } from "@/lib/agents/types";
 
 export type AvatarStatus = "idle" | "working" | "done" | "error";
@@ -61,54 +62,40 @@ export function AgentAvatar({
   const ringColor = STATUS_RING_COLORS[status];
   const isWorking = status === "working";
   const showRing = status !== "idle";
-
-  const container: CSSProperties = {
-    position: "relative",
-    width: size,
-    height: size,
-    flexShrink: 0,
-  };
-
-  const ringStyle: CSSProperties = {
-    position: "absolute",
-    inset: -2,
-    borderRadius: "50%",
-    border: `2px solid ${ringColor}`,
-    opacity: showRing ? 1 : 0,
-    transition: "opacity 0.3s, border-color 0.3s",
-    animation: isWorking
-      ? "avatar-ring-pulse 1.5s ease-in-out infinite"
-      : undefined,
-  };
-
-  const wrapper: CSSProperties = {
-    width: size,
-    height: size,
-    borderRadius: "50%",
-    background: `${color}15`,
-    border: `1.5px solid ${color}40`,
-    overflow: "hidden",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: isWorking
-      ? `0 0 ${size * 0.4}px ${color}40`
-      : status === "done"
-        ? `0 0 ${size * 0.3}px #22c55e30`
-        : status === "error"
-          ? `0 0 ${size * 0.3}px #ef444430`
-          : "none",
-    transition: "box-shadow 0.3s ease",
-  };
-
   const showBadge = status === "done" || status === "error";
   const badgeSize = Math.max(12, size * 0.35);
 
   return (
-    <div style={container}>
-      <div style={ringStyle} />
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      {/* Status ring */}
+      <div
+        className={cn(
+          "absolute -inset-0.5 rounded-full transition-[opacity,border-color] duration-300",
+          isWorking && "animate-avatar-ring-pulse",
+        )}
+        style={{
+          border: `2px solid ${ringColor}`,
+          opacity: showRing ? 1 : 0,
+        }}
+      />
 
-      <div style={wrapper}>
+      {/* Avatar wrapper */}
+      <div
+        className="rounded-full overflow-hidden flex items-center justify-center transition-shadow duration-300"
+        style={{
+          width: size,
+          height: size,
+          background: `${color}15`,
+          border: `1.5px solid ${color}40`,
+          boxShadow: isWorking
+            ? `0 0 ${size * 0.4}px ${color}40`
+            : status === "done"
+              ? `0 0 ${size * 0.3}px #22c55e30`
+              : status === "error"
+                ? `0 0 ${size * 0.3}px #ef444430`
+                : "none",
+        }}
+      >
         {videoSrc ? (
           <video
             ref={videoRef}
@@ -117,20 +104,18 @@ export function AgentAvatar({
             loop
             muted
             playsInline
+            className="pointer-events-none object-cover"
             style={{
               width: size * 1.2,
               height: size * 1.2,
-              objectFit: "cover",
-              pointerEvents: "none",
             }}
           />
         ) : (
           <span
+            className="font-bold uppercase"
             style={{
               fontSize: size * 0.45,
-              fontWeight: 700,
               color: color,
-              textTransform: "uppercase",
             }}
           >
             {(role[0] ?? "?").toUpperCase()}
@@ -138,25 +123,17 @@ export function AgentAvatar({
         )}
       </div>
 
+      {/* Status badge */}
       {showBadge && (
         <div
+          className="absolute -bottom-0.5 -right-0.5 rounded-full flex items-center justify-center text-white font-bold animate-avatar-badge-pop"
           style={{
-            position: "absolute",
-            bottom: -2,
-            right: -2,
             width: badgeSize,
             height: badgeSize,
-            borderRadius: "50%",
             background: status === "done" ? "#22c55e" : "#ef4444",
             border: "2px solid var(--bg-secondary, #0f0f0f)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             fontSize: badgeSize * 0.55,
             lineHeight: 1,
-            color: "#fff",
-            fontWeight: 700,
-            animation: "avatar-badge-pop 0.3s ease-out",
           }}
         >
           {status === "done" ? "\u2713" : "!"}
