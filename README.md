@@ -4,6 +4,7 @@ A production-grade Next.js 15 application that simulates an AI software team wit
 
 ## Architecture
 
+
 ```
 User Request
      │
