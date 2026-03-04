@@ -325,9 +325,9 @@ export default function WorkspaceTeamPage({
       {hasPipeline && (
         <div className="absolute top-3.5 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-[720px]">
           <nav
-            className="flex items-center gap-2 sm:gap-3 py-[0.55rem] pl-3 sm:pl-5 pr-[0.5rem] rounded-full border border-[rgba(255,255,255,0.1)] shadow-[0_4px_30px_rgba(0,0,0,0.25),0_0_0_0.5px_rgba(255,255,255,0.05)_inset]"
+            className="flex items-center gap-2 sm:gap-3 py-[0.55rem] pl-3 sm:pl-5 pr-[0.5rem] rounded-full border border-[var(--glass-border)] shadow-[0_4px_30px_rgba(0,0,0,0.12)]"
             style={{
-              background: "rgba(10, 10, 10, 0.75)",
+              background: "var(--topbar-bg)",
               backdropFilter: "blur(20px) saturate(1.4)",
               WebkitBackdropFilter: "blur(20px) saturate(1.4)",
             }}
@@ -340,7 +340,7 @@ export default function WorkspaceTeamPage({
                 "px-[0.55rem] sm:px-[0.65rem] py-[0.3rem] rounded-full border text-[0.68rem] sm:text-[0.73rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.3rem] shrink-0",
                 showKanban
                   ? "bg-[rgba(34,197,94,0.1)] text-[#22c55e] border-[#22c55e80]"
-                  : "bg-[rgba(255,255,255,0.04)] text-[var(--text-muted)] border-[rgba(255,255,255,0.08)]"
+                  : "bg-[var(--surface-raised)] text-[var(--text-muted)] border-[var(--surface-border)]"
               )}
               onClick={() => setShowKanban((v) => !v)}
             >
@@ -387,15 +387,15 @@ export default function WorkspaceTeamPage({
             {/* Bottom input bar */}
             <div className="px-2 sm:px-4 pb-3 sm:pb-4 flex justify-center">
               <div
-                className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 border border-[var(--glass-border)] rounded-[14px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] z-[90] w-full max-w-[720px]"
+                className="flex items-center gap-2.5 sm:gap-3.5 px-3.5 sm:px-5 py-2.5 border border-[var(--glass-border)] rounded-[16px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] z-[90] w-full max-w-[780px]"
               >
-                <span className="text-[0.6rem] sm:text-[0.65rem] text-[var(--text-muted)] whitespace-nowrap shrink-0">
+                <span className="text-[0.75rem] sm:text-[0.8rem] text-[var(--text-muted)] whitespace-nowrap shrink-0">
                   {isWaitingForPlan ? "Working..." : "Ready"}
                 </span>
                 <div className="flex-1 min-w-0">
                   <ChatInput onSubmit={handleSubmit} disabled={isLoading} loading={isLoading} compact />
                 </div>
-                <span className="text-[0.6rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60 hidden sm:inline">
+                <span className="text-[0.72rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60 hidden sm:inline">
                   {"\u2318"} Enter
                 </span>
               </div>
@@ -438,9 +438,9 @@ export default function WorkspaceTeamPage({
         {/* Bottom bar */}
         {hasPipeline && (
           <div
-            className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 border border-[var(--glass-border)] rounded-[14px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] z-[90] w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-[720px]"
+            className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2.5 sm:gap-3.5 px-3 sm:px-4 py-2 border border-[var(--glass-border)] rounded-[18px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] z-[90] w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-[780px]"
           >
-            <span className="text-[0.6rem] sm:text-[0.65rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 hidden sm:inline">
+            <span className="text-[0.75rem] sm:text-[0.8rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 hidden sm:inline">
               {isLoading
                 ? `Working... (${latestEntry?.workingAgents.map((a) => a.split("_").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ")).join(", ") || "planning"})`
                 : latestEntry?.done
@@ -450,7 +450,7 @@ export default function WorkspaceTeamPage({
             <div className="flex-1 min-w-0">
               <ChatInput onSubmit={handleSubmit} disabled={isLoading} loading={isLoading} compact />
             </div>
-            <span className="text-[0.6rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60 hidden sm:inline">
+            <span className="text-[0.72rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60 hidden sm:inline">
               {"\u2318"} Enter
             </span>
           </div>

@@ -75,7 +75,7 @@ function StatusColumn({
   return (
     <div>
       <div
-        className="flex items-center justify-between px-2.5 py-2 rounded-lg cursor-pointer select-none text-[0.74rem] font-semibold transition-colors hover:bg-white/[0.03]"
+        className="flex items-center justify-between px-2.5 py-2 rounded-lg cursor-pointer select-none text-[0.74rem] font-semibold transition-colors hover:bg-[var(--surface-hover)]"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-2">

@@ -198,7 +198,7 @@ export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPa
             {response.toolCalls.map((tc, i) => (
               <div
                 key={i}
-                className="text-[0.7rem] px-2 py-1 rounded-md bg-white/[0.02] border border-white/[0.05] font-mono text-[var(--text-muted)]"
+                className="text-[0.7rem] px-2 py-1 rounded-md bg-[var(--surface-raised)] border border-[var(--surface-border)] font-mono text-[var(--text-muted)]"
               >
                 <span className="text-[var(--accent)]">{tc.tool}</span>
               </div>

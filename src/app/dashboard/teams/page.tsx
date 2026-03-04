@@ -26,19 +26,19 @@ export default function TeamsPage() {
           <h1 className={cn("text-[1.5rem] sm:text-[1.8rem] font-bold font-[var(--font-display)] tracking-tight", textGradientTitle)}>
             Team Marketplace
           </h1>
-          <p className="text-[0.82rem] sm:text-[0.88rem] text-[var(--text-muted)] mt-1">
+          <p className="text-[0.92rem] sm:text-[1rem] text-[var(--text-muted)] mt-1">
             {MOCK_TEAMS.length} teams &middot; {totalAgents} agents &middot; Ready to deploy
           </p>
         </div>
 
         {/* Stats mini row */}
-        <div className="flex items-center gap-4 text-[0.72rem] text-[var(--text-muted)]">
+        <div className="flex items-center gap-4 text-[0.85rem] text-[var(--text-muted)]">
           <span className="flex items-center gap-1.5">
             <span className="size-2 rounded-full bg-[#22c55e] shadow-[0_0_6px_rgba(34,197,94,0.4)]" />
             {MOCK_TEAMS.length} available
           </span>
           <span className="flex items-center gap-1">
-            <svg width={12} height={12} viewBox="0 0 24 24" fill="#facc15" stroke="none">
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="#facc15" stroke="none">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
             {(MOCK_TEAMS.reduce((s, t) => s + t.rating, 0) / MOCK_TEAMS.length).toFixed(1)} avg
@@ -58,7 +58,7 @@ export default function TeamsPage() {
               key={cat}
               onClick={() => setCategory(cat)}
               className={cn(
-                "px-3.5 py-1.5 rounded-full text-[0.75rem] font-medium border cursor-pointer transition-all duration-150 flex items-center gap-1.5",
+                "px-3.5 py-1.5 rounded-full text-[0.88rem] font-medium border cursor-pointer transition-all duration-150 flex items-center gap-1.5",
                 category === cat
                   ? "bg-[rgba(34,197,94,0.1)] text-[#22c55e] border-[rgba(34,197,94,0.25)]"
                   : "bg-[var(--surface-raised)] text-[var(--text-muted)] border-[var(--surface-border)] hover:border-[var(--text-muted)] hover:text-[var(--text)]",
@@ -66,7 +66,7 @@ export default function TeamsPage() {
             >
               {cat}
               <span className={cn(
-                "text-[0.6rem] font-semibold px-1.5 py-px rounded-full",
+                "text-[0.72rem] font-semibold px-1.5 py-px rounded-full",
                 category === cat
                   ? "bg-[rgba(34,197,94,0.15)] text-[#22c55e]"
                   : "bg-[var(--surface-hover)] text-[var(--text-muted)]",
@@ -93,12 +93,12 @@ export default function TeamsPage() {
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
           </div>
-          <p className="text-[var(--text-muted)] text-[0.88rem]">
+          <p className="text-[var(--text-muted)] text-[1rem]">
             No teams found in &ldquo;{category}&rdquo;
           </p>
           <button
             onClick={() => setCategory("All")}
-            className="mt-3 text-[0.78rem] text-[#22c55e] bg-transparent border-none cursor-pointer underline underline-offset-2"
+            className="mt-3 text-[0.9rem] text-[#22c55e] bg-transparent border-none cursor-pointer underline underline-offset-2"
           >
             Show all teams
           </button>

@@ -49,7 +49,7 @@ export function TaskBoard({ tasks }: { tasks: TaskItem[] }) {
             return (
               <div
                 key={task.id}
-                className="flex items-center gap-2 px-2 py-1.5 rounded bg-white/[0.02] border border-[var(--glass-border)] mb-1"
+                className="flex items-center gap-2 px-2 py-1.5 rounded bg-[var(--surface-raised)] border border-[var(--surface-border)] mb-1"
                 style={{ borderLeft: `2px solid ${assigneeColor}` }}
               >
                 <AgentAvatar role={task.assignedTo} size={28} />

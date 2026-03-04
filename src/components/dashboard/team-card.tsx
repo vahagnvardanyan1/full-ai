@@ -26,13 +26,13 @@ export function TeamCard({ team }: { team: ITeam }) {
         {/* Header */}
         <div className="flex items-center gap-3">
           <div
-            className="size-11 rounded-xl flex items-center justify-center font-bold text-[0.9rem] shrink-0 border"
+            className="size-12 rounded-xl flex items-center justify-center font-bold text-[1rem] shrink-0 border"
             style={{ background: `${catColor}12`, borderColor: `${catColor}25`, color: catColor }}
           >
             {team.name[0]}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[0.88rem] font-semibold text-[var(--text)] group-hover:text-[#22c55e] transition-colors truncate">
+            <div className="text-[1rem] font-semibold text-[var(--text)] group-hover:text-[#22c55e] transition-colors truncate">
               {team.name}
             </div>
             <div className="flex items-center gap-2 mt-1">
@@ -42,8 +42,8 @@ export function TeamCard({ team }: { team: ITeam }) {
               >
                 {team.category}
               </span>
-              <span className="flex items-center gap-1 text-[0.65rem] text-[var(--text-muted)]">
-                <svg width={11} height={11} viewBox="0 0 24 24" fill="#facc15" stroke="none">
+              <span className="flex items-center gap-1 text-[0.78rem] text-[var(--text-muted)]">
+                <svg width={13} height={13} viewBox="0 0 24 24" fill="#facc15" stroke="none">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
                 {team.rating}
@@ -54,7 +54,7 @@ export function TeamCard({ team }: { team: ITeam }) {
         </div>
 
         {/* Description */}
-        <p className="text-[0.76rem] text-[var(--text-muted)] leading-relaxed line-clamp-2 m-0">
+        <p className="text-[0.88rem] text-[var(--text-muted)] leading-relaxed line-clamp-2 m-0">
           {team.description}
         </p>
 
@@ -69,13 +69,13 @@ export function TeamCard({ team }: { team: ITeam }) {
                   alt={agent.name}
                   width={28}
                   height={28}
-                  className="size-7 rounded-full border-2 border-[var(--glass-bg)] bg-[var(--surface-raised)]"
+                  className="size-8 rounded-full border-2 border-[var(--glass-bg)] bg-[var(--surface-raised)]"
                   title={agent.name}
                 />
               ) : (
                 <div
                   key={`${agent.id}-${i}`}
-                  className="size-7 rounded-full border-2 border-[var(--glass-bg)] bg-[var(--surface-raised)] flex items-center justify-center text-[0.5rem] font-bold text-[var(--text-muted)]"
+                  className="size-8 rounded-full border-2 border-[var(--glass-bg)] bg-[var(--surface-raised)] flex items-center justify-center text-[0.5rem] font-bold text-[var(--text-muted)]"
                   title={agent.name}
                 >
                   {agent.name[0]}
@@ -83,12 +83,12 @@ export function TeamCard({ team }: { team: ITeam }) {
               )
             ))}
             {team.agents.length > 5 && (
-              <div className="size-7 rounded-full border-2 border-[var(--glass-bg)] bg-[var(--surface-raised)] flex items-center justify-center text-[0.5rem] font-semibold text-[var(--text-muted)]">
+              <div className="size-8 rounded-full border-2 border-[var(--glass-bg)] bg-[var(--surface-raised)] flex items-center justify-center text-[0.5rem] font-semibold text-[var(--text-muted)]">
                 +{team.agents.length - 5}
               </div>
             )}
           </div>
-          <span className="text-[0.65rem] text-[var(--text-muted)]">
+          <span className="text-[0.78rem] text-[var(--text-muted)]">
             {team.agents.length} agents
           </span>
         </div>
@@ -98,13 +98,13 @@ export function TeamCard({ team }: { team: ITeam }) {
           {team.services.slice(0, 3).map((s) => (
             <span
               key={s}
-              className="text-[0.62rem] px-2 py-0.5 rounded-full bg-[var(--surface-raised)] text-[var(--text-muted)] border border-[var(--surface-border)]"
+              className="text-[0.75rem] px-2 py-0.5 rounded-full bg-[var(--surface-raised)] text-[var(--text-muted)] border border-[var(--surface-border)]"
             >
               {s}
             </span>
           ))}
           {team.services.length > 3 && (
-            <span className="text-[0.62rem] px-2 py-0.5 rounded-full bg-[var(--surface-raised)] text-[var(--text-muted)] border border-[var(--surface-border)]">
+            <span className="text-[0.75rem] px-2 py-0.5 rounded-full bg-[var(--surface-raised)] text-[var(--text-muted)] border border-[var(--surface-border)]">
               +{team.services.length - 3} more
             </span>
           )}
@@ -113,12 +113,12 @@ export function TeamCard({ team }: { team: ITeam }) {
         {/* Footer: price + CTA */}
         <div className="flex items-center justify-between pt-2 border-t border-[var(--surface-border)]">
           <div>
-            <span className="text-[0.65rem] text-[var(--text-muted)]">From </span>
+            <span className="text-[0.78rem] text-[var(--text-muted)]">From </span>
             <span className="text-[1rem] font-bold text-[var(--text)]">${team.pricing[0].price}</span>
-            <span className="text-[0.68rem] text-[var(--text-muted)]">/mo</span>
+            <span className="text-[0.8rem] text-[var(--text-muted)]">/mo</span>
           </div>
           <span
-            className="text-[0.7rem] font-semibold px-3 py-1 rounded-lg transition-all duration-200 group-hover:shadow-[0_2px_12px_rgba(34,197,94,0.2)]"
+            className="text-[0.82rem] font-semibold px-3 py-1 rounded-lg transition-all duration-200 group-hover:shadow-[0_2px_12px_rgba(34,197,94,0.2)]"
             style={{
               color: "#22c55e",
               background: "rgba(34,197,94,0.08)",

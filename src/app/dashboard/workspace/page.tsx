@@ -45,6 +45,12 @@ function StatusDot({ status, size = 6 }: { status: string; size?: number }) {
 
 /* ── Member card (enhanced) ─────────────────────────── */
 
+function stableProgress(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0;
+  return 40 + (((hash % 40) + 40) % 40);
+}
+
 function MemberCard({ member }: { member: IWorkspaceMember }) {
   const status = STATUS_CONFIG[member.status] ?? STATUS_CONFIG.idle;
   const agentData = MOCK_AGENTS.find((a) => a.id === member.agentId);
@@ -71,24 +77,24 @@ function MemberCard({ member }: { member: IWorkspaceMember }) {
           />
         )}
         <div className="flex-1 min-w-0">
-          <div className="text-[0.82rem] font-semibold text-[var(--text)] truncate">{member.name}</div>
+          <div className="text-[0.92rem] font-semibold text-[var(--text)] truncate">{member.name}</div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <StatusDot status={member.status} />
-            <span className="text-[0.65rem] font-medium" style={{ color: status.color }}>{status.label}</span>
+            <span className="text-[0.9rem] font-medium" style={{ color: status.color }}>{status.label}</span>
           </div>
         </div>
       </div>
 
       {member.currentTask ? (
         <div className="px-3 py-2 rounded-lg bg-[var(--surface-raised)] border border-[var(--surface-border)]">
-          <div className="text-[0.62rem] text-[var(--text-muted)] uppercase tracking-wide font-semibold mb-1">Current Task</div>
-          <div className="text-[0.72rem] text-[var(--text)] leading-snug">{member.currentTask}</div>
+          <div className="text-[0.75rem] text-[var(--text-muted)] uppercase tracking-wide font-semibold mb-1">Current Task</div>
+          <div className="text-[0.85rem] text-[var(--text)] leading-snug">{member.currentTask}</div>
           {member.status === "active" && (
             <div className="mt-2 h-1 rounded-full bg-[var(--surface-border)] overflow-hidden">
               <div
                 className="h-full rounded-full"
                 style={{
-                  width: `${Math.floor(Math.random() * 40 + 40)}%`,
+                  width: `${stableProgress(member.agentId)}%`,
                   background: `linear-gradient(90deg, ${member.color}, ${member.color}80)`,
                   transition: "width 0.5s ease",
                 }}
@@ -97,13 +103,13 @@ function MemberCard({ member }: { member: IWorkspaceMember }) {
           )}
         </div>
       ) : (
-        <div className="px-3 py-2 rounded-lg border border-dashed border-[var(--surface-border)] text-[0.68rem] text-[var(--text-muted)] text-center">
+        <div className="px-3 py-2 rounded-lg border border-dashed border-[var(--surface-border)] text-[0.8rem] text-[var(--text-muted)] text-center">
           Awaiting assignment
         </div>
       )}
 
       {agentData && (
-        <div className="flex items-center justify-between text-[0.62rem] text-[var(--text-muted)]">
+        <div className="flex items-center justify-between text-[0.75rem] text-[var(--text-muted)]">
           <span>{agentData.tasksCompleted} tasks completed</span>
           <span className="flex items-center gap-1">
             <svg width={10} height={10} viewBox="0 0 24 24" fill="#facc15" stroke="none">
@@ -132,13 +138,13 @@ export default function WorkspacePage() {
           <h1 className={cn("text-[1.5rem] sm:text-[1.8rem] font-bold font-[var(--font-display)] tracking-tight", textGradientTitle)}>
             My Workspace
           </h1>
-          <p className="text-[0.82rem] sm:text-[0.88rem] text-[var(--text-muted)] mt-1">
+          <p className="text-[0.92rem] sm:text-[1rem] text-[var(--text-muted)] mt-1">
             Manage your active teams and monitor agent activity.
           </p>
         </div>
         <Link href="/dashboard/teams" className="no-underline shrink-0 w-fit">
-          <span className="inline-flex items-center gap-2 py-2 px-4 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-raised)] text-[var(--text-muted)] text-[0.78rem] font-medium hover:border-[rgba(34,197,94,0.25)] hover:text-[var(--text)] transition-all cursor-pointer">
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <span className="inline-flex items-center gap-2 py-2 px-4 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-raised)] text-[var(--text-muted)] text-[0.9rem] font-medium hover:border-[rgba(34,197,94,0.25)] hover:text-[var(--text)] transition-all cursor-pointer">
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
             Add Team
@@ -162,7 +168,7 @@ export default function WorkspacePage() {
             </div>
             <div>
               <h2 className="text-[1.1rem] font-bold text-[var(--text)]">{team.name}</h2>
-              <div className="flex items-center gap-3 mt-1 text-[0.72rem] text-[var(--text-muted)]">
+              <div className="flex items-center gap-3 mt-1 text-[0.85rem] text-[var(--text-muted)]">
                 <span className="flex items-center gap-1.5">
                   <StatusDot status="active" />
                   {activeCount} working
@@ -205,8 +211,8 @@ export default function WorkspacePage() {
             </div>
 
             <Link href={`/dashboard/workspace/${team.teamId}`} className="no-underline">
-              <span className="inline-flex items-center gap-2 py-2.5 px-5 rounded-lg bg-gradient-to-br from-[#22c55e] to-[#16a34a] text-white text-[0.78rem] font-semibold cursor-pointer transition-all duration-200 shadow-[0_2px_12px_rgba(34,197,94,0.25)] hover:shadow-[0_2px_20px_rgba(34,197,94,0.4)]">
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <span className="inline-flex items-center gap-2 py-2.5 px-5 rounded-lg bg-gradient-to-br from-[#22c55e] to-[#16a34a] text-white text-[0.9rem] font-semibold cursor-pointer transition-all duration-200 shadow-[0_2px_12px_rgba(34,197,94,0.25)] hover:shadow-[0_2px_20px_rgba(34,197,94,0.4)]">
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
                 Open Pipeline
@@ -218,9 +224,9 @@ export default function WorkspacePage() {
         {/* Quick stats row */}
         <div className="relative grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-[var(--surface-border)]">
           {[
-            { label: "Total Tasks", value: "1,247", icon: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>, color: "#3b82f6" },
-            { label: "Pipeline Runs", value: "38", icon: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>, color: "#a78bfa" },
-            { label: "Uptime", value: "99.9%", icon: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>, color: "#22c55e" },
+            { label: "Total Tasks", value: "1,247", icon: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>, color: "#3b82f6" },
+            { label: "Pipeline Runs", value: "38", icon: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>, color: "#a78bfa" },
+            { label: "Uptime", value: "99.9%", icon: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>, color: "#22c55e" },
           ].map((stat) => (
             <div key={stat.label} className="flex items-center gap-2.5">
               <div
@@ -230,7 +236,7 @@ export default function WorkspacePage() {
                 {stat.icon}
               </div>
               <div>
-                <div className="text-[0.6rem] text-[var(--text-muted)] uppercase tracking-wide font-medium">{stat.label}</div>
+                <div className="text-[0.72rem] text-[var(--text-muted)] uppercase tracking-wide font-medium">{stat.label}</div>
                 <div className="text-[1rem] font-bold text-[var(--text)] tracking-tight">{stat.value}</div>
               </div>
             </div>
@@ -243,8 +249,8 @@ export default function WorkspacePage() {
         {/* Left: Agent cards */}
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[0.88rem] font-semibold text-[var(--text)]">Team Members</h2>
-            <span className="text-[0.68rem] text-[var(--text-muted)]">{team.members.length} agents</span>
+            <h2 className="text-[1rem] font-semibold text-[var(--text)]">Team Members</h2>
+            <span className="text-[0.8rem] text-[var(--text-muted)]">{team.members.length} agents</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {team.members.map((member) => (
@@ -255,11 +261,11 @@ export default function WorkspacePage() {
             <Link href="/dashboard/agents" className="no-underline">
               <div className={cn(glassCard, "p-4 flex flex-col items-center justify-center gap-2 min-h-[160px] border-dashed cursor-pointer transition-all duration-200 hover:border-[rgba(34,197,94,0.25)] group")}>
                 <div className="size-10 rounded-full border border-dashed border-[var(--surface-border)] flex items-center justify-center text-[var(--text-muted)] group-hover:border-[rgba(34,197,94,0.3)] group-hover:text-[#22c55e] transition-colors">
-                  <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
                 </div>
-                <span className="text-[0.72rem] font-medium text-[var(--text-muted)] group-hover:text-[#22c55e] transition-colors">Add Agent</span>
+                <span className="text-[0.85rem] font-medium text-[var(--text-muted)] group-hover:text-[#22c55e] transition-colors">Add Agent</span>
               </div>
             </Link>
           </div>
@@ -269,7 +275,7 @@ export default function WorkspacePage() {
         <div className="flex flex-col gap-4 sm:gap-6">
           {/* Activity feed */}
           <div>
-            <h2 className="text-[0.88rem] font-semibold text-[var(--text)] mb-3">Recent Activity</h2>
+            <h2 className="text-[1rem] font-semibold text-[var(--text)] mb-3">Recent Activity</h2>
             <div className={cn(glassCard, "divide-y divide-[var(--surface-border)] overflow-hidden")}>
               {RECENT_ACTIVITY.map((item, i) => (
                 <div key={i} className="px-4 py-3 flex items-start gap-2.5">
@@ -278,12 +284,12 @@ export default function WorkspacePage() {
                     style={{ background: item.color, boxShadow: `0 0 6px ${item.color}40` }}
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="text-[0.72rem] leading-snug">
+                    <div className="text-[0.85rem] leading-snug">
                       <span className="font-semibold text-[var(--text)]">{item.agent}</span>
                       {" "}
                       <span className="text-[var(--text-muted)]">{item.action}</span>
                     </div>
-                    <div className="text-[0.6rem] text-[var(--text-muted)] mt-0.5">{item.time}</div>
+                    <div className="text-[0.72rem] text-[var(--text-muted)] mt-0.5">{item.time}</div>
                   </div>
                 </div>
               ))}
@@ -293,22 +299,22 @@ export default function WorkspacePage() {
           {/* Pipeline runs */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-[0.88rem] font-semibold text-[var(--text)]">Pipeline Runs</h2>
-              <Link href={`/dashboard/workspace/${team.teamId}`} className="text-[0.68rem] text-[var(--text-muted)] no-underline hover:text-[var(--text)] transition-colors">
+              <h2 className="text-[1rem] font-semibold text-[var(--text)]">Pipeline Runs</h2>
+              <Link href={`/dashboard/workspace/${team.teamId}`} className="text-[0.8rem] text-[var(--text-muted)] no-underline hover:text-[var(--text)] transition-colors">
                 View all &rarr;
               </Link>
             </div>
             <div className="flex flex-col gap-2">
               {PIPELINE_RUNS.map((run) => (
                 <div key={run.id} className={cn(glassCard, "px-4 py-3 flex items-center gap-3")}>
-                  <div className="size-7 rounded-lg bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.15)] flex items-center justify-center shrink-0">
-                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round">
+                  <div className="size-8 rounded-lg bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.15)] flex items-center justify-center shrink-0">
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[0.72rem] font-medium text-[var(--text)] truncate">{run.prompt}</div>
-                    <div className="text-[0.6rem] text-[var(--text-muted)] mt-0.5">
+                    <div className="text-[0.85rem] font-medium text-[var(--text)] truncate">{run.prompt}</div>
+                    <div className="text-[0.72rem] text-[var(--text-muted)] mt-0.5">
                       {run.tasks} tasks &middot; {run.duration} &middot; {run.time}
                     </div>
                   </div>
@@ -328,10 +334,10 @@ export default function WorkspacePage() {
               <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
             </svg>
           </div>
-          <p className="text-[var(--text-muted)] text-[0.88rem] mb-1">No active teams yet</p>
-          <p className="text-[var(--text-muted)] text-[0.75rem] mb-5">Browse the marketplace to hire your first AI team.</p>
+          <p className="text-[var(--text-muted)] text-[1rem] mb-1">No active teams yet</p>
+          <p className="text-[var(--text-muted)] text-[0.88rem] mb-5">Browse the marketplace to hire your first AI team.</p>
           <Link href="/dashboard/teams" className="no-underline">
-            <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-br from-[#22c55e] to-[#16a34a] text-white text-[0.78rem] font-semibold cursor-pointer shadow-[0_2px_12px_rgba(34,197,94,0.3)]">
+            <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-br from-[#22c55e] to-[#16a34a] text-white text-[0.9rem] font-semibold cursor-pointer shadow-[0_2px_12px_rgba(34,197,94,0.3)]">
               Browse Teams
             </span>
           </Link>
