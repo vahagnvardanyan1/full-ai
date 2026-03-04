@@ -314,9 +314,6 @@ export const getIntegrationStatus = (): IntegrationStatus => {
           connected: true,
           projectId: config.vercel.projectId,
         }
-      : {
-          connected: !!(process.env.VERCEL_TOKEN && process.env.VERCEL_PROJECT_ID),
-          projectId: process.env.VERCEL_PROJECT_ID,
-        },
+      : { connected: false },
   };
 };
