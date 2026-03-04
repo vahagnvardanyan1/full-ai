@@ -8,6 +8,12 @@ import { SIDEBAR_NAV } from "@/lib/dashboard/constants";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const ICONS: Record<string, (props: { size?: number }) => React.ReactNode> = {
+  home: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  ),
   "layout-dashboard": ({ size = 20 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -51,7 +57,7 @@ export function Sidebar() {
   }, [pathname]);
 
   function isActive(href: string) {
-    if (href === "/") return false;
+    if (href === "/") return pathname === "/";
     if (href === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(href);
   }
