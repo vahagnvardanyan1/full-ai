@@ -127,3 +127,18 @@ export interface CacheEntry<T> {
   ttl: number;
   hits: number;
 }
+
+/** Typed review issue from LLM self-review (replaces inline `any` casts) */
+export interface ReviewIssue {
+  filename: string;
+  issue: string;
+  fix: string;
+  severity: "critical" | "error" | "warning" | "info";
+}
+
+/** Self-review response from LLM */
+export interface SelfReviewResult {
+  approved: boolean;
+  issues: ReviewIssue[];
+  summary: string;
+}

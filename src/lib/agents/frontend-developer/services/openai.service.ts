@@ -11,34 +11,131 @@ import {
   SELF_REVIEW_PROMPT,
   COMMIT_TITLE_PROMPT,
 } from "../system-prompt";
+import { buildRoleSkillContext } from "../../skills/skill-loader.service";
 import type {
   LLMMessage,
   CodeGenerationRequest,
   CodeGenerationResponse,
   TaskPlan,
   IssueInfo,
+  SelfReviewResult,
 } from "../types";
 
 const log = createChildLogger("openai-service");
 
+// ── JSON Repair Utility ─────────────────────────────────
+// Handles the most common truncation pattern: response cut mid-string,
+// leaving unclosed quotes/braces. This recovers many cases where only
+// the closing `"}` is missing.
+
+function tryRepairJSON(raw: string): string {
+  let repaired = raw.trim();
+
+  let braceCount = 0;
+  let bracketCount = 0;
+  let inString = false;
+  let escapeNext = false;
+
+  for (let i = 0; i < repaired.length; i++) {
+    const ch = repaired[i];
+
+    if (escapeNext) {
+      escapeNext = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escapeNext = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (!inString) {
+      if (ch === "{") braceCount++;
+      else if (ch === "}") braceCount--;
+      else if (ch === "[") bracketCount++;
+      else if (ch === "]") bracketCount--;
+    }
+  }
+
+  // Close unclosed string
+  if (inString) repaired += '"';
+
+  // Close unclosed arrays
+  for (let i = 0; i < bracketCount; i++) repaired += "]";
+
+  // Close unclosed objects
+  for (let i = 0; i < braceCount; i++) repaired += "}";
+
+  return repaired;
+}
+
+// ── Safe JSON Parser ────────────────────────────────────
+
+function safeParseJSON<T>(raw: string, context: string): T {
+  // First attempt: standard parse
+  try {
+    return JSON.parse(raw) as T;
+  } catch (firstErr) {
+    // Second attempt: repair then parse
+    try {
+      const repaired = tryRepairJSON(raw);
+      const result = JSON.parse(repaired) as T;
+      log.warn({ context }, "JSON parse succeeded after repair — response was likely truncated");
+      return result;
+    } catch {
+      // Both failed — throw descriptive error
+      const preview = raw.slice(0, 200);
+      const originalMsg = firstErr instanceof Error ? firstErr.message : String(firstErr);
+      throw new Error(
+        `JSON parse failed in ${context}: ${originalMsg}. ` +
+        `Response preview: ${preview}...`,
+      );
+    }
+  }
+}
+
+// ── Response type from internal chat ────────────────────
+
+interface ChatRawResponse {
+  content: string;
+  finishReason: string;
+  totalTokens: number;
+}
+
 export class OpenAIService {
   private model: string;
   private maxTokens: number;
+  private skillContextPromise: Promise<string>;
 
   constructor(model = "gpt-4o", maxTokens = 4096) {
     this.model = model;
     this.maxTokens = maxTokens;
+    this.skillContextPromise = buildRoleSkillContext("frontend_developer");
   }
 
-  // ── Core LLM Call ──────────────────────────────────────
+  private async withSkills(basePrompt: string): Promise<string> {
+    const skillContext = await this.skillContextPromise;
+    if (!skillContext) return basePrompt;
+    return `${basePrompt}\n\n${skillContext}`;
+  }
 
-  async chat(messages: LLMMessage[], jsonMode = false): Promise<string> {
-    log.debug({ messageCount: messages.length, jsonMode }, "Sending LLM request");
+  // ── Internal LLM Call (with truncation detection) ──────
+
+  private async chatRaw(
+    messages: LLMMessage[],
+    opts: { maxTokens?: number; jsonMode?: boolean } = {},
+  ): Promise<ChatRawResponse> {
+    const maxTokens = opts.maxTokens ?? this.maxTokens;
+    const jsonMode = opts.jsonMode ?? false;
+
+    log.debug({ messageCount: messages.length, jsonMode, maxTokens }, "Sending LLM request");
 
     const client = getOpenAIClient();
     const response = await client.chat.completions.create({
       model: this.model,
-      max_tokens: this.maxTokens,
+      max_tokens: maxTokens,
       temperature: 0.2,
       messages,
       ...(jsonMode && { response_format: { type: "json_object" as const } }),
@@ -47,19 +144,36 @@ export class OpenAIService {
     const content = response.choices[0]?.message?.content;
     if (!content) throw new Error("Empty response from OpenAI");
 
-    log.debug({ tokens: response.usage?.total_tokens }, "LLM response received");
-    return content;
+    const finishReason = response.choices[0]?.finish_reason ?? "unknown";
+    const totalTokens = response.usage?.total_tokens ?? 0;
+
+    log.debug({ tokens: totalTokens, finishReason }, "LLM response received");
+
+    if (finishReason === "length") {
+      log.warn({ totalTokens, maxTokens }, "Response truncated — hit max_tokens limit");
+    }
+
+    return { content, finishReason, totalTokens };
+  }
+
+  // ── Public chat() — backward-compatible ────────────────
+  // Used by index.ts for ad-hoc calls (task completion check etc.)
+
+  async chat(messages: LLMMessage[], jsonMode = false): Promise<string> {
+    const resp = await this.chatRaw(messages, { jsonMode });
+    return resp.content;
   }
 
   // ── Task Planning ──────────────────────────────────────
 
   async planTask(issue: IssueInfo, repoContext: string): Promise<TaskPlan> {
     log.info({ issue: issue.number }, "Planning task for issue");
+    const planningPrompt = await this.withSkills(PLANNING_PROMPT);
 
     const messages: LLMMessage[] = [
       {
         role: "system",
-        content: PLANNING_PROMPT,
+        content: planningPrompt,
       },
       {
         role: "user",
@@ -75,19 +189,35 @@ Create a detailed implementation plan. Make sure file paths match the existing r
       },
     ];
 
-    const response = await this.chat(messages, true);
-    return JSON.parse(response) as TaskPlan;
+    const resp = await this.chatRaw(messages, { maxTokens: 4096, jsonMode: true });
+    return safeParseJSON<TaskPlan>(resp.content, "planTask");
   }
 
-  // ── Code Generation ────────────────────────────────────
+  // ── Code Generation (with truncation retry) ────────────
 
   async generateCode(request: CodeGenerationRequest): Promise<CodeGenerationResponse> {
     log.info({ task: request.task.slice(0, 80) }, "Generating code");
+    const codePrompt = await this.withSkills(CODE_GENERATION_PROMPT);
+
+    // ── Build the existing-code section with DIFF-AWARENESS ──
+    let existingCodeSection = "";
+    if (request.existingCode) {
+      existingCodeSection = `## CURRENT FILE CONTENT (YOU MUST MODIFY THIS — NOT ECHO IT)
+\`\`\`${request.language || ""}
+${request.existingCode}
+\`\`\`
+
+⚠️ CRITICAL: The code above is what CURRENTLY exists. Your job is to CHANGE it according to the task.
+- If you return code that is identical or near-identical to the above, you have FAILED.
+- Before writing code, mentally identify the SPECIFIC lines/sections/components you will change.
+- Your output must contain VISIBLE, MEANINGFUL differences from the current file.
+- "Preserve working parts" means keep unrelated logic intact — it does NOT mean return the same file unchanged.`;
+    }
 
     const messages: LLMMessage[] = [
       {
         role: "system",
-        content: CODE_GENERATION_PROMPT,
+        content: codePrompt,
       },
       {
         role: "user",
@@ -97,16 +227,46 @@ ${request.task}
 ## Context
 ${request.context}
 
-${request.existingCode ? `## Existing Code (PRESERVE working parts)\n\`\`\`${request.language || ""}\n${request.existingCode}\n\`\`\`` : ""}
+${existingCodeSection}
 
 ${request.constraints?.length ? `## Constraints\n${request.constraints.map((c) => `- ${c}`).join("\n")}` : ""}
 
-Generate the code. Make sure ALL imports are correct and ALL existing functionality is preserved.`,
+${request.existingCode ? `BEFORE generating code, briefly state (in the "explanation" field) WHAT SPECIFICALLY you are changing and WHY it differs from the current file. Then generate the COMPLETE modified file.` : "Generate the code. Make sure ALL imports are correct and ALL existing functionality is preserved."}`,
       },
     ];
 
-    const response = await this.chat(messages, true);
-    return JSON.parse(response) as CodeGenerationResponse;
+    // Estimate a reasonable token budget based on existing code size.
+    // Existing code in tokens ≈ chars / 3.5 (rough estimate for code).
+    // We need enough for the full file + JSON wrapper + explanation.
+    const existingTokenEstimate = request.existingCode
+      ? Math.ceil(request.existingCode.length / 3.5)
+      : 0;
+    // Base budget: enough for a new file. Scale up if modifying a large file.
+    const baseBudget = 4096;
+    const codeTokenBudget = Math.max(baseBudget, existingTokenEstimate + 1024);
+    // Cap at a reasonable maximum
+    const initialMaxTokens = Math.min(codeTokenBudget, 16384);
+
+    log.debug({ existingTokenEstimate, initialMaxTokens }, "Code generation token budget");
+
+    // First attempt
+    let resp = await this.chatRaw(messages, { maxTokens: initialMaxTokens, jsonMode: true });
+
+    // If truncated, retry with doubled budget (capped at 32768)
+    if (resp.finishReason === "length") {
+      const retryMaxTokens = Math.min(initialMaxTokens * 2, 32768);
+      log.warn(
+        { initialMaxTokens, retryMaxTokens },
+        "Code generation truncated — retrying with higher token limit",
+      );
+      resp = await this.chatRaw(messages, { maxTokens: retryMaxTokens, jsonMode: true });
+
+      if (resp.finishReason === "length") {
+        log.error("Code generation still truncated after retry — will attempt JSON repair");
+      }
+    }
+
+    return safeParseJSON<CodeGenerationResponse>(resp.content, "generateCode");
   }
 
   // ── Self-Review ────────────────────────────────────────
@@ -115,12 +275,9 @@ Generate the code. Make sure ALL imports are correct and ALL existing functional
     files: { filename: string; code: string; language: string }[],
     taskDescription: string,
     repoContext: string,
-  ): Promise<{
-    approved: boolean;
-    issues: { filename: string; issue: string; fix: string; severity: string }[];
-    summary: string;
-  }> {
+  ): Promise<SelfReviewResult> {
     log.info({ fileCount: files.length }, "Self-reviewing generated code");
+    const reviewPrompt = await this.withSkills(SELF_REVIEW_PROMPT);
 
     const fileContents = files
       .map((f) => `### ${f.filename} (${f.language})\n\`\`\`${f.language}\n${f.code}\n\`\`\``)
@@ -129,7 +286,7 @@ Generate the code. Make sure ALL imports are correct and ALL existing functional
     const messages: LLMMessage[] = [
       {
         role: "system",
-        content: SELF_REVIEW_PROMPT,
+        content: reviewPrompt,
       },
       {
         role: "user",
@@ -150,8 +307,8 @@ Review EVERY file strictly. Focus especially on:
       },
     ];
 
-    const response = await this.chat(messages, true);
-    return JSON.parse(response);
+    const resp = await this.chatRaw(messages, { maxTokens: 4096, jsonMode: true });
+    return safeParseJSON(resp.content, "selfReviewCode");
   }
 
   // ── Fix Code Issues ────────────────────────────────────
@@ -190,6 +347,7 @@ Review EVERY file strictly. Focus especially on:
     changedFiles: { filename: string; explanation: string }[],
   ): Promise<{ title: string; type: string; scope: string }> {
     log.info("Generating smart commit title");
+    const commitPrompt = await this.withSkills(COMMIT_TITLE_PROMPT);
 
     // Strip internal fix noise from explanations so the LLM focuses on the actual task
     const cleanedFiles = changedFiles.map((f) => ({
@@ -205,7 +363,7 @@ Review EVERY file strictly. Focus especially on:
     const messages: LLMMessage[] = [
       {
         role: "system",
-        content: COMMIT_TITLE_PROMPT,
+        content: commitPrompt,
       },
       {
         role: "user",
@@ -213,7 +371,7 @@ Review EVERY file strictly. Focus especially on:
       },
     ];
 
-    const response = await this.chat(messages, true);
-    return JSON.parse(response);
+    const resp = await this.chatRaw(messages, { maxTokens: 1024, jsonMode: true });
+    return safeParseJSON(resp.content, "generateCommitTitle");
   }
 }

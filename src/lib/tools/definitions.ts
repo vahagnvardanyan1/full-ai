@@ -88,6 +88,17 @@ export const TOOL_CREATE_GITHUB_PR: ChatCompletionTool = {
           type: "string",
           description: 'Target branch (usually "main")',
         },
+        created_by: {
+          type: "string",
+          description:
+            'Optional scope filter for code-store files by creator role (e.g. "qa", "frontend_developer").',
+        },
+        file_paths: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Optional explicit file path allowlist to include in the PR commit.",
+        },
       },
       required: ["title", "body", "head", "base"],
     },
@@ -246,6 +257,7 @@ export const FRONTEND_DEV_TOOLS: ChatCompletionTool[] = [
 export const QA_TOOLS: ChatCompletionTool[] = [
   TOOL_WRITE_CODE,
   TOOL_CREATE_GITHUB_ISSUE,
+  TOOL_CREATE_GITHUB_PR,
   TOOL_UPDATE_TASK_STATUS,
 ];
 

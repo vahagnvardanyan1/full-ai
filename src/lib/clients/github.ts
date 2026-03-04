@@ -11,7 +11,10 @@
 
 import { Octokit } from "@octokit/rest";
 import { logger } from "@/lib/logger";
-import { getFilesForCurrentRequest } from "@/lib/clients/code-store";
+import {
+  getFilesForCurrentRequest,
+  getFilesForCurrentRequestByCreator,
+} from "@/lib/clients/code-store";
 
 let instance: Octokit | null = null;
 let simulatedIssueCounter = 100;
@@ -133,7 +136,22 @@ export interface CreatePullRequestParams {
   body: string;
   head: string;
   base: string;
+  created_by?: string;
+  file_paths?: string[];
 }
+
+const pickFilesForPR = (params: CreatePullRequestParams) => {
+  const baseFiles = params.created_by
+    ? getFilesForCurrentRequestByCreator(params.created_by)
+    : getFilesForCurrentRequest();
+
+  if (!params.file_paths || params.file_paths.length === 0) {
+    return baseFiles;
+  }
+
+  const allowedPaths = new Set(params.file_paths);
+  return baseFiles.filter((file) => allowedPaths.has(file.filePath));
+};
 
 /**
  * Creates a real GitHub PR by:
@@ -145,11 +163,21 @@ export interface CreatePullRequestParams {
 export async function createGitHubPullRequest(params: CreatePullRequestParams) {
   const { owner, repo } = ownerRepo();
   logger.info("Creating GitHub pull request", { title: params.title, owner, repo });
+  const files = pickFilesForPR(params);
+
+  if (files.length === 0) {
+    return {
+      error: "No files available for PR creation using the provided scope.",
+      simulated: true,
+      prNumber: 0,
+      url: "",
+      title: params.title,
+    };
+  }
 
   if (isConfigured()) {
     try {
       const octokit = getOctokit();
-      const files = getFilesForCurrentRequest();
 
       logger.info("PR: files from code store", { fileCount: files.length, filePaths: files.map(f => f.filePath) });
 
@@ -175,42 +203,93 @@ export async function createGitHubPullRequest(params: CreatePullRequestParams) {
         baseTreeSha = baseCommit.tree.sha;
       } catch (refErr) {
         const refMsg = refErr instanceof Error ? refErr.message : String(refErr);
-        logger.info("PR: base branch not found, bootstrapping empty repo", { base: params.base, error: refMsg });
-
-        // Git Data API doesn't work on empty repos at all.
-        // Use the Contents API WITHOUT specifying a branch — GitHub will
-        // create the file on the repo's default branch automatically.
-        const { data: created } = await octokit.repos.createOrUpdateFileContents({
-          owner,
-          repo,
-          path: "README.md",
-          message: "Initial commit",
-          content: Buffer.from(`# ${repo}\n\nInitialized by AI Team.\n`).toString("base64"),
+        logger.info("PR: base branch not found, trying default-branch fallback", {
+          base: params.base,
+          error: refMsg,
         });
-        logger.info("PR: repo initialized via Contents API", { commitSha: created.commit.sha });
 
-        // The default branch was created. Check if it matches the requested base.
-        const { data: repoInfo } = await octokit.repos.get({ owner, repo });
-        const defaultBranch = repoInfo.default_branch;
-        logger.info("PR: repo default branch", { defaultBranch, requestedBase: params.base });
-
-        // If default branch differs from requested base, create the base branch
-        if (defaultBranch !== params.base) {
+        // Most failures here are "base branch missing", not "empty repo".
+        // First fallback: create base from existing default branch.
+        let createdFromDefault = false;
+        try {
+          const { data: repoInfo } = await octokit.repos.get({ owner, repo });
+          const defaultBranch = repoInfo.default_branch;
           const { data: defaultRef } = await octokit.git.getRef({
             owner,
             repo,
             ref: `heads/${defaultBranch}`,
           });
-          await octokit.git.createRef({
-            owner,
-            repo,
-            ref: `refs/heads/${params.base}`,
-            sha: defaultRef.object.sha,
+
+          if (defaultBranch !== params.base) {
+            await octokit.git.createRef({
+              owner,
+              repo,
+              ref: `refs/heads/${params.base}`,
+              sha: defaultRef.object.sha,
+            });
+            logger.info("PR: created missing base branch from default branch", {
+              base: params.base,
+              defaultBranch,
+            });
+          }
+          createdFromDefault = true;
+        } catch (defaultBranchErr) {
+          const defaultMsg =
+            defaultBranchErr instanceof Error ? defaultBranchErr.message : String(defaultBranchErr);
+          logger.info("PR: default-branch fallback unavailable, bootstrapping repo", {
+            error: defaultMsg,
           });
-          logger.info("PR: created base branch from default", { base: params.base });
         }
 
-        // Now fetch the base branch SHA
+        if (!createdFromDefault) {
+          // Last resort: bootstrap initial commit safely.
+          // If README already exists, include sha to avoid GitHub API "sha wasn't supplied".
+          let existingReadmeSha: string | undefined;
+          try {
+            const { data: existingReadme } = await octokit.repos.getContent({
+              owner,
+              repo,
+              path: "README.md",
+            });
+            if (!Array.isArray(existingReadme) && "sha" in existingReadme) {
+              existingReadmeSha = existingReadme.sha;
+            }
+          } catch {
+            // README does not exist yet; creation path below is fine.
+          }
+
+          const { data: created } = await octokit.repos.createOrUpdateFileContents({
+            owner,
+            repo,
+            path: "README.md",
+            message: "Initial commit",
+            content: Buffer.from(`# ${repo}\n\nInitialized by AI Team.\n`).toString("base64"),
+            ...(existingReadmeSha ? { sha: existingReadmeSha } : {}),
+          });
+          logger.info("PR: repo initialized via Contents API", { commitSha: created.commit.sha });
+
+          const { data: repoInfo } = await octokit.repos.get({ owner, repo });
+          const defaultBranch = repoInfo.default_branch;
+          if (defaultBranch !== params.base) {
+            const { data: defaultRef } = await octokit.git.getRef({
+              owner,
+              repo,
+              ref: `heads/${defaultBranch}`,
+            });
+            await octokit.git.createRef({
+              owner,
+              repo,
+              ref: `refs/heads/${params.base}`,
+              sha: defaultRef.object.sha,
+            });
+            logger.info("PR: created base branch from bootstrapped default", {
+              base: params.base,
+              defaultBranch,
+            });
+          }
+        }
+
+        // Fetch base branch after fallback path.
         const { data: newBaseRef } = await octokit.git.getRef({
           owner,
           repo,
@@ -224,7 +303,6 @@ export async function createGitHubPullRequest(params: CreatePullRequestParams) {
           commit_sha: baseSha,
         });
         baseTreeSha = newBaseCommit.tree.sha;
-
         logger.info("PR: base branch ready", { base: params.base, sha: baseSha });
       }
 

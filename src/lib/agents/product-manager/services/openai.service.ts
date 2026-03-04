@@ -12,6 +12,7 @@ import {
   STORY_WRITING_PROMPT,
   RISK_ASSESSMENT_PROMPT,
 } from "../system-prompt";
+import { buildRoleSkillContext } from "../../skills/skill-loader.service";
 import type {
   PRDDocument,
   FeasibilityReport,
@@ -30,10 +31,18 @@ interface LLMMessage {
 export class PMOpenAIService {
   private model: string;
   private maxTokens: number;
+  private skillContextPromise: Promise<string>;
 
   constructor(model = "gpt-4o", maxTokens = 4096) {
     this.model = model;
     this.maxTokens = maxTokens;
+    this.skillContextPromise = buildRoleSkillContext("product_manager");
+  }
+
+  private async withSkills(basePrompt: string): Promise<string> {
+    const skillContext = await this.skillContextPromise;
+    if (!skillContext) return basePrompt;
+    return `${basePrompt}\n\n${skillContext}`;
   }
 
   // ── Core LLM Call ──
@@ -64,9 +73,10 @@ export class PMOpenAIService {
     repoContext: string,
   ): Promise<PRDDocument> {
     log.info("Analyzing requirements");
+    const requirementsPrompt = await this.withSkills(REQUIREMENTS_PROMPT);
 
     const messages: LLMMessage[] = [
-      { role: "system", content: REQUIREMENTS_PROMPT },
+      { role: "system", content: requirementsPrompt },
       {
         role: "user",
         content: `## Repository Context\n${repoContext}\n\n## User Request\n${userRequest}\n\nAnalyze this request and produce a structured requirements document. Reference real file paths from the repo.`,
@@ -84,9 +94,10 @@ export class PMOpenAIService {
     repoContext: string,
   ): Promise<FeasibilityReport> {
     log.info("Assessing technical feasibility");
+    const feasibilityPrompt = await this.withSkills(FEASIBILITY_PROMPT);
 
     const messages: LLMMessage[] = [
-      { role: "system", content: FEASIBILITY_PROMPT },
+      { role: "system", content: feasibilityPrompt },
       {
         role: "user",
         content: `## Repository Context\n${repoContext}\n\n## Requirements\nSummary: ${prd.summary}\nScope: ${prd.scope}\nOut of scope: ${prd.outOfScope}\nAcceptance Criteria:\n${prd.acceptanceCriteria.map((ac) => `- [${ac.priority}] ${ac.description}`).join("\n")}\n\nAssess the technical feasibility of implementing these requirements.`,
@@ -105,9 +116,10 @@ export class PMOpenAIService {
     repoContext: string,
   ): Promise<PMTaskPlan[]> {
     log.info("Planning tasks");
+    const taskPrompt = await this.withSkills(TASK_PLANNING_PROMPT);
 
     const messages: LLMMessage[] = [
-      { role: "system", content: TASK_PLANNING_PROMPT },
+      { role: "system", content: taskPrompt },
       {
         role: "user",
         content: `## Repository Context\n${repoContext}\n\n## Requirements\nSummary: ${prd.summary}\nGoals: ${prd.goals.join(", ")}\nScope: ${prd.scope}\nOut of scope: ${prd.outOfScope}\n\n## Feasibility\nComplexity: ${feasibility.complexity}/5\nEstimate: ${feasibility.estimatedHours}h\nRisks: ${feasibility.risks.join("; ")}\nAffected files: ${feasibility.affectedFiles.join(", ")}\nRecommendation: ${feasibility.recommendation}\n\n## Acceptance Criteria\n${prd.acceptanceCriteria.map((ac) => `- [${ac.id}][${ac.priority}] ${ac.description}`).join("\n")}\n\nDecompose into assignable tasks for the team. Reference real file paths.`,
@@ -126,9 +138,10 @@ export class PMOpenAIService {
     prd: PRDDocument,
   ): Promise<UserStory[]> {
     log.info("Writing user stories");
+    const storiesPrompt = await this.withSkills(STORY_WRITING_PROMPT);
 
     const messages: LLMMessage[] = [
-      { role: "system", content: STORY_WRITING_PROMPT },
+      { role: "system", content: storiesPrompt },
       {
         role: "user",
         content: `## Requirements Summary\n${prd.summary}\nGoals: ${prd.goals.join(", ")}\nUser Personas: ${prd.userPersonas.join(", ")}\n\n## Tasks to write stories for:\n${tasks.filter((t) => t.type === "story" || t.type === "task").map((t) => `- ${t.title}: ${t.description.slice(0, 200)}`).join("\n")}\n\nWrite full user stories for these tasks.`,
@@ -149,9 +162,10 @@ export class PMOpenAIService {
     repoContext: string,
   ): Promise<RiskItem[]> {
     log.info("Assessing risks");
+    const risksPrompt = await this.withSkills(RISK_ASSESSMENT_PROMPT);
 
     const messages: LLMMessage[] = [
-      { role: "system", content: RISK_ASSESSMENT_PROMPT },
+      { role: "system", content: risksPrompt },
       {
         role: "user",
         content: `## Repository Context\n${repoContext.slice(0, 3000)}\n\n## Requirements\n${prd.summary}\nScope: ${prd.scope}\n\n## Feasibility\nComplexity: ${feasibility.complexity}/5\nTechnical risks: ${feasibility.risks.join("; ")}\nConstraints: ${feasibility.technicalConstraints.join("; ")}\n\n## Planned Tasks (${tasks.length}):\n${tasks.map((t) => `- [${t.priority}] ${t.title} (assigned to: ${t.assignedTo})`).join("\n")}\n\nIdentify all risks for this implementation.`,

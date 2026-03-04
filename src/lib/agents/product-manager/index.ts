@@ -241,6 +241,7 @@ export async function runProductManager(
 
     emit("analyzing_requirements", `PRD: ${prd.acceptanceCriteria.length} acceptance criteria`, 25);
 
+
     // ══════════════════════════════════════════════
     // Stage 3: Technical Feasibility Assessment
     // ══════════════════════════════════════════════

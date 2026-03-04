@@ -358,6 +358,7 @@ export class GitHubService {
     body: string,
     head: string,
     base: string,
+    draft = false,
   ): Promise<{ prNumber: number; prUrl: string }> {
     const { owner, repo } = ownerRepo();
     const octokit = getOctokit();
@@ -385,9 +386,9 @@ export class GitHubService {
 
         // Create new PR
         const { data } = await octokit.pulls.create({
-          owner, repo, title, body: safeBody, head, base,
+          owner, repo, title, body: safeBody, head, base, draft,
         });
-        log.info({ pr: data.number }, "Created pull request");
+        log.info({ pr: data.number, draft }, "Created pull request");
         return { prNumber: data.number, prUrl: data.html_url };
       } catch (err) {
         lastError = err;

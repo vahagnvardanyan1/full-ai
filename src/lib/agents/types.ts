@@ -11,7 +11,7 @@ export type AgentRole =
   | "devops";
 
 /** Task lifecycle statuses for the Kanban board */
-export type TaskStatus = "open" | "in_progress" | "review" | "testing" | "done";
+export type TaskStatus = "open" | "in_progress" | "review" | "testing" | "ready_to_merge" | "done";
 
 /** A single tool invocation recorded during an agent run */
 export interface ToolCall {
@@ -80,9 +80,12 @@ export type FEProgressStage =
   | "pushing"
   | "pr_created";
 
-/** Progress stages emitted by the PM pipeline */
+/** Progress stages emitted by the PM pipeline (v4 — includes creative stages) */
 export type PMProgressStage =
   | "gathering_context"
+  | "deep_analysis"
+  | "design_analysis"
+  | "creative_reasoning"
   | "analyzing_requirements"
   | "assessing_feasibility"
   | "planning_tasks"
@@ -91,8 +94,20 @@ export type PMProgressStage =
   | "creating_tasks"
   | "complete";
 
+/** Progress stages emitted by the QA pipeline */
+export type QAProgressStage =
+  | "gathering_context"
+  | "planning_strategy"
+  | "running_validation"
+  | "executing_qa"
+  | "reporting"
+  | "complete";
+
 /** All possible progress stages across all agents */
-export type AgentProgressStage = FEProgressStage | PMProgressStage;
+export type AgentProgressStage =
+  | FEProgressStage
+  | PMProgressStage
+  | QAProgressStage;
 
 /** Sub-step progress event for agents that run multi-stage pipelines */
 export interface AgentProgressEvent {

@@ -13,8 +13,8 @@ import { getOpenAIClient } from "@/lib/clients/openai";
 import { logger } from "@/lib/logger";
 import { runProductManager, type PMProgressCallback } from "@/lib/agents/product-manager";
 import { runFrontendDeveloper, type ProgressCallback } from "@/lib/agents/frontend-developer";
-import { runQAAgent } from "@/lib/agents/qa-agent";
-import { runDevOpsAgent } from "@/lib/agents/devops-agent";
+import { runQAAgent, type QAProgressCallback } from "@/lib/agents/qa";
+import { runDevOpsAgent } from "@/lib/agents/devops";
 import {
   setActiveRequestId,
   getTasksForRequestByCreator,
@@ -80,6 +80,7 @@ Think about dependencies:
 
 Be smart about which agents are actually needed:
 - New feature, bug fix, or any implementation work: ALWAYS include all 4 agents (product_manager → frontend_developer → qa + devops). QA must always run after frontend_developer to validate the code.
+- PM-only planning/spec requests (PRD, spec, roadmap, acceptance criteria) with no implementation ask: just product_manager.
 - Simple question or clarification with no code changes: just product_manager.
 - Deployment-only request: product_manager → devops.
 - When in doubt, include more agents rather than fewer. The full pipeline is the default.`;
@@ -161,6 +162,7 @@ async function dispatchAgent(
   instructions: string,
   onProgress?: ProgressCallback,
   onPMProgress?: PMProgressCallback,
+  onQAProgress?: QAProgressCallback,
 ): Promise<AgentResponse> {
   // Frontend developer uses the v3 pipeline with progress callback
   if (role === "frontend_developer") {
@@ -185,6 +187,21 @@ async function dispatchAgent(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       logger.error("Product manager failed", { error: msg });
+      return {
+        agent: role,
+        summary: `Agent ${role} encountered an error: ${msg}`,
+        toolCalls: [],
+        detail: msg,
+      };
+    }
+  }
+
+  if (role === "qa") {
+    try {
+      return await runQAAgent(instructions, onQAProgress);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error("QA agent failed", { error: msg });
       return {
         agent: role,
         summary: `Agent ${role} encountered an error: ${msg}`,
@@ -259,6 +276,8 @@ export async function orchestrateStream(
 
   // Step 2: Execute phases sequentially
   const agentResults: AgentResponse[] = [];
+  let frontendBranchForQA: string | null = null;
+  let frontendPrUrlForQA: string | null = null;
 
   function emitTasksSnapshot() {
     const allTasks = getTasksForRequestAll(requestId);
@@ -290,7 +309,28 @@ export async function orchestrateStream(
       onEvent({ type: "agent_progress", agent: role, stage, message, progress });
     };
 
-    const result = await dispatchAgent(role, instructions, progressCb, pmProgressCb);
+    const qaProgressCb: QAProgressCallback = (stage, message, progress) => {
+      onEvent({ type: "agent_progress", agent: role, stage, message, progress });
+    };
+
+    const result = await dispatchAgent(
+      role,
+      instructions,
+      progressCb,
+      pmProgressCb,
+      qaProgressCb,
+    );
+
+    if (role === "frontend_developer") {
+      const branchFromToolCall = result.toolCalls.find(
+        (toolCall) =>
+          (toolCall.tool === "commit_and_push" || toolCall.tool === "clone_and_branch") &&
+          typeof toolCall.arguments.branch === "string",
+      )?.arguments.branch as string | undefined;
+
+      frontendBranchForQA = branchFromToolCall ?? frontendBranchForQA;
+      frontendPrUrlForQA = result.prUrl ?? frontendPrUrlForQA;
+    }
 
     const newTasks = getTasksForRequestByCreator(requestId, role);
     const newFiles = getFilesForRequestByCreator(requestId, role);
@@ -350,7 +390,10 @@ export async function orchestrateStream(
       phase.map((role) => {
         const baseInstructions =
           plan.agentInstructions[role] ?? userMessage;
-        const instructions = baseInstructions + codeContext;
+        const qaBranchContext = role === "qa" && frontendBranchForQA
+          ? `\n\nQA BRANCH TARGETING CONTEXT:\n- Frontend feature branch: ${frontendBranchForQA}\n- Frontend PR URL: ${frontendPrUrlForQA ?? "not available"}\n- Create QA branch as qa/<frontend-branch>-tests and open PR against the frontend feature branch.`
+          : "";
+        const instructions = baseInstructions + codeContext + qaBranchContext;
         return runAgentAndEmit(role, instructions);
       }),
     );
