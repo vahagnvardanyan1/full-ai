@@ -60,6 +60,8 @@ export interface CodeGenerationRequest {
   existingCode?: string;
   language?: string;
   constraints?: string[];
+  /** Original user message — ground-truth intent the task was derived from */
+  userMessage?: string;
 }
 
 export interface CodeGenerationResponse {

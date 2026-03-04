@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { ChatInput } from "@/components/chat-input";
 import { AgentPipeline } from "@/components/agent-pipeline";
 import { DetailPanel } from "@/components/detail-panel";
@@ -193,13 +193,34 @@ export default function WorkspaceTeamPage({
 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [allTasks, setAllTasks] = useState<TaskItem[]>([]);
-  const [sessionId] = useState(() => crypto.randomUUID());
+  const [sessionId] = useState(() => Math.random().toString(36).slice(2) + Date.now().toString(36));
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [showKanban, setShowKanban] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [dismissedErrors, setDismissedErrors] = useState<Set<string>>(new Set());
   const [lastMessage, setLastMessage] = useState<string | null>(null);
+  const [githubWarning, setGithubWarning] = useState<string | null>(null);
 
+  const checkGitHubStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/integrations/github/status");
+      const data = await res.json();
+      if (!data.ready) {
+        setGithubWarning(data.error ?? "GitHub is not connected.");
+      } else {
+        setGithubWarning(null);
+      }
+    } catch { /* ignore — non-blocking */ }
+  }, []);
+
+  useEffect(() => {
+    checkGitHubStatus();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") checkGitHubStatus();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [checkGitHubStatus]);
 
   const isLoading = history.some((h) => !h.done && !h.error);
   const latestEntry = [...history].reverse().find((h) => h.phases);
@@ -225,7 +246,7 @@ export default function WorkspaceTeamPage({
   }
 
   async function handleSubmit(message: string) {
-    const entryId = crypto.randomUUID();
+    const entryId = Math.random().toString(36).slice(2) + Date.now().toString(36);
     setSelectedAgent(null);
     setShowKanban(false);
     setLastMessage(message);
@@ -235,6 +256,18 @@ export default function WorkspaceTeamPage({
       ...prev,
       { id: entryId, userMessage: message, plan: null, phases: null, workingAgents: [], outputs: [], error: null, done: false },
     ]);
+
+    // Pre-flight: check GitHub connection before running pipeline
+    try {
+      const ghRes = await fetch("/api/integrations/github/status");
+      const ghStatus = await ghRes.json();
+      if (!ghStatus.ready) {
+        setGithubWarning(ghStatus.error ?? "GitHub is not connected.");
+        setHistory(prev => [...prev.map(h => h.id === entryId ? { ...h, error: ghStatus.error, done: true } : h)]);
+        return;
+      }
+      setGithubWarning(null);
+    } catch { /* non-blocking — proceed if status endpoint unavailable */ }
 
     try {
       const res = await fetch("/api/orchestrate", {
@@ -278,7 +311,7 @@ export default function WorkspaceTeamPage({
               }));
               {
                 const t: Toast = {
-                  id: crypto.randomUUID(),
+                  id: Math.random().toString(36).slice(2) + Date.now().toString(36),
                   agent: event.response.agent,
                   summary: event.response.summary.slice(0, 80).replace(/\n/g, " "),
                 };
@@ -293,7 +326,7 @@ export default function WorkspaceTeamPage({
               patch(entryId, () => ({ error: event.message }));
               {
                 const errToast: Toast = {
-                  id: crypto.randomUUID(),
+                  id: Math.random().toString(36).slice(2) + Date.now().toString(36),
                   agent: event.agent,
                   summary: event.message.slice(0, 80),
                   isError: true,
@@ -458,6 +491,32 @@ export default function WorkspaceTeamPage({
           </div>
         )}
       </div>
+
+      {/* GitHub disconnected warning */}
+      {githubWarning && (
+        <div className="mx-5 mb-2 px-3.5 py-[0.65rem] rounded-[10px] bg-[rgba(234,179,8,0.08)] border border-[rgba(234,179,8,0.18)] flex items-start gap-[0.6rem] animate-slide-in">
+          <div className="size-7 rounded-full bg-[rgba(234,179,8,0.12)] flex items-center justify-center shrink-0 mt-px">
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 22h20L12 2z" stroke="#eab308" strokeWidth="1.8" fill="none" />
+              <line x1="12" y1="10" x2="12" y2="15" stroke="#eab308" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="12" cy="18" r="1.2" fill="#eab308" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[0.78rem] font-semibold text-[#eab308] mb-0.5">GitHub disconnected</div>
+            <div className="text-[0.72rem] text-[var(--text-muted)] leading-[1.4]">{githubWarning}</div>
+          </div>
+          <button
+            className="p-[0.2rem] rounded border-none bg-transparent text-[var(--text-muted)] cursor-pointer flex items-center justify-center transition-colors duration-150 hover:text-[#eab308]"
+            onClick={() => setGithubWarning(null)}
+          >
+            <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
+              <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Error */}
       {latestEntry?.error && !dismissedErrors.has(latestEntry.id) && (

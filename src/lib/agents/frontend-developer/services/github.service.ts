@@ -10,29 +10,39 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { createChildLogger } from "../utils/logger";
 import type { RepoInfo, CodeGenerationResponse } from "../types";
+import { getRuntimeGitHubConfig, onGitHubDisconnect } from "@/lib/clients/integration-store";
 
 const log = createChildLogger("github-service");
 
-let octokitInstance: Octokit | null = null;
+let runtimeOctokitInstance: Octokit | null = null;
+let lastRuntimeToken: string | null = null;
+
+onGitHubDisconnect(() => {
+  runtimeOctokitInstance = null;
+  lastRuntimeToken = null;
+});
 
 function getToken(): string {
-  const token = process.env.GITHUB_TOKEN;
-  if (!token) throw new Error("GITHUB_TOKEN is not set");
-  return token;
+  const runtime = getRuntimeGitHubConfig();
+  if (runtime?.accessToken) return runtime.accessToken;
+  throw new Error("GitHub is not connected. Go to Settings > Integrations to connect your GitHub account.");
 }
 
 function getOctokit(): Octokit {
-  if (!octokitInstance) {
-    octokitInstance = new Octokit({ auth: getToken() });
+  const token = getToken();
+  if (!runtimeOctokitInstance || lastRuntimeToken !== token) {
+    runtimeOctokitInstance = new Octokit({ auth: token });
+    lastRuntimeToken = token;
   }
-  return octokitInstance;
+  return runtimeOctokitInstance;
 }
 
 function ownerRepo(): { owner: string; repo: string } {
-  return {
-    owner: process.env.GITHUB_OWNER ?? "demo-org",
-    repo: process.env.GITHUB_REPO ?? "demo-repo",
-  };
+  const runtime = getRuntimeGitHubConfig();
+  if (runtime?.owner && runtime.repo) {
+    return { owner: runtime.owner, repo: runtime.repo };
+  }
+  throw new Error("No GitHub repository selected. Go to Settings > Integrations to select a repository.");
 }
 
 export class GitHubService {
@@ -430,4 +440,22 @@ export class GitHubService {
     await octokit.issues.createComment({ owner, repo, issue_number: number, body });
     log.info({ issue: number }, "Commented on issue");
   }
+}
+
+// ── Pre-flight check ──────────────────────────────────────
+
+export function checkGitHubReady(): {
+  ready: boolean;
+  owner?: string;
+  repo?: string;
+  error?: string;
+} {
+  const runtime = getRuntimeGitHubConfig();
+  if (runtime?.accessToken && runtime.owner && runtime.repo) {
+    return { ready: true, owner: runtime.owner, repo: runtime.repo };
+  }
+  if (runtime?.accessToken && !runtime.repo) {
+    return { ready: false, error: "GitHub is connected but no repository selected. Go to Settings > Integrations to select a repository." };
+  }
+  return { ready: false, error: "GitHub is not connected. Go to Settings > Integrations to connect your GitHub account." };
 }

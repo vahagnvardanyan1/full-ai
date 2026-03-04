@@ -3,6 +3,7 @@ export const SIDEBAR_NAV = [
   { label: "Agents Marketplace", href: "/dashboard/agents", icon: "bot" },
   { label: "Team Marketplace", href: "/dashboard/teams", icon: "users" },
   { label: "My Workspace", href: "/dashboard/workspace", icon: "briefcase" },
+  { label: "Settings", href: "/dashboard/settings", icon: "settings" },
 ] as const;
 
 export const AGENT_CATEGORIES = [

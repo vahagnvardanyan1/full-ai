@@ -11,24 +11,81 @@
 
 import { logger } from "@/lib/logger";
 import type { TaskStatus } from "@/lib/agents/types";
+import { getRuntimeJiraConfig, refreshJiraTokenIfNeeded } from "@/lib/clients/integration-store";
 
-// ── Configuration ────────────────────────────────────────
+// ── Auth resolution: runtime OAuth → env vars → null ────
 
-export function isJiraConfigured(): boolean {
-  return !!(
+interface ResolvedJira {
+  baseUrl: string;
+  authHeader: string;
+  projectKey: string;
+  source: "runtime" | "env";
+}
+
+async function resolveJiraAuth(): Promise<ResolvedJira | null> {
+  // 1. Runtime OAuth tokens (from Settings → Integrations UI)
+  //    refreshJiraTokenIfNeeded() returns the config with a fresh token
+  const runtime = await refreshJiraTokenIfNeeded();
+  if (runtime?.accessToken && runtime.cloudId && runtime.projectKey) {
+    return {
+      // OAuth uses Atlassian's cloud API gateway
+      baseUrl: `https://api.atlassian.com/ex/jira/${runtime.cloudId}`,
+      authHeader: `Bearer ${runtime.accessToken}`,
+      projectKey: runtime.projectKey,
+      source: "runtime",
+    };
+  }
+
+  // 2. Environment variables (existing behavior, untouched)
+  if (
     process.env.JIRA_BASE_URL &&
     process.env.JIRA_EMAIL &&
     process.env.JIRA_API_TOKEN &&
     process.env.JIRA_PROJECT_KEY
-  );
+  ) {
+    const email = process.env.JIRA_EMAIL!;
+    const token = process.env.JIRA_API_TOKEN!;
+    const auth = Buffer.from(`${email}:${token}`).toString("base64");
+    return {
+      baseUrl: process.env.JIRA_BASE_URL!.replace(/\/+$/, ""),
+      authHeader: `Basic ${auth}`,
+      projectKey: process.env.JIRA_PROJECT_KEY!,
+      source: "env",
+    };
+  }
+
+  return null;
+}
+
+// ── Configuration ────────────────────────────────────────
+
+export async function isJiraConfigured(): Promise<boolean> {
+  return (await resolveJiraAuth()) !== null;
 }
 
 function getJiraConfig() {
+  // Existing function preserved for backward compatibility
+  // Internal callers should prefer resolveJiraAuth()
   return {
     baseUrl: process.env.JIRA_BASE_URL!.replace(/\/+$/, ""),
     email: process.env.JIRA_EMAIL!,
     token: process.env.JIRA_API_TOKEN!,
     projectKey: process.env.JIRA_PROJECT_KEY!,
+  };
+}
+
+/** Resolve projectKey & browsable base URL from runtime or env */
+function resolveProjectConfig() {
+  const runtime = getRuntimeJiraConfig();
+  if (runtime?.projectKey && runtime.siteUrl) {
+    return {
+      projectKey: runtime.projectKey,
+      browseUrl: runtime.siteUrl.replace(/\/+$/, ""),
+    };
+  }
+  return {
+    projectKey: process.env.JIRA_PROJECT_KEY ?? "",
+    browseUrl: (process.env.JIRA_BASE_URL ?? "").replace(/\/+$/, ""),
   };
 }
 
@@ -38,14 +95,26 @@ async function jiraFetch<T = unknown>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const { baseUrl, email, token } = getJiraConfig();
-  const url = `${baseUrl}/rest/api/3${path}`;
-  const auth = Buffer.from(`${email}:${token}`).toString("base64");
+  const resolved = await resolveJiraAuth();
+
+  // Determine URL and auth header
+  let url: string;
+  let authHeader: string;
+
+  if (resolved) {
+    url = `${resolved.baseUrl}/rest/api/3${path}`;
+    authHeader = resolved.authHeader;
+  } else {
+    // Fallback to legacy getJiraConfig() for any edge case
+    const { baseUrl, email, token } = getJiraConfig();
+    url = `${baseUrl}/rest/api/3${path}`;
+    authHeader = `Basic ${Buffer.from(`${email}:${token}`).toString("base64")}`;
+  }
 
   const res = await fetch(url, {
     ...options,
     headers: {
-      Authorization: `Basic ${auth}`,
+      Authorization: authHeader,
       "Content-Type": "application/json",
       Accept: "application/json",
       ...((options.headers as Record<string, string>) ?? {}),
@@ -180,7 +249,7 @@ export interface CreateJiraIssueParams {
 export async function createJiraIssue(
   params: CreateJiraIssueParams,
 ): Promise<JiraCreateResult> {
-  const { projectKey, baseUrl } = getJiraConfig();
+  const { projectKey, browseUrl: baseUrl } = resolveProjectConfig();
 
   logger.info("Creating Jira issue", {
     title: params.title,
@@ -215,7 +284,7 @@ export async function createJiraIssue(
     url: `${baseUrl}/browse/${data.key}`,
   };
 
-  logger.info("Jira issue created", result);
+  logger.info("Jira issue created", { ...result });
   return result;
 }
 
@@ -315,7 +384,7 @@ export interface JiraIssueInfo {
 export async function getJiraIssues(
   jql?: string,
 ): Promise<JiraIssueInfo[]> {
-  const { projectKey, baseUrl } = getJiraConfig();
+  const { projectKey, browseUrl: baseUrl } = resolveProjectConfig();
   const defaultJql = `project = "${projectKey}" ORDER BY created DESC`;
   const query = jql ?? defaultJql;
 
@@ -350,7 +419,7 @@ export async function getJiraIssues(
  * Get a single Jira issue.
  */
 export async function getJiraIssue(issueKey: string): Promise<JiraIssueInfo> {
-  const { baseUrl } = getJiraConfig();
+  const { browseUrl: baseUrl } = resolveProjectConfig();
 
   const data = await jiraFetch<{
     id: string;

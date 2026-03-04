@@ -15,31 +15,47 @@ import {
   getFilesForCurrentRequest,
   getFilesForCurrentRequestByCreator,
 } from "@/lib/clients/code-store";
+import { getRuntimeGitHubConfig, onGitHubDisconnect } from "@/lib/clients/integration-store";
 
-let instance: Octokit | null = null;
+let runtimeInstance: Octokit | null = null;
+let lastRuntimeToken: string | null = null;
+
+onGitHubDisconnect(() => {
+  runtimeInstance = null;
+  lastRuntimeToken = null;
+});
 let simulatedIssueCounter = 100;
 let simulatedPRCounter = 10;
 
+// ── Auth resolution: runtime OAuth only ─────────────────
+
+function resolveGitHubAuth(): { token: string; owner: string; repo: string } | null {
+  const runtime = getRuntimeGitHubConfig();
+  if (runtime?.accessToken && runtime.owner && runtime.repo) {
+    return { token: runtime.accessToken, owner: runtime.owner, repo: runtime.repo };
+  }
+  return null;
+}
+
 function isConfigured(): boolean {
-  return !!(
-    process.env.GITHUB_TOKEN &&
-    process.env.GITHUB_OWNER &&
-    process.env.GITHUB_REPO
-  );
+  return resolveGitHubAuth() !== null;
 }
 
 function getOctokit(): Octokit {
-  if (!instance) {
-    const token = process.env.GITHUB_TOKEN;
-    if (!token) throw new Error("GITHUB_TOKEN is not set");
-    instance = new Octokit({ auth: token });
+  const auth = resolveGitHubAuth();
+  if (!auth) throw new Error("GitHub is not connected. Go to Settings > Integrations to connect your GitHub account.");
+
+  if (!runtimeInstance || lastRuntimeToken !== auth.token) {
+    runtimeInstance = new Octokit({ auth: auth.token });
+    lastRuntimeToken = auth.token;
   }
-  return instance;
+  return runtimeInstance;
 }
 
 function ownerRepo() {
-  const owner = process.env.GITHUB_OWNER ?? "demo-org";
-  const repo = process.env.GITHUB_REPO ?? "demo-repo";
+  const auth = resolveGitHubAuth();
+  const owner = auth?.owner ?? "demo-org";
+  const repo = auth?.repo ?? "demo-repo";
   return { owner, repo };
 }
 

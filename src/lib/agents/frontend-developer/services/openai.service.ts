@@ -214,6 +214,10 @@ ${request.existingCode}
 - "Preserve working parts" means keep unrelated logic intact — it does NOT mean return the same file unchanged.`;
     }
 
+    const userRequestSection = request.userMessage
+      ? `## Original User Request (THIS IS THE GROUND TRUTH — your code MUST implement this)\n${request.userMessage}\n\n`
+      : "";
+
     const messages: LLMMessage[] = [
       {
         role: "system",
@@ -221,7 +225,7 @@ ${request.existingCode}
       },
       {
         role: "user",
-        content: `## Task
+        content: `${userRequestSection}## Task
 ${request.task}
 
 ## Context
