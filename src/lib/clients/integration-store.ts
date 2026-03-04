@@ -271,24 +271,12 @@ export function getIntegrationStatus(): IntegrationStatus {
           siteName: config.jira.siteName,
           projectKey: config.jira.projectKey,
         }
-      : {
-          connected: !!(
-            process.env.JIRA_BASE_URL &&
-            process.env.JIRA_EMAIL &&
-            process.env.JIRA_API_TOKEN &&
-            process.env.JIRA_PROJECT_KEY
-          ),
-          email: process.env.JIRA_EMAIL,
-          projectKey: process.env.JIRA_PROJECT_KEY,
-        },
+      : { connected: false },
     vercel: config.vercel
       ? {
           connected: true,
           projectId: config.vercel.projectId,
         }
-      : {
-          connected: !!(process.env.VERCEL_TOKEN && process.env.VERCEL_PROJECT_ID),
-          projectId: process.env.VERCEL_PROJECT_ID,
-        },
+      : { connected: false },
   };
 }
