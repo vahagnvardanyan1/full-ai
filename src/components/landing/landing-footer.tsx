@@ -1,49 +1,9 @@
 "use client";
 
-import { CSSProperties } from "react";
-
-const footer: CSSProperties = {
-  padding: "4rem 1.5rem 10rem",
-  borderTop: "1px solid var(--glass-border)",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  maxWidth: 960,
-  margin: "0 auto",
-  flexWrap: "wrap",
-  gap: "1rem",
-};
-
-const logoRow: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "0.5rem",
-};
-
-const logoText: CSSProperties = {
-  fontSize: "0.9rem",
-  fontWeight: 700,
-  fontFamily: "var(--font-display)",
-  color: "var(--text)",
-};
-
-const links: CSSProperties = {
-  display: "flex",
-  gap: "1.5rem",
-  alignItems: "center",
-};
-
-const linkStyle: CSSProperties = {
-  fontSize: "0.75rem",
-  color: "var(--text-muted)",
-  textDecoration: "none",
-  transition: "color 0.15s",
-};
-
 export function LandingFooter() {
   return (
-    <footer className="landing-footer" style={footer}>
-      <div style={logoRow}>
+    <footer className="landing-footer flex justify-between items-center flex-wrap gap-4 max-w-[960px] mx-auto px-6 pt-16 pb-40 border-t border-[var(--glass-border)]">
+      <div className="flex items-center gap-2">
         <svg width={16} height={16} viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="3" stroke="var(--accent)" strokeWidth="1.8" />
           <circle cx="12" cy="4" r="1.5" fill="var(--accent)" opacity="0.6" />
@@ -51,36 +11,19 @@ export function LandingFooter() {
           <circle cx="12" cy="20" r="1.5" fill="var(--accent)" opacity="0.6" />
           <circle cx="4" cy="12" r="1.5" fill="var(--accent)" opacity="0.6" />
         </svg>
-        <span style={logoText}>AI Team</span>
-        <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", opacity: 0.5 }}>
+        <span className="text-[0.9rem] font-bold font-[var(--font-display)] text-[var(--text)]">AI Team</span>
+        <span className="text-[0.68rem] text-[var(--text-muted)] opacity-50">
           &copy; {new Date().getFullYear()}
         </span>
       </div>
-      <div className="landing-footer-links" style={links}>
-        <a
-          href="/app"
-          style={linkStyle}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
-        >
+      <div className="landing-footer-links flex gap-6 items-center">
+        <a href="/app" className="text-[0.75rem] text-[var(--text-muted)] no-underline transition-colors duration-150 hover:text-[var(--text)]">
           App
         </a>
-        <a
-          href="#how-it-works"
-          style={linkStyle}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
-        >
+        <a href="#how-it-works" className="text-[0.75rem] text-[var(--text-muted)] no-underline transition-colors duration-150 hover:text-[var(--text)]">
           Features
         </a>
-        <a
-          href="https://github.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={linkStyle}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
-        >
+        <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-[0.75rem] text-[var(--text-muted)] no-underline transition-colors duration-150 hover:text-[var(--text)]">
           GitHub
         </a>
       </div>

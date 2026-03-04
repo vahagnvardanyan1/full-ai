@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 
 /* ── Provider data ──────────────────────────────────── */
 
@@ -38,42 +38,12 @@ const PROVIDERS = [
 ];
 
 const ROUTING_EVENTS = [
-  {
-    task: "Analyzing product spec",
-    provider: 0,
-    latency: "1.2s",
-    reason: "Deep reasoning",
-  },
-  {
-    task: "Generating React components",
-    provider: 1,
-    latency: "0.8s",
-    reason: "Fast code gen",
-  },
-  {
-    task: "Writing E2E test suite",
-    provider: 0,
-    latency: "1.4s",
-    reason: "Complex logic",
-  },
-  {
-    task: "Parsing image mockup",
-    provider: 2,
-    latency: "0.6s",
-    reason: "Multimodal",
-  },
-  {
-    task: "Drafting API documentation",
-    provider: 1,
-    latency: "0.5s",
-    reason: "Speed optimized",
-  },
-  {
-    task: "Reviewing security audit",
-    provider: 0,
-    latency: "1.8s",
-    reason: "Deep analysis",
-  },
+  { task: "Analyzing product spec", provider: 0, latency: "1.2s", reason: "Deep reasoning" },
+  { task: "Generating React components", provider: 1, latency: "0.8s", reason: "Fast code gen" },
+  { task: "Writing E2E test suite", provider: 0, latency: "1.4s", reason: "Complex logic" },
+  { task: "Parsing image mockup", provider: 2, latency: "0.6s", reason: "Multimodal" },
+  { task: "Drafting API documentation", provider: 1, latency: "0.5s", reason: "Speed optimized" },
+  { task: "Reviewing security audit", provider: 0, latency: "1.8s", reason: "Deep analysis" },
 ];
 
 /* ── Orbiting circles ───────────────────────────────── */
@@ -141,69 +111,21 @@ function OrbitingProviders() {
   return (
     <div
       ref={containerRef}
-      className="landing-orbit"
-      style={{
-        position: "relative",
-        width: ORBIT_SIZE,
-        height: ORBIT_SIZE,
-        flexShrink: 0,
-      }}
+      className="landing-orbit relative shrink-0"
+      style={{ width: ORBIT_SIZE, height: ORBIT_SIZE }}
     >
       {/* Orbit ring */}
       <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          width: ORBIT_RADIUS * 2,
-          height: ORBIT_RADIUS * 2,
-          borderRadius: "50%",
-          border: "1px solid var(--glass-border)",
-          transform: "translate(-50%, -50%)",
-        }}
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--glass-border)]"
+        style={{ width: ORBIT_RADIUS * 2, height: ORBIT_RADIUS * 2 }}
       />
 
       {/* Center hub */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: 76,
-          height: 76,
-          borderRadius: 18,
-          background: "var(--surface-raised)",
-          border: "1px solid var(--glass-border)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 3,
-          zIndex: 2,
-        }}
-      >
-        <svg
-          width={22}
-          height={22}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="var(--text)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        >
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[76px] h-[76px] rounded-[18px] bg-[var(--surface-raised)] border border-[var(--glass-border)] flex flex-col items-center justify-center gap-[3px] z-[2]">
+        <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="var(--text)" strokeWidth="1.5" strokeLinecap="round">
           <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
         </svg>
-        <span
-          style={{
-            fontSize: "0.58rem",
-            fontWeight: 700,
-            color: "var(--text-muted)",
-            letterSpacing: "0.05em",
-          }}
-        >
-          AUTO
-        </span>
+        <span className="text-[0.58rem] font-bold text-[var(--text-muted)] tracking-[0.05em]">AUTO</span>
       </div>
 
       {/* Provider nodes */}
@@ -212,17 +134,11 @@ function OrbitingProviders() {
         const isActive = i === activeIdx;
 
         return (
-          <div key={p.name} style={{ position: "absolute" }}>
+          <div key={p.name} className="absolute">
             {/* Connection line to center */}
             <svg
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: ORBIT_SIZE,
-                height: ORBIT_SIZE,
-                pointerEvents: "none",
-              }}
+              className="absolute top-0 left-0 pointer-events-none"
+              style={{ width: ORBIT_SIZE, height: ORBIT_SIZE }}
               viewBox={`0 0 ${ORBIT_SIZE} ${ORBIT_SIZE}`}
             >
               <line
@@ -237,13 +153,7 @@ function OrbitingProviders() {
                 style={{ transition: "stroke 0.5s ease, opacity 0.5s ease" }}
               >
                 {isActive && (
-                  <animate
-                    attributeName="stroke-dashoffset"
-                    from="0"
-                    to="-20"
-                    dur="0.8s"
-                    repeatCount="indefinite"
-                  />
+                  <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="0.8s" repeatCount="indefinite" />
                 )}
               </line>
             </svg>
@@ -254,28 +164,15 @@ function OrbitingProviders() {
               onPointerMove={handlePointerMove(i)}
               onPointerUp={handlePointerUp(i)}
               onClick={() => setActiveIdx(i)}
+              className="absolute size-[54px] rounded-[14px] flex items-center justify-center z-[3] cursor-grab touch-none select-none"
               style={{
-                position: "absolute",
                 left: x - 27,
                 top: y - 27,
-                width: 54,
-                height: 54,
-                borderRadius: 14,
                 background: isActive ? `${p.color}15` : "var(--surface-raised)",
-                border: isActive
-                  ? `1.5px solid ${p.color}50`
-                  : "1px solid var(--glass-border)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                border: isActive ? `1.5px solid ${p.color}50` : "1px solid var(--glass-border)",
                 color: isActive ? p.color : "var(--text-muted)",
-                transition:
-                  "background 0.5s ease, border 0.5s ease, box-shadow 0.5s ease, color 0.5s ease",
+                transition: "background 0.5s ease, border 0.5s ease, box-shadow 0.5s ease, color 0.5s ease",
                 boxShadow: isActive ? `0 0 24px ${p.color}20` : "none",
-                zIndex: 3,
-                cursor: "grab",
-                touchAction: "none",
-                userSelect: "none",
               }}
             >
               {p.icon}
@@ -283,18 +180,12 @@ function OrbitingProviders() {
 
             {/* Label */}
             <span
+              className="absolute w-[60px] text-center text-[0.7rem] font-semibold pointer-events-none select-none"
               style={{
-                position: "absolute",
                 left: x - 30,
                 top: y + 32,
-                width: 60,
-                textAlign: "center",
-                fontSize: "0.7rem",
-                fontWeight: 600,
                 color: isActive ? "var(--text)" : "var(--text-muted)",
                 transition: "color 0.5s ease",
-                pointerEvents: "none",
-                userSelect: "none",
               }}
             >
               {p.name}
@@ -330,48 +221,12 @@ function RoutingTicker() {
   return (
     <div
       ref={containerRef}
-      className="landing-ticker"
-      style={{
-        flex: 1,
-        minWidth: 340,
-        maxHeight: 360,
-        overflow: "hidden",
-        borderRadius: 14,
-        border: "1px solid var(--glass-border)",
-        background: "var(--surface-raised)",
-        padding: "0.75rem",
-        fontFamily: "var(--font-mono)",
-      }}
+      className="landing-ticker flex-1 min-w-[340px] max-h-[360px] overflow-hidden rounded-[14px] border border-[var(--glass-border)] bg-[var(--surface-raised)] p-3 font-mono"
     >
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          paddingBottom: "0.6rem",
-          marginBottom: "0.5rem",
-          borderBottom: "1px solid var(--glass-border)",
-        }}
-      >
-        <span
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            background: "#22c55e",
-            animation: "landing-fade-up 1.5s ease-in-out infinite alternate",
-          }}
-        />
-        <span
-          style={{
-            fontSize: "0.62rem",
-            fontWeight: 700,
-            color: "var(--text-muted)",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-          }}
-        >
+      <div className="flex items-center gap-2 pb-[0.6rem] mb-2 border-b border-[var(--glass-border)]">
+        <span className="size-1.5 rounded-full bg-[#22c55e]" style={{ animation: "landing-fade-up 1.5s ease-in-out infinite alternate" }} />
+        <span className="text-[0.62rem] font-bold text-[var(--text-muted)] uppercase tracking-[0.08em]">
           Smart routing — live
         </span>
       </div>
@@ -382,80 +237,31 @@ function RoutingTicker() {
         return (
           <div
             key={`${ev.task}-${i}`}
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "0.5rem",
-              padding: "0.55rem 0",
-              borderBottom:
-                i < events.length - 1
-                  ? "1px solid var(--glass-border)"
-                  : "none",
-              animation: "landing-fade-up 0.3s ease-out both",
-            }}
+            className="flex items-start gap-2 py-[0.55rem] animate-landing-fade-up"
+            style={{ borderBottom: i < events.length - 1 ? "1px solid var(--glass-border)" : "none" }}
           >
             {/* Provider badge */}
             <div
+              className="size-[34px] rounded-[9px] flex items-center justify-center shrink-0 mt-px"
               style={{
-                width: 34,
-                height: 34,
-                borderRadius: 9,
                 background: `${p.color}12`,
                 border: `1px solid ${p.color}20`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
                 color: p.color,
-                flexShrink: 0,
-                marginTop: 1,
               }}
             >
               {p.icon}
             </div>
 
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: "0.78rem",
-                  color: "var(--text)",
-                  fontWeight: 500,
-                  fontFamily: "var(--font-body)",
-                }}
-              >
+            <div className="flex-1 min-w-0">
+              <div className="text-[0.78rem] text-[var(--text)] font-medium font-[var(--font-body)]">
                 {ev.task}
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  marginTop: 2,
-                }}
-              >
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[0.58rem] font-semibold" style={{ color: p.color }}>{p.model}</span>
+                <span className="text-[0.55rem] text-[var(--text-muted)]">{ev.latency}</span>
                 <span
-                  style={{
-                    fontSize: "0.58rem",
-                    fontWeight: 600,
-                    color: p.color,
-                  }}
-                >
-                  {p.model}
-                </span>
-                <span
-                  style={{ fontSize: "0.55rem", color: "var(--text-muted)" }}
-                >
-                  {ev.latency}
-                </span>
-                <span
-                  style={{
-                    fontSize: "0.52rem",
-                    padding: "0.08rem 0.3rem",
-                    borderRadius: 4,
-                    background: `${p.color}10`,
-                    color: p.color,
-                    fontWeight: 500,
-                    fontFamily: "var(--font-body)",
-                  }}
+                  className="text-[0.52rem] px-[0.3rem] py-[0.08rem] rounded font-medium font-[var(--font-body)]"
+                  style={{ background: `${p.color}10`, color: p.color }}
                 >
                   {ev.reason}
                 </span>
@@ -466,34 +272,18 @@ function RoutingTicker() {
       })}
 
       {/* Typing indicator */}
-      <div
-        style={{
-          display: "flex",
-          gap: "0.25rem",
-          padding: "0.5rem 0 0.2rem",
-          alignItems: "center",
-        }}
-      >
+      <div className="flex gap-1 pt-2 pb-[0.2rem] items-center">
         {[0, 1, 2].map((d) => (
           <div
             key={d}
+            className="size-[3px] rounded-full bg-[var(--text-muted)]"
             style={{
-              width: 3,
-              height: 3,
-              borderRadius: "50%",
-              background: "var(--text-muted)",
               animation: "landing-fade-up 0.8s ease-in-out infinite alternate",
               animationDelay: `${d * 0.15}s`,
             }}
           />
         ))}
-        <span
-          style={{
-            fontSize: "0.55rem",
-            color: "var(--text-muted)",
-            marginLeft: "0.3rem",
-          }}
-        >
+        <span className="text-[0.55rem] text-[var(--text-muted)] ml-[0.3rem]">
           routing next task...
         </span>
       </div>
@@ -511,37 +301,13 @@ function StatsRow() {
   ];
 
   return (
-    <div
-      className="landing-stats-row"
-      style={{
-        display: "flex",
-        gap: "2rem",
-        justifyContent: "center",
-        flexWrap: "wrap",
-        marginTop: "1.5rem",
-      }}
-    >
+    <div className="landing-stats-row flex gap-8 justify-center flex-wrap mt-6">
       {stats.map((s) => (
-        <div key={s.label} style={{ textAlign: "center" }}>
-          <div
-            style={{
-              fontSize: "1.8rem",
-              fontWeight: 800,
-              fontFamily: "var(--font-display)",
-              color: "var(--text)",
-              letterSpacing: "-0.02em",
-            }}
-          >
+        <div key={s.label} className="text-center">
+          <div className="text-[1.8rem] font-extrabold font-[var(--font-display)] text-[var(--text)] tracking-[-0.02em]">
             {s.value}
           </div>
-          <div
-            style={{
-              fontSize: "0.68rem",
-              color: "var(--text-muted)",
-              fontWeight: 500,
-              marginTop: 2,
-            }}
-          >
+          <div className="text-[0.68rem] text-[var(--text-muted)] font-medium mt-0.5">
             {s.label}
           </div>
         </div>
@@ -550,67 +316,19 @@ function StatsRow() {
   );
 }
 
-/* ── Section styles ─────────────────────────────────── */
-
-const section: CSSProperties = {
-  padding: "5rem 1.5rem",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-};
-
-const sectionLabel: CSSProperties = {
-  fontSize: "0.72rem",
-  fontWeight: 600,
-  color: "var(--text-muted)",
-  textTransform: "uppercase",
-  letterSpacing: "0.12em",
-  marginBottom: "0.5rem",
-};
-
-const sectionTitle: CSSProperties = {
-  fontSize: "clamp(1.5rem, 3.5vw, 2.5rem)",
-  fontWeight: 700,
-  fontFamily: "var(--font-display)",
-  color: "var(--text)",
-  textAlign: "center",
-  letterSpacing: "-0.025em",
-  marginBottom: "0.75rem",
-};
-
-const sectionSubtitle: CSSProperties = {
-  fontSize: "0.92rem",
-  color: "var(--text-muted)",
-  textAlign: "center",
-  lineHeight: 1.6,
-  maxWidth: 480,
-  marginBottom: "2rem",
-};
-
 /* ── Export ──────────────────────────────────────────── */
 
 export function AiProviders() {
   return (
-    <section className="landing-ai-section" style={section}>
-      <p style={sectionLabel}>Intelligent model routing</p>
-      <h2 style={sectionTitle}>The right model, every time</h2>
-      <p style={sectionSubtitle}>
+    <section className="landing-ai-section px-6 py-20 flex flex-col items-center">
+      <p className="text-[0.72rem] font-semibold text-[var(--text-muted)] uppercase tracking-[0.12em] mb-2">Intelligent model routing</p>
+      <h2 className="font-bold font-[var(--font-display)] text-[var(--text)] text-center tracking-[-0.025em] mb-3" style={{ fontSize: "clamp(1.5rem, 3.5vw, 2.5rem)" }}>The right model, every time</h2>
+      <p className="text-[0.92rem] text-[var(--text-muted)] text-center leading-relaxed max-w-[480px] mb-8">
         We analyze each task and automatically dispatch to the most capable
         model — so you get the best results without thinking about it.
       </p>
 
-      <div
-        className="landing-ai-layout"
-        style={{
-          display: "flex",
-          gap: "2.5rem",
-          alignItems: "center",
-          justifyContent: "center",
-          flexWrap: "wrap",
-          maxWidth: 960,
-          width: "100%",
-        }}
-      >
+      <div className="landing-ai-layout flex gap-10 items-center justify-center flex-wrap max-w-[960px] w-full">
         <OrbitingProviders />
         <RoutingTicker />
       </div>

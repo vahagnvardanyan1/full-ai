@@ -4,36 +4,6 @@ import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
 
 const PICSART_CDN = "https://cdn-cms-uploads.picsart.com/cms-uploads";
 
-/* ── Section wrapper ─────────────────────────────────── */
-
-const section: CSSProperties = {
-  padding: "5rem 1.5rem",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: "5rem",
-};
-
-const sectionLabel: CSSProperties = {
-  fontSize: "0.72rem",
-  fontWeight: 600,
-  color: "var(--text-muted)",
-  textTransform: "uppercase",
-  letterSpacing: "0.12em",
-  marginBottom: "0.5rem",
-  textAlign: "center",
-};
-
-const sectionTitle: CSSProperties = {
-  fontSize: "clamp(1.5rem, 3.5vw, 2.5rem)",
-  fontWeight: 700,
-  fontFamily: "var(--font-display)",
-  color: "var(--text)",
-  textAlign: "center",
-  letterSpacing: "-0.025em",
-  marginBottom: "1rem",
-};
-
 /* ── Feature row (alternating layout) ────────────────── */
 
 function FeatureRow({
@@ -49,38 +19,21 @@ function FeatureRow({
   visual: ReactNode;
   reversed?: boolean;
 }) {
-  const rowStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: "4rem",
-    maxWidth: 960,
-    width: "100%",
-    flexDirection: reversed ? "row-reverse" : "row",
-    flexWrap: "wrap",
-  };
-
-  const textCol: CSSProperties = {
-    flex: "1 1 300px",
-    minWidth: 280,
-  };
-
-  const vizCol: CSSProperties = {
-    flex: "1 1 440px",
-    minWidth: 340,
-  };
-
   return (
-    <div className="landing-feature-row" style={rowStyle}>
-      <div className="landing-feature-text" style={textCol}>
-        <p style={{ ...sectionLabel, textAlign: "left" }}>{label}</p>
-        <h3 style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--text)", letterSpacing: "-0.02em", marginBottom: "0.75rem" }}>
+    <div
+      className="landing-feature-row flex items-center gap-16 max-w-[960px] w-full flex-wrap"
+      style={{ flexDirection: reversed ? "row-reverse" : "row" }}
+    >
+      <div className="landing-feature-text flex-[1_1_300px] min-w-[280px]">
+        <p className="text-[0.72rem] font-semibold text-[var(--text-muted)] uppercase tracking-[0.12em] mb-2 text-left">{label}</p>
+        <h3 className="text-2xl font-bold text-[var(--text)] tracking-[-0.02em] mb-3">
           {title}
         </h3>
-        <p style={{ fontSize: "0.92rem", color: "var(--text-muted)", lineHeight: 1.7 }}>
+        <p className="text-[0.92rem] text-[var(--text-muted)] leading-[1.7]">
           {description}
         </p>
       </div>
-      <div className="landing-feature-visual" style={vizCol}>{visual}</div>
+      <div className="landing-feature-visual flex-[1_1_440px] min-w-[340px]">{visual}</div>
     </div>
   );
 }
@@ -115,57 +68,29 @@ function LiveEventStream() {
   }, [events.length]);
 
   return (
-    <div
-      style={{
-        borderRadius: 14,
-        border: "1px solid var(--glass-border)",
-        background: "var(--surface-raised)",
-        padding: "1rem",
-        maxHeight: 320,
-        overflow: "hidden",
-        fontFamily: "var(--font-mono)",
-      }}
-    >
+    <div className="rounded-[14px] border border-[var(--glass-border)] bg-[var(--surface-raised)] p-4 max-h-[320px] overflow-hidden font-mono">
       {events.slice(0, count).map((ev, i) => (
         <div
           key={i}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.6rem",
-            padding: "0.4rem 0.5rem",
-            borderRadius: 6,
-            animation: "landing-fade-up 0.25s ease-out both",
-            marginBottom: 2,
-          }}
+          className="flex items-center gap-[0.6rem] px-2 py-[0.4rem] rounded-md animate-landing-fade-up mb-0.5"
         >
-          <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", minWidth: 24, flexShrink: 0 }}>{ev.time}</span>
+          <span className="text-[0.6rem] text-[var(--text-muted)] min-w-[24px] shrink-0">{ev.time}</span>
           <span
-            style={{
-              fontSize: "0.6rem",
-              fontWeight: 700,
-              color: ev.color,
-              background: `${ev.color}12`,
-              padding: "0.1rem 0.35rem",
-              borderRadius: 4,
-              flexShrink: 0,
-            }}
+            className="text-[0.6rem] font-bold px-[0.35rem] py-[0.1rem] rounded shrink-0"
+            style={{ color: ev.color, background: `${ev.color}12` }}
           >
             {ev.agent}
           </span>
-          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{ev.text}</span>
+          <span className="text-[0.7rem] text-[var(--text-muted)]">{ev.text}</span>
         </div>
       ))}
       {count < events.length && (
-        <div style={{ display: "flex", gap: "0.3rem", padding: "0.4rem 0.5rem" }}>
+        <div className="flex gap-[0.3rem] px-2 py-[0.4rem]">
           {[0, 1, 2].map((d) => (
             <div
               key={d}
+              className="size-1 rounded-full bg-[var(--text-muted)]"
               style={{
-                width: 4,
-                height: 4,
-                borderRadius: "50%",
-                background: "var(--text-muted)",
                 animation: "dot-bounce 1s ease-in-out infinite",
                 animationDelay: `${d * 0.15}s`,
               }}
@@ -188,7 +113,7 @@ function AgentTemplates() {
   ];
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+    <div className="grid grid-cols-2 gap-3">
       {templates.map((t) => (
         <TemplateCard key={t.name} template={t} />
       ))}
@@ -202,52 +127,32 @@ function TemplateCard({ template }: { template: { name: string; color: string; t
 
   return (
     <div
+      className="rounded-xl border border-[var(--glass-border)] bg-[var(--surface-raised)] p-4 flex items-center gap-[0.65rem] transition-all duration-200 cursor-default hover:shadow-[0_0_20px_var(--tw-shadow-color)]"
       style={{
-        borderRadius: 12,
-        border: "1px solid var(--glass-border)",
-        background: "var(--surface-raised)",
-        padding: "1rem",
-        display: "flex",
-        alignItems: "center",
-        gap: "0.65rem",
-        transition: "all 0.2s",
-        cursor: "default",
+        // @ts-expect-error CSS custom property for hover shadow color
+        "--tw-shadow-color": `${template.color}10`,
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = `${template.color}40`;
-        e.currentTarget.style.boxShadow = `0 0 20px ${template.color}10`;
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.borderColor = "var(--glass-border)";
-        e.currentTarget.style.boxShadow = "none";
       }}
     >
       <div
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: 10,
-          overflow: "hidden",
-          border: `1px solid ${template.color}30`,
-          flexShrink: 0,
-        }}
+        className="size-[38px] rounded-[10px] overflow-hidden shrink-0"
+        style={{ border: `1px solid ${template.color}30` }}
       >
-        <video ref={videoRef} src={template.video} autoPlay loop muted playsInline style={{ width: 46, height: 46, objectFit: "cover", marginLeft: -4, marginTop: -4 }} />
+        <video ref={videoRef} src={template.video} autoPlay loop muted playsInline className="object-cover" style={{ width: 46, height: 46, marginLeft: -4, marginTop: -4 }} />
       </div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text)" }}>{template.name}</div>
-        <div style={{ display: "flex", gap: "0.3rem", marginTop: 3 }}>
+      <div className="min-w-0">
+        <div className="text-[0.78rem] font-semibold text-[var(--text)]">{template.name}</div>
+        <div className="flex gap-[0.3rem] mt-[3px]">
           {template.tools.map((tool) => (
             <span
               key={tool}
-              style={{
-                fontSize: "0.58rem",
-                padding: "0.1rem 0.35rem",
-                borderRadius: 4,
-                background: `${template.color}12`,
-                color: template.color,
-                fontWeight: 500,
-              }}
+              className="text-[0.58rem] px-[0.35rem] py-[0.1rem] rounded font-medium"
+              style={{ background: `${template.color}12`, color: template.color }}
             >
               {tool}
             </span>
@@ -269,38 +174,24 @@ function PipelineVisual() {
   ];
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 0, justifyContent: "center" }}>
+    <div className="flex items-center gap-0 justify-center">
       {phases.map((phase, i) => (
-        <div key={phase.label} style={{ display: "flex", alignItems: "center" }}>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "0.35rem",
-            }}
-          >
+        <div key={phase.label} className="flex items-center">
+          <div className="flex flex-col items-center gap-[0.35rem]">
             <div
+              className="size-12 rounded-xl flex items-center justify-center text-[0.75rem] font-bold"
               style={{
-                width: 48,
-                height: 48,
-                borderRadius: 12,
                 background: `${phase.agents[0].color}12`,
                 border: `1.5px solid ${phase.agents[0].color}35`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "0.75rem",
-                fontWeight: 700,
                 color: phase.agents[0].color,
               }}
             >
               {phase.agents[0].name}
             </div>
-            <span style={{ fontSize: "0.62rem", color: "var(--text-muted)", fontWeight: 500 }}>{phase.label}</span>
+            <span className="text-[0.62rem] text-[var(--text-muted)] font-medium">{phase.label}</span>
           </div>
           {i < phases.length - 1 && (
-            <div style={{ width: 40, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+            <div className="w-10 flex items-center justify-center mb-4">
               <svg width={40} height={12} viewBox="0 0 40 12">
                 <line x1="0" y1="6" x2="32" y2="6" stroke="var(--glass-border)" strokeWidth="1.5" strokeDasharray="3 2">
                   <animate attributeName="stroke-dashoffset" from="0" to="-10" dur="1s" repeatCount="indefinite" />
@@ -331,16 +222,18 @@ function FlowAvatar({ video, size, color }: { video: string; size: number; color
   const ref = useRef<HTMLVideoElement>(null);
   useEffect(() => { if (ref.current) ref.current.playbackRate = 0.7; }, []);
   return (
-    <div style={{
-      width: size,
-      height: size,
-      borderRadius: size * 0.3,
-      overflow: "hidden",
-      border: `2px solid ${color}60`,
-      flexShrink: 0,
-    }}>
+    <div
+      className="overflow-hidden shrink-0"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size * 0.3,
+        border: `2px solid ${color}60`,
+      }}
+    >
       <video ref={ref} src={video} autoPlay loop muted playsInline
-        style={{ width: size * 1.2, height: size * 1.2, objectFit: "cover", marginLeft: -size * 0.1, marginTop: -size * 0.1 }} />
+        className="object-cover"
+        style={{ width: size * 1.2, height: size * 1.2, marginLeft: -size * 0.1, marginTop: -size * 0.1 }} />
     </div>
   );
 }
@@ -349,34 +242,28 @@ function FlowCard({ agent }: { agent: typeof flowAgents[number] }) {
   const isComplete = agent.status === "complete";
   const isWorking = agent.status === "working";
   const borderColor = isComplete ? `${agent.color}60` : isWorking ? `${agent.color}80` : `${agent.color}30`;
-  const glowColor = isWorking ? `0 0 16px ${agent.color}20` : "none";
+  const glowShadow = isWorking ? `0 0 16px ${agent.color}20` : "none";
   const text = (agent as { text?: string }).text;
   const badge = (agent as { badge?: string }).badge;
 
   return (
-    <div style={{
-      background: "var(--surface-raised)",
-      border: `1.5px solid ${borderColor}`,
-      borderRadius: 14,
-      padding: "0.75rem",
-      display: "flex",
-      flexDirection: "column",
-      gap: "0.5rem",
-      width: isComplete ? 170 : 148,
-      boxShadow: glowColor,
-    }}>
+    <div
+      className="bg-[var(--surface-raised)] rounded-[14px] p-3 flex flex-col gap-2"
+      style={{
+        border: `1.5px solid ${borderColor}`,
+        width: isComplete ? 170 : 148,
+        boxShadow: glowShadow,
+      }}
+    >
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <div className="flex items-center gap-2">
         <FlowAvatar video={agent.video} size={32} color={agent.color} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text)" }}>{agent.label}</div>
-          <div style={{
-            fontSize: "0.58rem",
-            fontWeight: 700,
-            color: agent.color,
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-          }}>
+        <div className="flex-1 min-w-0">
+          <div className="text-[0.72rem] font-bold text-[var(--text)]">{agent.label}</div>
+          <div
+            className="text-[0.58rem] font-bold uppercase tracking-[0.05em]"
+            style={{ color: agent.color }}
+          >
             {isComplete ? "COMPLETE" : "WORKING..."}
           </div>
         </div>
@@ -389,32 +276,29 @@ function FlowCard({ agent }: { agent: typeof flowAgents[number] }) {
       </div>
       {/* Body text */}
       {text && (
-        <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
-          {text}
-        </div>
+        <div className="text-[0.62rem] text-[var(--text-muted)] leading-[1.4]">{text}</div>
       )}
       {badge && (
-        <span style={{
-          alignSelf: "flex-start",
-          fontSize: "0.55rem",
-          fontWeight: 600,
-          padding: "0.15rem 0.4rem",
-          borderRadius: 6,
-          border: `1px solid ${agent.color}30`,
-          color: agent.color,
-        }}>
+        <span
+          className="self-start text-[0.55rem] font-semibold px-[0.4rem] py-[0.15rem] rounded-md"
+          style={{ border: `1px solid ${agent.color}30`, color: agent.color }}
+        >
           {badge}
         </span>
       )}
       {/* Working dots */}
       {isWorking && (
-        <div style={{ display: "flex", gap: 4, paddingTop: 2 }}>
+        <div className="flex gap-1 pt-0.5">
           {[0, 1, 2].map((d) => (
-            <div key={d} style={{
-              width: 5, height: 5, borderRadius: "50%", background: agent.color,
-              animation: "landing-fade-up 0.8s ease-in-out infinite alternate",
-              animationDelay: `${d * 0.2}s`,
-            }} />
+            <div
+              key={d}
+              className="size-[5px] rounded-full"
+              style={{
+                background: agent.color,
+                animation: "landing-fade-up 0.8s ease-in-out infinite alternate",
+                animationDelay: `${d * 0.2}s`,
+              }}
+            />
           ))}
         </div>
       )}
@@ -437,35 +321,36 @@ function DecorativePipelineFlow() {
   });
 
   return (
-    <div className="landing-pipeline-flow" style={{
-      position: "relative",
-      width: 700,
-      height: 340,
-      borderRadius: 16,
-      transform: "scale(0.75)",
-      transformOrigin: "top left",
-      marginBottom: -85,
-      marginRight: -175,
-    }}>
+    <div
+      className="landing-pipeline-flow relative rounded-2xl"
+      style={{
+        width: 700,
+        height: 340,
+        transform: "scale(0.75)",
+        transformOrigin: "top left",
+        marginBottom: -85,
+        marginRight: -175,
+      }}
+    >
       {/* Orchestrator node (small) */}
-      <div style={{ position: "absolute", left: 0, top: 145 }}>
+      <div className="absolute" style={{ left: 0, top: 145 }}>
         <FlowAvatar video={orch.video} size={40} color={orch.color} />
       </div>
 
       {/* Connection: Orch → PM */}
-      <svg style={{ position: "absolute", left: 40, top: 164, width: 44, height: 2, overflow: "visible" }}>
+      <svg className="absolute overflow-visible" style={{ left: 40, top: 164, width: 44, height: 2 }}>
         <line x1="0" y1="0" x2="44" y2="0" style={connStyle("#a78bfa", false)}>
           <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="1s" repeatCount="indefinite" />
         </line>
       </svg>
 
       {/* PM card */}
-      <div style={{ position: "absolute", left: 84, top: 96 }}>
+      <div className="absolute" style={{ left: 84, top: 96 }}>
         <FlowCard agent={pm} />
       </div>
 
       {/* Connection: PM → Dev */}
-      <svg style={{ position: "absolute", left: 254, top: 164, width: 38, height: 2, overflow: "visible" }}>
+      <svg className="absolute overflow-visible" style={{ left: 254, top: 164, width: 38, height: 2 }}>
         <line x1="0" y1="0" x2="38" y2="0" style={connStyle("#34d399", false)}>
           <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="1s" repeatCount="indefinite" />
         </line>
@@ -474,12 +359,12 @@ function DecorativePipelineFlow() {
       </svg>
 
       {/* Dev card */}
-      <div style={{ position: "absolute", left: 292, top: 96 }}>
+      <div className="absolute" style={{ left: 292, top: 96 }}>
         <FlowCard agent={dev} />
       </div>
 
       {/* Connection: Dev → QA (dashed, going up-right) */}
-      <svg style={{ position: "absolute", left: 462, top: 24, width: 70, height: 144, overflow: "visible" }}>
+      <svg className="absolute overflow-visible" style={{ left: 462, top: 24, width: 70, height: 144 }}>
         <path d={`M0,120 C25,120 45,10 70,10`} style={connStyle("#facc15", true)}>
           <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="0.8s" repeatCount="indefinite" />
         </path>
@@ -487,12 +372,12 @@ function DecorativePipelineFlow() {
       </svg>
 
       {/* QA card */}
-      <div style={{ position: "absolute", left: 532, top: 8 }}>
+      <div className="absolute" style={{ left: 532, top: 8 }}>
         <FlowCard agent={qa} />
       </div>
 
       {/* Connection: Dev → DevOps (dashed, going down-right) */}
-      <svg style={{ position: "absolute", left: 462, top: 164, width: 70, height: 120, overflow: "visible" }}>
+      <svg className="absolute overflow-visible" style={{ left: 462, top: 164, width: 70, height: 120 }}>
         <path d={`M0,0 C25,0 45,100 70,100`} style={connStyle("#f97316", true)}>
           <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="0.8s" repeatCount="indefinite" />
         </path>
@@ -500,7 +385,7 @@ function DecorativePipelineFlow() {
       </svg>
 
       {/* DevOps card */}
-      <div style={{ position: "absolute", left: 532, top: 232 }}>
+      <div className="absolute" style={{ left: 532, top: 232 }}>
         <FlowCard agent={devops} />
       </div>
     </div>
@@ -511,16 +396,16 @@ function DecorativePipelineFlow() {
 
 export function FeaturesSection() {
   return (
-    <section id="how-it-works" className="landing-features-section" style={section}>
+    <section id="how-it-works" className="landing-features-section px-6 py-20 flex flex-col items-center gap-20">
       {/* Header with decorative flow */}
-      <div className="landing-features-header" style={{ display: "flex", alignItems: "center", gap: "3.5rem", maxWidth: 960, width: "100%", flexWrap: "wrap" }}>
-        <div className="landing-feature-visual" style={{ flex: "1 1 400px", minWidth: 340, overflow: "hidden" }}>
+      <div className="landing-features-header flex items-center gap-14 max-w-[960px] w-full flex-wrap">
+        <div className="landing-feature-visual flex-[1_1_400px] min-w-[340px] overflow-hidden">
           <DecorativePipelineFlow />
         </div>
-        <div className="landing-feature-text" style={{ flex: "1 1 300px", minWidth: 260 }}>
-          <p style={{ ...sectionLabel, textAlign: "left" }}>How it works</p>
-          <h2 style={{ ...sectionTitle, textAlign: "left", marginBottom: "0.75rem" }}>Agents actually ship</h2>
-          <p style={{ fontSize: "0.92rem", color: "var(--text-muted)", lineHeight: 1.7, maxWidth: 360 }}>
+        <div className="landing-feature-text flex-[1_1_300px] min-w-[260px]">
+          <p className="text-[0.72rem] font-semibold text-[var(--text-muted)] uppercase tracking-[0.12em] mb-2 text-left">How it works</p>
+          <h2 className="font-bold font-[var(--font-display)] text-[var(--text)] text-left tracking-[-0.025em] mb-3" style={{ fontSize: "clamp(1.5rem, 3.5vw, 2.5rem)" }}>Agents actually ship</h2>
+          <p className="text-[0.92rem] text-[var(--text-muted)] leading-[1.7] max-w-[360px]">
             A structured pipeline where each agent completes its phase before handing off — from planning to deployment, fully automated.
           </p>
         </div>

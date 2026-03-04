@@ -1,17 +1,13 @@
 "use client";
 
-import { CSSProperties, useRef, KeyboardEvent } from "react";
-
-// ── Icons ────────────────────────────────────────────────
+import { useRef, KeyboardEvent } from "react";
+import { cn } from "@/lib/utils";
+import { glassCard } from "@/lib/styles";
 
 function SendIcon() {
   return (
     <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
-      <path
-        d="M2 8L14 2L8 14L7 9L2 8Z"
-        fill="currentColor"
-        opacity="0.9"
-      />
+      <path d="M2 8L14 2L8 14L7 9L2 8Z" fill="currentColor" opacity="0.9" />
     </svg>
   );
 }
@@ -23,15 +19,13 @@ function SpinnerIcon({ size = 14 }: { size?: number }) {
       height={size}
       viewBox="0 0 16 16"
       fill="none"
-      style={{ animation: "spin 0.8s linear infinite" }}
+      className="animate-spin"
     >
       <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" opacity="0.25" />
       <path d="M14 8a6 6 0 0 0-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
-
-// ── Component ────────────────────────────────────────────
 
 interface ChatInputProps {
   onSubmit: (message: string) => void;
@@ -78,69 +72,6 @@ export function ChatInput({ onSubmit, disabled, loading, compact, textareaRef }:
   />;
 }
 
-// ── Hero variant (landing page) ──────────────────────────
-
-const heroContainer: CSSProperties = {
-  borderRadius: 16,
-  border: "1px solid var(--glass-border)",
-  background: "var(--glass-bg)",
-  backdropFilter: "blur(var(--glass-blur))",
-  WebkitBackdropFilter: "blur(var(--glass-blur))",
-  boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-  transition: "border-color 0.2s, box-shadow 0.2s",
-  overflow: "hidden",
-};
-
-const heroTextarea: CSSProperties = {
-  width: "100%",
-  minHeight: 80,
-  maxHeight: 200,
-  padding: "1rem 1.15rem 0.5rem",
-  border: "none",
-  background: "transparent",
-  color: "var(--text)",
-  fontSize: "0.92rem",
-  fontFamily: "inherit",
-  resize: "none",
-  outline: "none",
-  lineHeight: 1.5,
-};
-
-const heroFooter: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "flex-end",
-  padding: "0.35rem 0.65rem 0.65rem",
-  gap: "0.5rem",
-};
-
-const heroHint: CSSProperties = {
-  fontSize: "0.62rem",
-  color: "var(--text-muted)",
-  opacity: 0.7,
-  marginRight: "auto",
-  padding: "0.15rem 0.45rem",
-  borderRadius: 6,
-  background: "var(--surface-hover)",
-  letterSpacing: "0.01em",
-};
-
-const heroBtnBase: CSSProperties = {
-  padding: "0.4rem 0.85rem",
-  borderRadius: 10,
-  border: "none",
-  background: "var(--accent)",
-  color: "#fff",
-  fontWeight: 600,
-  fontSize: "0.78rem",
-  cursor: "pointer",
-  transition: "opacity 0.15s, transform 0.15s, background 0.15s",
-  whiteSpace: "nowrap",
-  display: "flex",
-  alignItems: "center",
-  gap: "0.35rem",
-};
-
 interface InputVariantProps {
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
   disabled?: boolean;
@@ -152,46 +83,27 @@ interface InputVariantProps {
 function HeroInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: InputVariantProps) {
   const isOff = disabled || loading;
 
-  const btnStyle: CSSProperties = isOff
-    ? { ...heroBtnBase, opacity: 0.4, cursor: "not-allowed" }
-    : heroBtnBase;
-
   return (
-    <div
-      style={heroContainer}
-      onFocus={(e) => {
-        const wrap = e.currentTarget;
-        wrap.style.borderColor = "var(--accent)";
-        wrap.style.boxShadow = "0 0 0 2px var(--accent-glow), 0 4px 24px rgba(0,0,0,0.08)";
-      }}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-          const wrap = e.currentTarget;
-          wrap.style.borderColor = "var(--glass-border)";
-          wrap.style.boxShadow = "0 4px 24px rgba(0,0,0,0.08)";
-        }
-      }}
-    >
+    <div className={`${glassCard} shadow-[0_4px_24px_rgba(0,0,0,0.08)] transition-[border-color,box-shadow] duration-200 overflow-hidden focus-within:border-[#22c55e80] focus-within:shadow-[0_0_0_2px_rgba(34,197,94,0.15),0_4px_24px_rgba(0,0,0,0.08)]`}>
       <textarea
         ref={inputRef}
         rows={3}
-        style={heroTextarea}
+        className="w-full min-h-[80px] max-h-[200px] px-4 pt-4 pb-2 border-none bg-transparent text-[var(--text)] text-[0.92rem] font-[inherit] resize-none outline-none leading-normal placeholder:text-[var(--text-muted)]"
         placeholder="What would you like your AI team to build?"
         disabled={isOff}
         onKeyDown={onKeyDown}
       />
-      <div style={heroFooter}>
-        <span style={heroHint}>{"\u2318"} Enter</span>
+      <div className="flex items-center justify-end px-2.5 pb-2.5 gap-2">
+        <span className="text-[0.62rem] text-[var(--text-muted)] opacity-70 mr-auto px-2 py-0.5 rounded-md bg-[var(--surface-hover)] tracking-tight">
+          {"\u2318"} Enter
+        </span>
         <button
-          style={btnStyle}
+          className={cn(
+            "px-3.5 py-1.5 rounded-[10px] border-none bg-gradient-to-br from-[#22c55e] to-[#16a34a] text-white font-semibold text-[0.78rem] cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5 shadow-[0_2px_12px_rgba(34,197,94,0.25)] hover:shadow-[0_2px_20px_rgba(34,197,94,0.4)]",
+            isOff && "opacity-40 cursor-not-allowed",
+          )}
           onClick={onSubmit}
           disabled={isOff}
-          onMouseEnter={(e) => {
-            if (!isOff) e.currentTarget.style.opacity = "0.85";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = "1";
-          }}
         >
           {loading ? <SpinnerIcon size={13} /> : <SendIcon />}
           {loading ? "Sending..." : "Send"}
@@ -201,97 +113,26 @@ function HeroInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: InputVa
   );
 }
 
-// ── Compact variant (bottom bar) ─────────────────────────
-
-const compactWrap: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 0,
-  border: "1px solid var(--glass-border)",
-  borderRadius: 12,
-  background: "var(--glass-bg)",
-  backdropFilter: "blur(var(--glass-blur))",
-  WebkitBackdropFilter: "blur(var(--glass-blur))",
-  transition: "border-color 0.2s, box-shadow 0.2s",
-  overflow: "hidden",
-};
-
-const compactTextarea: CSSProperties = {
-  flex: 1,
-  height: 38,
-  minHeight: 38,
-  maxHeight: 38,
-  padding: "0 0.85rem",
-  border: "none",
-  background: "transparent",
-  color: "var(--text)",
-  fontSize: "0.82rem",
-  fontFamily: "inherit",
-  resize: "none",
-  outline: "none",
-  lineHeight: "38px",
-};
-
-const compactBtn: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: "0.35rem",
-  padding: "0 0.85rem",
-  height: 38,
-  border: "none",
-  borderLeft: "1px solid var(--glass-border)",
-  background: "transparent",
-  color: "var(--accent)",
-  fontSize: "0.78rem",
-  fontWeight: 600,
-  cursor: "pointer",
-  transition: "background 0.15s, color 0.15s",
-  whiteSpace: "nowrap",
-  flexShrink: 0,
-};
-
 function CompactInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: InputVariantProps) {
   const isOff = disabled || loading;
 
-  const btnStyle: CSSProperties = isOff
-    ? { ...compactBtn, opacity: 0.4, cursor: "not-allowed" }
-    : compactBtn;
-
   return (
-    <div
-      style={compactWrap}
-      onFocus={(e) => {
-        const wrap = e.currentTarget;
-        wrap.style.borderColor = "var(--accent)";
-        wrap.style.boxShadow = "0 0 0 2px var(--accent-glow)";
-      }}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-          const wrap = e.currentTarget;
-          wrap.style.borderColor = "var(--glass-border)";
-          wrap.style.boxShadow = "none";
-        }
-      }}
-    >
+    <div className="flex items-center gap-0 border border-[var(--glass-border)] rounded-[12px] bg-[var(--glass-bg)] backdrop-blur-[var(--glass-blur)] [-webkit-backdrop-filter:blur(var(--glass-blur))] transition-[border-color,box-shadow] duration-200 overflow-hidden focus-within:border-[#22c55e80] focus-within:shadow-[0_0_0_2px_rgba(34,197,94,0.15)]">
       <textarea
         ref={inputRef}
         rows={1}
-        style={compactTextarea}
+        className="flex-1 h-[38px] min-h-[38px] max-h-[38px] px-3.5 border-none bg-transparent text-[var(--text)] text-[0.82rem] font-[inherit] resize-none outline-none leading-[38px] placeholder:text-[var(--text-muted)]"
         placeholder="Follow-up message..."
         disabled={isOff}
         onKeyDown={onKeyDown}
       />
       <button
-        style={btnStyle}
+        className={cn(
+          "flex items-center justify-center gap-1.5 px-3.5 h-[38px] border-none border-l border-l-[var(--glass-border)] bg-transparent text-[#22c55e] text-[0.78rem] font-semibold cursor-pointer transition-colors whitespace-nowrap shrink-0 hover:bg-[rgba(34,197,94,0.06)]",
+          isOff && "opacity-40 cursor-not-allowed",
+        )}
         onClick={onSubmit}
         disabled={isOff}
-        onMouseEnter={(e) => {
-          if (!isOff) e.currentTarget.style.background = "var(--surface-hover)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "transparent";
-        }}
       >
         {loading ? <SpinnerIcon size={13} /> : <SendIcon />}
         {loading ? "Sending" : "Send"}
