@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback, use } from "react";
+
 import { ChatInput } from "@/components/chat-input";
 import { AgentPipeline } from "@/components/agent-pipeline";
 import { DetailPanel } from "@/components/detail-panel";
 import { KanbanBoard } from "@/components/kanban-board";
 import { AgentAvatar } from "@/components/agent-avatar";
 import { cn } from "@/lib/utils";
+import { useWorkspaceSession } from "@/hooks/use-workspace-session";
+import { useRunPolling } from "@/hooks/use-run-polling";
+import { WorkflowHistoryPanel } from "@/components/workflow-history-panel";
+import type { HistoryEntry } from "@/lib/workflow-replay";
 import type {
   AgentRole,
   AgentResponse,
@@ -14,25 +19,6 @@ import type {
   GeneratedFile,
   StreamEvent,
 } from "@/lib/agents/types";
-
-// ── Types ────────────────────────────────────────────────
-
-interface AgentOutput {
-  response: AgentResponse;
-  tasks: TaskItem[];
-  files: GeneratedFile[];
-}
-
-interface HistoryEntry {
-  id: string;
-  userMessage: string;
-  plan: string | null;
-  phases: AgentRole[][] | null;
-  workingAgents: string[];
-  outputs: AgentOutput[];
-  error: string | null;
-  done: boolean;
-}
 
 const AGENT_COLORS: Record<string, string> = {
   product_manager: "#a78bfa",
@@ -188,21 +174,63 @@ export default function WorkspaceTeamPage({
 }: {
   params: Promise<{ teamId: string }>;
 }) {
-  // teamId available for future backend integration
-  void params;
+  const { teamId } = use(params);
+
+  const { sessionId, isRestoring, restoredHistory, restoredTasks, activeRunRequestId } =
+    useWorkspaceSession({ teamId });
 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [allTasks, setAllTasks] = useState<TaskItem[]>([]);
-  const [sessionId] = useState(() => crypto.randomUUID());
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [showKanban, setShowKanban] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [dismissedErrors, setDismissedErrors] = useState<Set<string>>(new Set());
   const [lastMessage, setLastMessage] = useState<string | null>(null);
+  // Polling stops once the run completes or goes stale; set to null to stop
+  const [pollingRequestId, setPollingRequestId] = useState<string | null>(null);
+  // History panel
+  const [showHistory, setShowHistory] = useState(false);
+  // When set, shows a specific past run instead of the latest
+  const [viewingEntryId, setViewingEntryId] = useState<string | null>(null);
+
+  // Restore persisted state once the backend fetch completes
+  useEffect(() => {
+    if (isRestoring) return;
+    if (restoredHistory.length > 0) setHistory(restoredHistory);
+    if (restoredTasks.length > 0) setAllTasks(restoredTasks);
+    if (activeRunRequestId) setPollingRequestId(activeRunRequestId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRestoring]);
+
+  // Live-reconnect to a run that was still executing when the page reloaded
+  const handlePollingUpdate = useCallback(
+    ({ entry, tasks }: { entry: HistoryEntry; tasks: TaskItem[] }) => {
+      setHistory((prev) =>
+        prev.some((h) => h.id === entry.id)
+          ? prev.map((h) => (h.id === entry.id ? entry : h))
+          : [...prev, entry],
+      );
+      setAllTasks((prev) => mergeTasks(prev, tasks));
+    },
+    [],
+  );
+
+  const handlePollingDone = useCallback(() => {
+    setPollingRequestId(null);
+  }, []);
+
+  useRunPolling({
+    requestId: pollingRequestId,
+    onUpdate: handlePollingUpdate,
+    onDone: handlePollingDone,
+  });
 
 
   const isLoading = history.some((h) => !h.done && !h.error);
-  const latestEntry = [...history].reverse().find((h) => h.phases);
+  // If user selected a past run from the history panel, show that; otherwise show the latest
+  const latestEntry = viewingEntryId
+    ? (history.find((h) => h.id === viewingEntryId) ?? [...history].reverse().find((h) => h.phases))
+    : [...history].reverse().find((h) => h.phases);
 
   const completedAgents = latestEntry
     ? latestEntry.outputs.map((o) => o.response.agent)
@@ -220,11 +248,18 @@ export default function WorkspaceTeamPage({
 
   const selectedOutput = selectedAgent ? agentOutputs.get(selectedAgent) : null;
 
-  function patch(entryId: string, updater: (prev: HistoryEntry) => Partial<HistoryEntry>) {
+  const patch = (entryId: string, updater: (prev: HistoryEntry) => Partial<HistoryEntry>) => {
     setHistory((prev) => prev.map((h) => (h.id === entryId ? { ...h, ...updater(h) } : h)));
-  }
+  };
 
-  async function handleSubmit(message: string) {
+  const handleSubmit = async (message: string) => {
+    if (!sessionId) return;
+
+    // New run uses the live SSE stream — stop polling and reset view to latest
+    setPollingRequestId(null);
+    setViewingEntryId(null);
+    setShowHistory(false);
+
     const entryId = crypto.randomUUID();
     setSelectedAgent(null);
     setShowKanban(false);
@@ -318,6 +353,7 @@ export default function WorkspaceTeamPage({
   const hasPipeline = !!latestEntry?.phases;
   const isWaitingForPlan = isLoading && !hasPipeline;
   const showOrchestrator = !hasPipeline;
+  const isInputDisabled = isLoading || isRestoring || !sessionId;
 
   return (
     <div className={cn("w-full h-[calc(100vh)] flex flex-col overflow-hidden")}>
@@ -335,6 +371,7 @@ export default function WorkspaceTeamPage({
             <span className="text-[0.68rem] sm:text-[0.72rem] text-[var(--text-muted)] flex-1 overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
               {latestEntry?.plan ?? "Planning..."}
             </span>
+            {/* Tasks toggle */}
             <button
               className={cn(
                 "px-[0.55rem] sm:px-[0.65rem] py-[0.3rem] rounded-full border text-[0.68rem] sm:text-[0.73rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.3rem] shrink-0",
@@ -351,7 +388,70 @@ export default function WorkspaceTeamPage({
               </svg>
               <span className="hidden sm:inline">Tasks</span>{allTasks.length > 0 ? ` (${allTasks.length})` : ""}
             </button>
+            {/* History toggle — only shown when there are multiple runs */}
+            {history.length > 1 && (
+              <button
+                className={cn(
+                  "px-[0.55rem] sm:px-[0.65rem] py-[0.3rem] rounded-full border text-[0.68rem] sm:text-[0.73rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.3rem] shrink-0",
+                  showHistory
+                    ? "bg-[rgba(167,139,250,0.12)] text-[#a78bfa] border-[#a78bfa60]"
+                    : "bg-[rgba(255,255,255,0.04)] text-[var(--text-muted)] border-[rgba(255,255,255,0.08)]"
+                )}
+                onClick={() => setShowHistory((v) => !v)}
+              >
+                <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.3" />
+                  <polyline points="8,4.5 8,8 10.2,9.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className="hidden sm:inline">History</span>
+                <span className="text-[0.6rem] opacity-70">({history.length})</span>
+              </button>
+            )}
           </nav>
+
+          {/* History panel — anchored below the nav */}
+          {showHistory && (
+            <WorkflowHistoryPanel
+              history={history}
+              viewingId={viewingEntryId}
+              onSelectRun={setViewingEntryId}
+              onClose={() => setShowHistory(false)}
+            />
+          )}
+        </div>
+      )}
+
+      {/* History button when no pipeline is visible yet (past runs exist) */}
+      {!hasPipeline && history.length > 0 && (
+        <div className="absolute top-3.5 right-2 sm:right-4 z-20">
+          <button
+            className={cn(
+              "px-3 py-[0.4rem] rounded-full border text-[0.72rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.35rem]",
+              showHistory
+                ? "bg-[rgba(167,139,250,0.12)] text-[#a78bfa] border-[#a78bfa60]"
+                : "bg-[rgba(255,255,255,0.04)] text-[var(--text-muted)] border-[rgba(255,255,255,0.1)]"
+            )}
+            style={{
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+            }}
+            onClick={() => setShowHistory((v) => !v)}
+          >
+            <svg width={13} height={13} viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.3" />
+              <polyline points="8,4.5 8,8 10.2,9.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            History ({history.length})
+          </button>
+
+          {showHistory && (
+            <WorkflowHistoryPanel
+              history={history}
+              viewingId={viewingEntryId}
+              onSelectRun={setViewingEntryId}
+              onClose={() => setShowHistory(false)}
+            />
+          )}
         </div>
       )}
 
@@ -379,7 +479,11 @@ export default function WorkspaceTeamPage({
                 <div className="text-center">
                   <div className="text-[0.88rem] sm:text-[0.95rem] font-semibold text-[var(--text)]">Orchestrator</div>
                   <div className="text-[0.7rem] sm:text-[0.75rem] text-[var(--text-muted)] mt-1">
-                    {isWaitingForPlan ? "Planning the pipeline..." : "Describe a task to start the pipeline"}
+                    {isRestoring
+                      ? "Restoring session..."
+                      : isWaitingForPlan
+                        ? "Planning the pipeline..."
+                        : "Describe a task to start the pipeline"}
                   </div>
                 </div>
               </div>
@@ -389,11 +493,11 @@ export default function WorkspaceTeamPage({
               <div
                 className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 border border-[var(--glass-border)] rounded-[14px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] z-[90] w-full max-w-[720px]"
               >
-                <span className="text-[0.6rem] sm:text-[0.65rem] text-[var(--text-muted)] whitespace-nowrap shrink-0">
-                  {isWaitingForPlan ? "Working..." : "Ready"}
+                  <span className="text-[0.6rem] sm:text-[0.65rem] text-[var(--text-muted)] whitespace-nowrap shrink-0">
+                  {isRestoring ? "Restoring..." : isWaitingForPlan ? "Working..." : "Ready"}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <ChatInput onSubmit={handleSubmit} disabled={isLoading} loading={isLoading} compact />
+                  <ChatInput onSubmit={handleSubmit} disabled={isInputDisabled} loading={isInputDisabled} compact />
                 </div>
                 <span className="text-[0.6rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60 hidden sm:inline">
                   {"\u2318"} Enter
@@ -448,7 +552,7 @@ export default function WorkspaceTeamPage({
                   : "Ready"}
             </span>
             <div className="flex-1 min-w-0">
-              <ChatInput onSubmit={handleSubmit} disabled={isLoading} loading={isLoading} compact />
+              <ChatInput onSubmit={handleSubmit} disabled={isInputDisabled} loading={isLoading} compact />
             </div>
             <span className="text-[0.6rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60 hidden sm:inline">
               {"\u2318"} Enter
