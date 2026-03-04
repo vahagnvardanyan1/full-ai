@@ -12,7 +12,7 @@
 import { getOpenAIClient } from "@/lib/clients/openai";
 import { logger } from "@/lib/logger";
 import { runProductManager } from "@/lib/agents/product-manager";
-import { runFrontendDeveloper } from "@/lib/agents/frontend-developer";
+import { runFrontendDeveloper, type ProgressCallback } from "@/lib/agents/frontend-developer";
 import { runQAAgent } from "@/lib/agents/qa-agent";
 import { runDevOpsAgent } from "@/lib/agents/devops-agent";
 import {
@@ -147,12 +147,12 @@ async function createPlan(userMessage: string, context: string): Promise<Plan> {
 
 // ── Agent dispatcher ─────────────────────────────────────
 
-const AGENT_RUNNERS: Record<
+/** Simple agent runners (PM, QA, DevOps) — same signature as before */
+const SIMPLE_RUNNERS: Record<
   string,
   (msg: string) => Promise<AgentResponse>
 > = {
   product_manager: runProductManager,
-  frontend_developer: runFrontendDeveloper,
   qa: runQAAgent,
   devops: runDevOpsAgent,
 };
@@ -160,8 +160,25 @@ const AGENT_RUNNERS: Record<
 async function dispatchAgent(
   role: AgentRole,
   instructions: string,
+  onProgress?: ProgressCallback,
 ): Promise<AgentResponse> {
-  const runner = AGENT_RUNNERS[role];
+  // Frontend developer uses the v3 pipeline with progress callback
+  if (role === "frontend_developer") {
+    try {
+      return await runFrontendDeveloper(instructions, onProgress);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error("Frontend developer failed", { error: msg });
+      return {
+        agent: role,
+        summary: `Agent ${role} encountered an error: ${msg}`,
+        toolCalls: [],
+        detail: msg,
+      };
+    }
+  }
+
+  const runner = SIMPLE_RUNNERS[role];
   if (!runner) {
     logger.warn(`No runner for agent role: ${role}`);
     return {
@@ -248,7 +265,12 @@ export async function orchestrateStream(
       emitTasksSnapshot();
     }
 
-    const result = await dispatchAgent(role, instructions);
+    // Build progress callback for agents that support it (frontend_developer)
+    const progressCb: ProgressCallback = (stage, message, progress) => {
+      onEvent({ type: "agent_progress", agent: role, stage, message, progress });
+    };
+
+    const result = await dispatchAgent(role, instructions, progressCb);
 
     const newTasks = getTasksForRequestByCreator(requestId, role);
     const newFiles = getFilesForRequestByCreator(requestId, role);

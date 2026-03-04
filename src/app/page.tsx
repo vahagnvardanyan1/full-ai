@@ -12,6 +12,7 @@ import type {
   TaskItem,
   GeneratedFile,
   StreamEvent,
+  FEProgressStage,
 } from "@/lib/agents/types";
 
 // ── Types ────────────────────────────────────────────────
@@ -22,6 +23,13 @@ interface AgentOutput {
   files: GeneratedFile[];
 }
 
+/** Tracks an agent's pipeline sub-step progress */
+interface AgentProgressInfo {
+  stage: FEProgressStage;
+  message: string;
+  progress: number;
+}
+
 interface HistoryEntry {
   id: string;
   userMessage: string;
@@ -29,6 +37,8 @@ interface HistoryEntry {
   phases: AgentRole[][] | null;
   workingAgents: string[];
   outputs: AgentOutput[];
+  /** Per-agent pipeline progress (for agents like frontend_developer) */
+  agentProgress: Record<string, AgentProgressInfo>;
   error: string | null;
   done: boolean;
 }
@@ -461,7 +471,7 @@ export default function Home() {
 
     setHistory((prev) => [
       ...prev,
-      { id: entryId, userMessage: message, plan: null, phases: null, workingAgents: [], outputs: [], error: null, done: false },
+      { id: entryId, userMessage: message, plan: null, phases: null, workingAgents: [], outputs: [], agentProgress: {}, error: null, done: false },
     ]);
 
     try {
@@ -498,6 +508,14 @@ export default function Home() {
               break;
             case "agent_start":
               patch(entryId, (prev) => ({ workingAgents: [...prev.workingAgents, event.agent] }));
+              break;
+            case "agent_progress":
+              patch(entryId, (prev) => ({
+                agentProgress: {
+                  ...prev.agentProgress,
+                  [event.agent]: { stage: event.stage, message: event.message, progress: event.progress },
+                },
+              }));
               break;
             case "agent_complete":
               patch(entryId, (prev) => ({
@@ -819,7 +837,14 @@ export default function Home() {
           <div style={bottomBar}>
             <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", whiteSpace: "nowrap", flexShrink: 0 }}>
               {isLoading
-                ? `Working... (${latestEntry?.workingAgents.map((a) => a.split("_").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ")).join(", ") || "planning"})`
+                ? (() => {
+                    // Show pipeline progress if available
+                    const feProgress = latestEntry?.agentProgress?.["frontend_developer"];
+                    if (feProgress) {
+                      return `Frontend Dev: ${feProgress.message} (${feProgress.progress}%)`;
+                    }
+                    return `Working... (${latestEntry?.workingAgents.map((a) => a.split("_").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ")).join(", ") || "planning"})`;
+                  })()
                 : latestEntry?.done
                   ? "Pipeline complete"
                   : "Ready"}

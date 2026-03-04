@@ -27,6 +27,8 @@ export interface AgentResponse {
   toolCalls: ToolCall[];
   /** Raw markdown / text the agent produced */
   detail: string;
+  /** URL of the created Pull Request / Merge Request (if any) */
+  prUrl?: string;
 }
 
 /** A task created by the PM agent and assigned to a team member / agent */
@@ -67,9 +69,31 @@ export interface OrchestratorResponse {
 
 // ── SSE streaming event types ────────────────────────────
 
+/** Progress stages emitted by the v3 frontend-developer pipeline */
+export type FEProgressStage =
+  | "onboarding"
+  | "planning"
+  | "cloning"
+  | "coding"
+  | "self_review"
+  | "validating"
+  | "pushing"
+  | "pr_created";
+
+/** Sub-step progress event for agents that run multi-stage pipelines */
+export interface AgentProgressEvent {
+  type: "agent_progress";
+  agent: AgentRole;
+  stage: FEProgressStage;
+  message: string;
+  /** 0-100 */
+  progress: number;
+}
+
 export type StreamEvent =
   | { type: "plan"; plan: string; agents: AgentRole[]; phases: AgentRole[][] }
   | { type: "agent_start"; agent: AgentRole }
+  | AgentProgressEvent
   | {
       type: "agent_complete";
       response: AgentResponse;
