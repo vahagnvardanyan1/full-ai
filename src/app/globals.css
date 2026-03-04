@@ -372,6 +372,71 @@
   background: var(--surface-border);
 }
 
+/* ── Pixel Robot Workers (Hero Section) ─────────────── */
+
+@keyframes pixel-walk-ltr {
+  0%   { transform: translateX(-120px); }
+  100% { transform: translateX(calc(100vw + 120px)); }
+}
+
+@keyframes pixel-walk-rtl {
+  0%   { transform: translateX(calc(100vw + 120px)); }
+  100% { transform: translateX(-120px); }
+}
+
+@keyframes pixel-leg-a {
+  0%, 100% { transform: rotate(-20deg); }
+  50%       { transform: rotate(20deg); }
+}
+
+@keyframes pixel-leg-b {
+  0%, 100% { transform: rotate(20deg); }
+  50%       { transform: rotate(-20deg); }
+}
+
+@keyframes pixel-bob {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-2px); }
+}
+
+@keyframes pixel-thinking-cycle {
+  0%, 8%    { opacity: 0; transform: translateY(5px) scale(0.85); }
+  18%, 78%  { opacity: 1; transform: translateY(0)    scale(1);    }
+  90%, 100% { opacity: 0; transform: translateY(5px) scale(0.85); }
+}
+
+@keyframes pixel-eye-glow-anim {
+  0%, 100% { opacity: 1; }
+  45%, 55% { opacity: 0.6; }
+}
+
+@keyframes pixel-antenna-pulse-anim {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  50%       { opacity: 0.5; transform: scale(0.75); }
+}
+
+@keyframes pixel-status-pulse-anim {
+  0%, 100% { opacity: 0.95; }
+  50%       { opacity: 0.2;  }
+}
+
+@keyframes pixel-meeting-pop {
+  0%   { opacity: 0; transform: scale(0.5) translateY(8px); }
+  55%  { opacity: 1; transform: scale(1.12) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+.pixel-char-lleg       { animation: pixel-leg-a              0.44s ease-in-out infinite; }
+.pixel-char-rleg       { animation: pixel-leg-b              0.44s ease-in-out infinite; }
+.pixel-char-larm       { animation: pixel-leg-b              0.44s ease-in-out infinite; }
+.pixel-char-rarm       { animation: pixel-leg-a              0.44s ease-in-out infinite; }
+.pixel-char-bob        { animation: pixel-bob                0.44s ease-in-out infinite; }
+.pixel-thinking        { animation: pixel-thinking-cycle     5.5s  ease-in-out infinite; }
+.pixel-eye-glow        { animation: pixel-eye-glow-anim      2.4s  ease-in-out infinite; }
+.pixel-antenna-pulse   { animation: pixel-antenna-pulse-anim 1.6s  ease-in-out infinite; }
+.pixel-status-pulse    { animation: pixel-status-pulse-anim  1.1s  ease-in-out infinite; }
+.pixel-meeting-pop     { animation: pixel-meeting-pop        0.28s ease-out      forwards; }
+
 /* ── Landing Page Responsive ─────────────────────────── */
 
 /* Tablet */
