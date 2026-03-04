@@ -46,27 +46,49 @@ export async function POST(request: NextRequest) {
   // ── Stream SSE ──────────────────────────────────────
   const encoder = new TextEncoder();
 
+  // Track whether the client is still connected. When the browser closes
+  // the connection (e.g. page reload), the controller becomes closed.
+  // We must NOT let that error abort the server-side pipeline — the
+  // orchestrator should keep running and writing events to MongoDB so
+  // the polling endpoint can serve them on the next page load.
+  let controllerOpen = true;
+
   const stream = new ReadableStream({
     async start(controller) {
-      function send(event: StreamEvent) {
-        const data = `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
-        controller.enqueue(encoder.encode(data));
-      }
+      const send = (event: StreamEvent) => {
+        if (!controllerOpen) return;
+        try {
+          const data = `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
+          controller.enqueue(encoder.encode(data));
+        } catch {
+          // Client disconnected — mark closed so we stop trying to enqueue,
+          // but let the orchestrator finish and persist to MongoDB.
+          controllerOpen = false;
+        }
+      };
 
       try {
         await orchestrateStream(body.message, body.sessionId, send);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         logger.error("Orchestration stream error", { error: message });
-        const errorEvent: StreamEvent = {
+        send({
           type: "error",
           agent: "orchestrator",
           message: "Internal server error. Check server logs.",
-        };
-        send(errorEvent);
+        });
       } finally {
-        controller.close();
+        if (controllerOpen) {
+          try { controller.close(); } catch { /* already closed */ }
+        }
+        controllerOpen = false;
       }
+    },
+    cancel() {
+      // Browser closed the connection (e.g. page reload / tab close).
+      // Signal send() to stop enqueueing, but do NOT throw —
+      // orchestrateStream will continue and persist events to MongoDB.
+      controllerOpen = false;
     },
   });
 

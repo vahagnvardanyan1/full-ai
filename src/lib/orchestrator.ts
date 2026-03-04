@@ -7,6 +7,8 @@
 //   3. Executes phases sequentially, agents within a phase
 //      run in parallel. Later phases receive output from
 //      earlier ones as context.
+//   4. Persists a WorkflowRun document to MongoDB so the UI
+//      can restore state on page reload.
 // ──────────────────────────────────────────────────────────
 
 import { getOpenAIClient } from "@/lib/clients/openai";
@@ -27,11 +29,9 @@ import {
   getFilesForRequestByCreator,
 } from "@/lib/clients/code-store";
 import type { AgentRole, AgentResponse, StreamEvent } from "@/lib/agents/types";
-import {
-  getSession,
-  createSession,
-  appendMessage,
-} from "@/lib/session-store";
+import { getSession, createSession, appendMessage } from "@/lib/session-store";
+import { connectDB, isDBEnabled } from "@/lib/db/connection";
+import { WorkflowRunModel } from "@/lib/db/models/workflow-run";
 import { v4 as uuidv4 } from "uuid";
 
 // ── Planning step ────────────────────────────────────────
@@ -85,7 +85,7 @@ Be smart about which agents are actually needed:
 - Deployment-only request: product_manager → devops.
 - When in doubt, include more agents rather than fewer. The full pipeline is the default.`;
 
-async function createPlan(userMessage: string, context: string): Promise<Plan> {
+const createPlan = async (userMessage: string, context: string): Promise<Plan> => {
   const openai = getOpenAIClient();
 
   const prompt = context
@@ -106,7 +106,6 @@ async function createPlan(userMessage: string, context: string): Promise<Plan> {
 
   const parsed = JSON.parse(raw) as Plan;
 
-  // Validate agent names and filter invalid ones
   const valid: AgentRole[] = [
     "product_manager",
     "frontend_developer",
@@ -118,7 +117,6 @@ async function createPlan(userMessage: string, context: string): Promise<Plan> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawAny = parsed as any;
   if (!parsed.phases && rawAny.agents) {
-    // Backwards compat: flat array → single phase
     parsed.phases = [rawAny.agents];
   }
 
@@ -144,11 +142,10 @@ async function createPlan(userMessage: string, context: string): Promise<Plan> {
   });
 
   return parsed;
-}
+};
 
 // ── Agent dispatcher ─────────────────────────────────────
 
-/** Simple agent runners (QA, DevOps) — PM and FE use autonomous pipelines */
 const SIMPLE_RUNNERS: Record<
   string,
   (msg: string) => Promise<AgentResponse>
@@ -157,42 +154,36 @@ const SIMPLE_RUNNERS: Record<
   devops: runDevOpsAgent,
 };
 
-async function dispatchAgent(
-  role: AgentRole,
-  instructions: string,
-  onProgress?: ProgressCallback,
-  onPMProgress?: PMProgressCallback,
-  onQAProgress?: QAProgressCallback,
-): Promise<AgentResponse> {
-  // Frontend developer uses the v3 pipeline with progress callback
+const dispatchAgent = async ({
+  role,
+  instructions,
+  onProgress,
+  onPMProgress,
+  onQAProgress,
+}: {
+  role: AgentRole;
+  instructions: string;
+  onProgress?: ProgressCallback;
+  onPMProgress?: PMProgressCallback;
+  onQAProgress?: QAProgressCallback;
+}): Promise<AgentResponse> => {
   if (role === "frontend_developer") {
     try {
       return await runFrontendDeveloper(instructions, onProgress);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       logger.error("Frontend developer failed", { error: msg });
-      return {
-        agent: role,
-        summary: `Agent ${role} encountered an error: ${msg}`,
-        toolCalls: [],
-        detail: msg,
-      };
+      return { agent: role, summary: `Agent ${role} encountered an error: ${msg}`, toolCalls: [], detail: msg };
     }
   }
 
-  // Product manager uses the v3 autonomous pipeline
   if (role === "product_manager") {
     try {
       return await runProductManager(instructions, onPMProgress);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       logger.error("Product manager failed", { error: msg });
-      return {
-        agent: role,
-        summary: `Agent ${role} encountered an error: ${msg}`,
-        toolCalls: [],
-        detail: msg,
-      };
+      return { agent: role, summary: `Agent ${role} encountered an error: ${msg}`, toolCalls: [], detail: msg };
     }
   }
 
@@ -202,24 +193,14 @@ async function dispatchAgent(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       logger.error("QA agent failed", { error: msg });
-      return {
-        agent: role,
-        summary: `Agent ${role} encountered an error: ${msg}`,
-        toolCalls: [],
-        detail: msg,
-      };
+      return { agent: role, summary: `Agent ${role} encountered an error: ${msg}`, toolCalls: [], detail: msg };
     }
   }
 
   const runner = SIMPLE_RUNNERS[role];
   if (!runner) {
     logger.warn(`No runner for agent role: ${role}`);
-    return {
-      agent: role,
-      summary: `Agent ${role} is not implemented.`,
-      toolCalls: [],
-      detail: "",
-    };
+    return { agent: role, summary: `Agent ${role} is not implemented.`, toolCalls: [], detail: "" };
   }
 
   try {
@@ -227,14 +208,59 @@ async function dispatchAgent(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     logger.error(`Agent ${role} failed`, { error: msg });
-    return {
-      agent: role,
-      summary: `Agent ${role} encountered an error: ${msg}`,
-      toolCalls: [],
-      detail: msg,
-    };
+    return { agent: role, summary: `Agent ${role} encountered an error: ${msg}`, toolCalls: [], detail: msg };
   }
-}
+};
+
+// ── WorkflowRun persistence helpers ──────────────────────
+
+const persistEvent = async ({
+  requestId,
+  event,
+}: {
+  requestId: string;
+  event: StreamEvent;
+}): Promise<void> => {
+  if (!isDBEnabled()) return;
+  try {
+    await connectDB();
+    await WorkflowRunModel.updateOne(
+      { requestId },
+      { $push: { events: event } },
+    );
+  } catch (err) {
+    logger.warn("Failed to persist workflow event", { requestId, error: String(err) });
+  }
+};
+
+const persistAgentResult = async ({
+  requestId,
+  result,
+  tasks,
+  files,
+}: {
+  requestId: string;
+  result: AgentResponse;
+  tasks: ReturnType<typeof getTasksForRequestByCreator>;
+  files: ReturnType<typeof getFilesForRequestByCreator>;
+}): Promise<void> => {
+  if (!isDBEnabled()) return;
+  try {
+    await connectDB();
+    await WorkflowRunModel.updateOne(
+      { requestId },
+      {
+        $push: { agentResults: result },
+        $set: {
+          tasks,
+          files,
+        },
+      },
+    );
+  } catch (err) {
+    logger.warn("Failed to persist agent result", { requestId, error: String(err) });
+  }
+};
 
 // ── Streaming orchestrator ───────────────────────────────
 
@@ -246,18 +272,18 @@ async function dispatchAgent(
  * run in parallel. Later phases receive code context from
  * earlier phases.
  */
-export async function orchestrateStream(
+export const orchestrateStream = async (
   userMessage: string,
   sessionId: string | undefined,
   onEvent: (event: StreamEvent) => void,
-): Promise<void> {
+): Promise<void> => {
   const requestId = uuidv4();
   logger.info("Orchestration started", { requestId, sessionId });
 
   // Resolve or create session
   const sid = sessionId ?? uuidv4();
-  let session = getSession(sid);
-  if (!session) session = createSession(sid);
+  let session = await getSession(sid);
+  if (!session) session = await createSession(sid);
 
   const context = session.messages
     .map((m) => `${m.role}: ${m.content}`)
@@ -270,28 +296,53 @@ export async function orchestrateStream(
   setActiveRequestId(requestId);
   setActiveCodeRequestId(requestId);
 
-  // Flatten phases for the plan event
+  // Create the WorkflowRun document in MongoDB immediately
+  if (isDBEnabled()) {
+    try {
+      await connectDB();
+      await WorkflowRunModel.create({
+        requestId,
+        sessionId: sid,
+        userMessage,
+        status: "running",
+        planSummary: plan.summary,
+        phases: plan.phases,
+        events: [],
+        tasks: [],
+        files: [],
+        agentResults: [],
+      });
+    } catch (err) {
+      logger.warn("Failed to create WorkflowRun document", { error: String(err) });
+    }
+  }
+
+  // Wrap onEvent to also persist every event to MongoDB
+  const emit = (event: StreamEvent) => {
+    onEvent(event);
+    // Fire-and-forget — don't block the stream
+    persistEvent({ requestId, event }).catch(() => undefined);
+  };
+
   const allAgents = plan.phases.flat();
-  onEvent({ type: "plan", plan: plan.summary, agents: allAgents, phases: plan.phases });
+  emit({ type: "plan", plan: plan.summary, agents: allAgents, phases: plan.phases });
 
   // Step 2: Execute phases sequentially
   const agentResults: AgentResponse[] = [];
   let frontendBranchForQA: string | null = null;
   let frontendPrUrlForQA: string | null = null;
 
-  function emitTasksSnapshot() {
+  const emitTasksSnapshot = () => {
     const allTasks = getTasksForRequestAll(requestId);
     if (allTasks.length > 0) {
-      onEvent({ type: "tasks_updated", tasks: [...allTasks.map(t => ({ ...t }))] });
+      emit({ type: "tasks_updated", tasks: [...allTasks.map((t) => ({ ...t }))] });
     }
-  }
+  };
 
-  async function runAgentAndEmit(role: AgentRole, instructions: string) {
-    onEvent({ type: "agent_start", agent: role });
+  const runAgentAndEmit = async (role: AgentRole, instructions: string) => {
+    emit({ type: "agent_start", agent: role });
 
-    // ── On-start transitions (tasks exist from prior phases)
     if (role === "frontend_developer") {
-      // PM already finished in phase 1 — tasks exist, move to in_progress
       updateTasksByRequestStatus(requestId, "open", "in_progress");
       emitTasksSnapshot();
     } else if (role === "qa") {
@@ -300,32 +351,31 @@ export async function orchestrateStream(
       emitTasksSnapshot();
     }
 
-    // Build progress callbacks for agents with autonomous pipelines
     const progressCb: ProgressCallback = (stage, message, progress) => {
-      onEvent({ type: "agent_progress", agent: role, stage, message, progress });
+      emit({ type: "agent_progress", agent: role, stage, message, progress });
     };
 
     const pmProgressCb: PMProgressCallback = (stage, message, progress) => {
-      onEvent({ type: "agent_progress", agent: role, stage, message, progress });
+      emit({ type: "agent_progress", agent: role, stage, message, progress });
     };
 
     const qaProgressCb: QAProgressCallback = (stage, message, progress) => {
-      onEvent({ type: "agent_progress", agent: role, stage, message, progress });
+      emit({ type: "agent_progress", agent: role, stage, message, progress });
     };
 
-    const result = await dispatchAgent(
+    const result = await dispatchAgent({
       role,
       instructions,
-      progressCb,
-      pmProgressCb,
-      qaProgressCb,
-    );
+      onProgress: progressCb,
+      onPMProgress: pmProgressCb,
+      onQAProgress: qaProgressCb,
+    });
 
     if (role === "frontend_developer") {
       const branchFromToolCall = result.toolCalls.find(
-        (toolCall) =>
-          (toolCall.tool === "commit_and_push" || toolCall.tool === "clone_and_branch") &&
-          typeof toolCall.arguments.branch === "string",
+        (tc) =>
+          (tc.tool === "commit_and_push" || tc.tool === "clone_and_branch") &&
+          typeof tc.arguments.branch === "string",
       )?.arguments.branch as string | undefined;
 
       frontendBranchForQA = branchFromToolCall ?? frontendBranchForQA;
@@ -337,26 +387,24 @@ export async function orchestrateStream(
 
     agentResults.push(result);
 
-    onEvent({
-      type: "agent_complete",
-      response: result,
-      tasks: newTasks,
-      files: newFiles,
-    });
+    emit({ type: "agent_complete", response: result, tasks: newTasks, files: newFiles });
 
-    // ── On-complete transitions (status-only matching, no assignee filtering)
+    // Persist agent result + current task/file snapshot
+    persistAgentResult({
+      requestId,
+      result,
+      tasks: getTasksForRequestAll(requestId),
+      files: getFilesForRequest(requestId),
+    }).catch(() => undefined);
+
     if (role === "frontend_developer") {
-      // Sweep any still-open tasks to in_progress first
       updateTasksByRequestStatus(requestId, "open", "in_progress");
       if (newFiles.length > 0) {
-        // Code produced → ready for review
         updateTasksByRequestStatus(requestId, "in_progress", "review");
       }
     } else if (role === "qa") {
-      // Testing complete → done
       updateTasksByRequestStatus(requestId, "testing", "done");
     } else if (role === "devops") {
-      // Deployment complete → everything done
       updateTasksByRequestStatus(requestId, "testing", "done");
       updateTasksByRequestStatus(requestId, "review", "done");
       updateTasksByRequestStatus(requestId, "in_progress", "done");
@@ -365,14 +413,12 @@ export async function orchestrateStream(
     emitTasksSnapshot();
 
     return result;
-  }
+  };
 
   for (let i = 0; i < plan.phases.length; i++) {
     const phase = plan.phases[i];
     logger.info(`Executing phase ${i + 1}`, { agents: phase });
 
-    // For phases after the first, append code context from earlier phases
-    // so agents like QA and DevOps can see what was built
     let codeContext = "";
     if (i > 0) {
       const generatedFiles = getFilesForRequest(requestId);
@@ -388,40 +434,47 @@ export async function orchestrateStream(
 
     await Promise.all(
       phase.map((role) => {
-        const baseInstructions =
-          plan.agentInstructions[role] ?? userMessage;
-        const qaBranchContext = role === "qa" && frontendBranchForQA
-          ? `\n\nQA BRANCH TARGETING CONTEXT:\n- Frontend feature branch: ${frontendBranchForQA}\n- Frontend PR URL: ${frontendPrUrlForQA ?? "not available"}\n- Create QA branch as qa/<frontend-branch>-tests and open PR against the frontend feature branch.`
-          : "";
-        const instructions = baseInstructions + codeContext + qaBranchContext;
-        return runAgentAndEmit(role, instructions);
+        const baseInstructions = plan.agentInstructions[role] ?? userMessage;
+        const qaBranchContext =
+          role === "qa" && frontendBranchForQA
+            ? `\n\nQA BRANCH TARGETING CONTEXT:\n- Frontend feature branch: ${frontendBranchForQA}\n- Frontend PR URL: ${frontendPrUrlForQA ?? "not available"}\n- Create QA branch as qa/<frontend-branch>-tests and open PR against the frontend feature branch.`
+            : "";
+        return runAgentAndEmit(role, baseInstructions + codeContext + qaBranchContext);
       }),
     );
   }
 
   // Step 3: Save to session
-  appendMessage(sid, {
-    role: "user",
-    content: userMessage,
-    timestamp: Date.now(),
-  });
-  appendMessage(sid, {
+  await appendMessage(sid, { role: "user", content: userMessage, timestamp: Date.now() });
+  await appendMessage(sid, {
     role: "assistant",
     content: JSON.stringify({
       plan: plan.summary,
-      results: agentResults.map((r) => ({
-        agent: r.agent,
-        summary: r.summary,
-      })),
+      results: agentResults.map((r) => ({ agent: r.agent, summary: r.summary })),
     }),
     timestamp: Date.now(),
   });
 
-  logger.info("Orchestration complete", {
-    requestId,
-    agentCount: agentResults.length,
-  });
+  // Mark WorkflowRun as completed with final snapshot
+  if (isDBEnabled()) {
+    try {
+      await connectDB();
+      await WorkflowRunModel.updateOne(
+        { requestId },
+        {
+          $set: {
+            status: "completed",
+            tasks: getTasksForRequestAll(requestId),
+            files: getFilesForRequest(requestId),
+          },
+        },
+      );
+    } catch (err) {
+      logger.warn("Failed to finalize WorkflowRun", { error: String(err) });
+    }
+  }
 
-  // Final event
-  onEvent({ type: "done", requestId });
-}
+  logger.info("Orchestration complete", { requestId, agentCount: agentResults.length });
+
+  emit({ type: "done", requestId });
+};
