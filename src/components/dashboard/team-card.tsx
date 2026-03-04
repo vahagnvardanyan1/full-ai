@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { glassCard, pillBase } from "@/lib/styles";
 import type { ITeam } from "@/lib/dashboard/types";
@@ -11,7 +12,6 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export function TeamCard({ team }: { team: ITeam }) {
-  const highlightedPlan = team.pricing.find((p) => p.highlighted) ?? team.pricing[1];
   const catColor = CATEGORY_COLORS[team.category] ?? "#22c55e";
 
   return (
@@ -63,10 +63,12 @@ export function TeamCard({ team }: { team: ITeam }) {
           <div className="flex -space-x-2">
             {team.agents.slice(0, 5).map((agent, i) => (
               agent.avatar ? (
-                <img
+                <Image
                   key={`${agent.id}-${i}`}
                   src={agent.avatar}
                   alt={agent.name}
+                  width={28}
+                  height={28}
                   className="size-7 rounded-full border-2 border-[var(--glass-bg)] bg-[var(--surface-raised)]"
                   title={agent.name}
                 />

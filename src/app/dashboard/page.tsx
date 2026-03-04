@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { glassCard, textGradientTitle } from "@/lib/styles";
 import { MOCK_AGENTS, MOCK_WORKSPACE, MOCK_STATS } from "@/lib/dashboard/mock-data";
@@ -40,7 +41,7 @@ function AgentMiniCard({ agent }: { agent: typeof MOCK_AGENTS[0] }) {
     <Link href={`/dashboard/agents/${agent.id}`} className="no-underline">
       <div className={cn(glassCard, "p-3.5 flex items-center gap-3 transition-all duration-200 hover:border-[rgba(34,197,94,0.2)] cursor-pointer group")}>
         {agent.avatar ? (
-          <img src={agent.avatar} alt={agent.name} className="size-9 rounded-full shrink-0 bg-[var(--surface-raised)] border border-[var(--surface-border)]" />
+          <Image src={agent.avatar} alt={agent.name} width={36} height={36} className="size-9 rounded-full shrink-0 bg-[var(--surface-raised)] border border-[var(--surface-border)]" />
         ) : (
           <div className="size-9 rounded-full shrink-0 bg-[var(--surface-raised)] border border-[var(--surface-border)] flex items-center justify-center text-[0.75rem] font-bold text-[var(--text-muted)]">
             {agent.name[0]}

@@ -134,8 +134,6 @@ function FileRow({ file }: { file: GeneratedFile }) {
 }
 
 export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPanelProps) {
-  const color = AGENT_COLORS[agent] ?? "#888";
-
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();

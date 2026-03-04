@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export function LandingFooter() {
   return (
     <footer className="landing-footer flex justify-between items-center flex-wrap gap-4 max-w-[960px] mx-auto px-6 pt-16 pb-40 border-t border-[var(--glass-border)]">
@@ -19,18 +21,18 @@ export function LandingFooter() {
         </span>
       </div>
       <div className="landing-footer-links flex gap-6 items-center">
-        <a href="/dashboard" className="text-[0.75rem] text-[var(--text-muted)] no-underline transition-colors duration-150 hover:text-[var(--text)]">
+        <Link href="/dashboard" className="text-[0.75rem] text-[var(--text-muted)] no-underline transition-colors duration-150 hover:text-[var(--text)]">
           Dashboard
-        </a>
-        <a href="/dashboard/agents" className="text-[0.75rem] text-[var(--text-muted)] no-underline transition-colors duration-150 hover:text-[var(--text)]">
+        </Link>
+        <Link href="/dashboard/agents" className="text-[0.75rem] text-[var(--text-muted)] no-underline transition-colors duration-150 hover:text-[var(--text)]">
           Agents
-        </a>
-        <a href="/dashboard/teams" className="text-[0.75rem] text-[var(--text-muted)] no-underline transition-colors duration-150 hover:text-[var(--text)]">
+        </Link>
+        <Link href="/dashboard/teams" className="text-[0.75rem] text-[var(--text-muted)] no-underline transition-colors duration-150 hover:text-[var(--text)]">
           Teams
-        </a>
-        <a href="/dashboard/workspace" className="text-[0.75rem] text-[var(--text-muted)] no-underline transition-colors duration-150 hover:text-[var(--text)]">
+        </Link>
+        <Link href="/dashboard/workspace" className="text-[0.75rem] text-[var(--text-muted)] no-underline transition-colors duration-150 hover:text-[var(--text)]">
           Workspace
-        </a>
+        </Link>
       </div>
     </footer>
   );

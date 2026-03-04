@@ -654,7 +654,7 @@ async function stageSelfReview(ctx: Pick<PipelineContext, "emit" | "openai" | "i
   const p = CONFIG.progress.selfReview;
 
   emit("self_review", "Running LLM self-review...", p.start);
-  let changes = [...allChanges];
+  const changes = [...allChanges];
 
   for (let iteration = 1; iteration <= CONFIG.maxReviewIterations; iteration++) {
     const iterProgress = p.start + Math.round((iteration / CONFIG.maxReviewIterations) * (p.end - p.start));
