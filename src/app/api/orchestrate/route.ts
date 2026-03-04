@@ -15,11 +15,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { orchestrateStream } from "@/lib/orchestrator";
 import { logger } from "@/lib/logger";
+import { runWithDeviceId, getDeviceIdFromCookies } from "@/lib/request-context";
 import type { OrchestrateRequestBody, StreamEvent } from "@/lib/agents/types";
 
 export const maxDuration = 120;
 
 export async function POST(request: NextRequest) {
+  const deviceId = getDeviceIdFromCookies(request.cookies);
+
   let body: OrchestrateRequestBody;
 
   try {
@@ -68,7 +71,11 @@ export async function POST(request: NextRequest) {
       };
 
       try {
-        await orchestrateStream(body.message, body.sessionId, send);
+        // Bind device ID so all downstream store calls (agents → github/jira clients)
+        // resolve the correct per-user integration config.
+        await runWithDeviceId(deviceId, () =>
+          orchestrateStream(body.message, body.sessionId, send),
+        );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         logger.error("Orchestration stream error", { error: message });

@@ -5,29 +5,33 @@
 // health checks or pre-flight calls before long operations.
 // ──────────────────────────────────────────────────────────
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { refreshJiraTokenIfNeeded } from "@/lib/clients/integration-store";
+import { runWithDeviceId, getDeviceIdFromCookies } from "@/lib/request-context";
 
-export async function POST() {
-  try {
-    const config = await refreshJiraTokenIfNeeded();
+export async function POST(request: NextRequest) {
+  const deviceId = getDeviceIdFromCookies(request.cookies);
+  return runWithDeviceId(deviceId, async () => {
+    try {
+      const config = await refreshJiraTokenIfNeeded();
 
-    if (!config) {
+      if (!config) {
+        return NextResponse.json(
+          { refreshed: false, error: "Jira is not connected" },
+          { status: 400 },
+        );
+      }
+
+      return NextResponse.json({
+        refreshed: true,
+        expiresAt: config.expiresAt,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
       return NextResponse.json(
-        { refreshed: false, error: "Jira is not connected" },
-        { status: 400 },
+        { refreshed: false, error: message },
+        { status: 500 },
       );
     }
-
-    return NextResponse.json({
-      refreshed: true,
-      expiresAt: config.expiresAt,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json(
-      { refreshed: false, error: message },
-      { status: 500 },
-    );
-  }
+  });
 }

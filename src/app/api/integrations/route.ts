@@ -17,60 +17,70 @@ import {
   getRuntimeJiraConfig,
   setRuntimeJiraConfig,
 } from "@/lib/clients/integration-store";
+import { runWithDeviceId, getDeviceIdFromCookies } from "@/lib/request-context";
 
-export async function GET() {
-  const status = getIntegrationStatus();
-  return NextResponse.json(status);
+export async function GET(request: NextRequest) {
+  const deviceId = getDeviceIdFromCookies(request.cookies);
+  return runWithDeviceId(deviceId, () => {
+    const status = getIntegrationStatus();
+    return NextResponse.json(status);
+  });
 }
 
 export async function DELETE(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const service = searchParams.get("service");
+  const deviceId = getDeviceIdFromCookies(request.cookies);
+  return runWithDeviceId(deviceId, () => {
+    const { searchParams } = new URL(request.url);
+    const service = searchParams.get("service");
 
-  switch (service) {
-    case "github":
-      disconnectGitHub();
-      break;
-    case "jira":
-      disconnectJira();
-      break;
-    case "vercel":
-      disconnectVercel();
-      break;
-    default:
-      return NextResponse.json({ error: "Invalid service" }, { status: 400 });
-  }
+    switch (service) {
+      case "github":
+        disconnectGitHub();
+        break;
+      case "jira":
+        disconnectJira();
+        break;
+      case "vercel":
+        disconnectVercel();
+        break;
+      default:
+        return NextResponse.json({ error: "Invalid service" }, { status: 400 });
+    }
 
-  return NextResponse.json({ disconnected: service });
+    return NextResponse.json({ disconnected: service });
+  });
 }
 
 export async function PATCH(request: NextRequest) {
-  const body = await request.json();
-  const { service, ...updates } = body;
+  const deviceId = getDeviceIdFromCookies(request.cookies);
+  return runWithDeviceId(deviceId, async () => {
+    const body = await request.json();
+    const { service, ...updates } = body;
 
-  switch (service) {
-    case "github": {
-      const current = getRuntimeGitHubConfig();
-      if (!current) {
-        return NextResponse.json({ error: "GitHub not connected" }, { status: 400 });
+    switch (service) {
+      case "github": {
+        const current = getRuntimeGitHubConfig();
+        if (!current) {
+          return NextResponse.json({ error: "GitHub not connected" }, { status: 400 });
+        }
+        if (updates.owner) current.owner = updates.owner;
+        if (updates.repo) current.repo = updates.repo;
+        setRuntimeGitHubConfig(current);
+        break;
       }
-      if (updates.owner) current.owner = updates.owner;
-      if (updates.repo) current.repo = updates.repo;
-      setRuntimeGitHubConfig(current);
-      break;
-    }
-    case "jira": {
-      const current = getRuntimeJiraConfig();
-      if (!current) {
-        return NextResponse.json({ error: "Jira not connected" }, { status: 400 });
+      case "jira": {
+        const current = getRuntimeJiraConfig();
+        if (!current) {
+          return NextResponse.json({ error: "Jira not connected" }, { status: 400 });
+        }
+        if (updates.projectKey) current.projectKey = updates.projectKey;
+        setRuntimeJiraConfig(current);
+        break;
       }
-      if (updates.projectKey) current.projectKey = updates.projectKey;
-      setRuntimeJiraConfig(current);
-      break;
+      default:
+        return NextResponse.json({ error: "Invalid service" }, { status: 400 });
     }
-    default:
-      return NextResponse.json({ error: "Invalid service" }, { status: 400 });
-  }
 
-  return NextResponse.json({ updated: service });
+    return NextResponse.json({ updated: service });
+  });
 }

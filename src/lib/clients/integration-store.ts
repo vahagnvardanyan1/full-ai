@@ -11,6 +11,7 @@
 // ──────────────────────────────────────────────────────────
 
 import { logger } from "@/lib/logger";
+import { getCurrentDeviceId } from "@/lib/request-context";
 
 // ── Types ───────────────────────────────────────────────
 
@@ -63,14 +64,15 @@ const globalStore = globalThis as unknown as {
   __integrationStore?: Map<string, IntegrationConfig>;
 };
 const store = (globalStore.__integrationStore ??= new Map<string, IntegrationConfig>());
-const DEFAULT_KEY = "default";
 
 function getConfig(): IntegrationConfig {
-  return store.get(DEFAULT_KEY) ?? {};
+  const key = getCurrentDeviceId();
+  return store.get(key) ?? {};
 }
 
 function setConfig(config: IntegrationConfig) {
-  store.set(DEFAULT_KEY, config);
+  const key = getCurrentDeviceId();
+  store.set(key, config);
 }
 
 // ── GitHub disconnect callbacks ──────────────────────────
