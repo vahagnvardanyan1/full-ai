@@ -145,7 +145,7 @@ export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPa
   }, [onClose]);
 
   return (
-    <div className={`${panelBase} absolute top-2.5 left-1/2 -translate-x-1/2 w-[min(560px,calc(100%-2rem))] max-h-[50vh] rounded-2xl flex flex-col z-[55] animate-panel-slide-down overflow-y-auto shadow-[0_8px_32px_rgba(0,0,0,0.12)]`}>
+    <div className={`${panelBase} absolute top-2.5 left-1/2 w-[min(560px,calc(100%-2rem))] max-h-[50vh] rounded-2xl flex flex-col z-[55] overflow-y-auto shadow-[0_8px_32px_rgba(0,0,0,0.12)]`} style={{ animation: "panel-slide-down 0.25s ease-out forwards" }}>
       {/* Header */}
       <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[var(--panel-border)] sticky top-0 bg-[var(--panel-bg)] backdrop-blur-[12px] rounded-t-2xl z-2">
         <AgentAvatar role={agent} size={48} status="done" />
