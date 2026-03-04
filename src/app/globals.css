@@ -1,0 +1,255 @@
+/* ── Theme System ─────────────────────────────────────── */
+
+:root {
+  --radius: 8px;
+  --radius-lg: 12px;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --agent-pm: #a78bfa;
+  --agent-dev: #34d399;
+  --agent-qa: #eab308;
+  --agent-devops: #f97316;
+  --agent-orchestrator: #0ea5e9;
+}
+
+/* ── Dark Theme ──────────────────────────────────────── */
+
+[data-theme="dark"] {
+  --bg: #0a0a0a;
+  --bg-secondary: #0f0f0f;
+  --bg-tertiary: #141414;
+  --border: #1c1c1c;
+  --border-focus: #2a2a2a;
+  --text: #e0e4ed;
+  --text-muted: #586578;
+  --accent: #0ea5e9;
+  --accent-hover: #0284c7;
+  --accent-glow: rgba(14, 165, 233, 0.25);
+
+  --glass-bg: rgba(0, 0, 0, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-blur: 16px;
+
+  --panel-bg: rgba(0, 0, 0, 0.94);
+  --panel-border: rgba(255, 255, 255, 0.06);
+  --surface-hover: rgba(255, 255, 255, 0.04);
+  --surface-raised: rgba(255, 255, 255, 0.025);
+  --surface-border: rgba(255, 255, 255, 0.05);
+  --code-bg: rgba(0, 0, 0, 0.35);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --idle-border: rgba(255, 255, 255, 0.07);
+  --summary-dim: rgba(255, 255, 255, 0.5);
+  --trellis-opacity: 0.035;
+  --node-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  --gradient-title-from: #e0e4ed;
+  --gradient-title-to: #586578;
+  --topbar-bg: rgba(0, 0, 0, 0.88);
+
+  /* React Flow */
+  --rf-dot-color: rgba(255, 255, 255, 0.03);
+  --rf-edge-idle: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Light Theme ─────────────────────────────────────── */
+
+[data-theme="light"] {
+  --bg: #f4f1ec;
+  --bg-secondary: #eae7e0;
+  --bg-tertiary: #dfdcd4;
+  --border: #ccc8be;
+  --border-focus: #aaa69c;
+  --text: #1a1d24;
+  --text-muted: #6b6f78;
+  --accent: #0284c7;
+  --accent-hover: #0369a1;
+  --accent-glow: rgba(2, 132, 199, 0.2);
+
+  --glass-bg: rgba(244, 241, 236, 0.78);
+  --glass-border: rgba(0, 0, 0, 0.07);
+  --glass-blur: 16px;
+
+  --panel-bg: rgba(244, 241, 236, 0.96);
+  --panel-border: rgba(0, 0, 0, 0.08);
+  --surface-hover: rgba(0, 0, 0, 0.035);
+  --surface-raised: rgba(0, 0, 0, 0.025);
+  --surface-border: rgba(0, 0, 0, 0.06);
+  --code-bg: rgba(0, 0, 0, 0.04);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --idle-border: rgba(0, 0, 0, 0.1);
+  --summary-dim: rgba(0, 0, 0, 0.5);
+  --trellis-opacity: 0.055;
+  --node-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --gradient-title-from: #1a1d24;
+  --gradient-title-to: #6b6f78;
+  --topbar-bg: rgba(244, 241, 236, 0.9);
+
+  --rf-dot-color: rgba(0, 0, 0, 0.04);
+  --rf-edge-idle: rgba(0, 0, 0, 0.08);
+}
+
+/* ── Base Reset ──────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+  color-scheme: dark light;
+}
+
+body {
+  height: 100%;
+  font-family: var(--font-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.35s ease, color 0.25s ease;
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Typography ──────────────────────────────────────── */
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display, var(--font-body, sans-serif));
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+code, pre {
+  font-family: var(--font-mono, "SF Mono", "Fira Code", Menlo, monospace);
+  font-size: 0.85rem;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+/* ── Keyframes ──────────────────────────────────────── */
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px 2px var(--glow-color, var(--accent-glow)); }
+  50% { box-shadow: 0 0 20px 6px var(--glow-color, var(--accent-glow)); }
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-6px); }
+}
+
+@keyframes panel-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes hero-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes orbit-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes theme-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes push-celebrate {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  40% { transform: scale(1.08); box-shadow: 0 0 24px 8px rgba(34, 197, 94, 0.3); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+@keyframes github-push-overlay {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; pointer-events: none; }
+}
+
+@keyframes github-push-icon {
+  0% { opacity: 0; transform: scale(0.5) translateY(6px); }
+  50% { opacity: 1; transform: scale(1.15) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── React Flow Overrides ────────────────────────────── */
+
+.react-flow__edge-path {
+  stroke: var(--border) !important;
+  stroke-width: 2px;
+}
+
+.react-flow__edge.animated .react-flow__edge-path {
+  stroke-dasharray: 6;
+  animation: react-flow-dash 0.6s linear infinite;
+}
+
+@keyframes react-flow-dash {
+  to { stroke-dashoffset: -12; }
+}
+
+.react-flow__attribution {
+  display: none !important;
+}
+
+/* ── Scrollbar ───────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-hover);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--surface-border);
+}
