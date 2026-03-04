@@ -306,3 +306,193 @@ pre {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--surface-border);
 }
+
+/* ── Landing Page Responsive ─────────────────────────── */
+
+/* Tablet */
+@media (max-width: 768px) {
+  .landing-hero {
+    padding-top: 5rem !important;
+    padding-bottom: 2rem !important;
+    min-height: auto !important;
+  }
+
+  .landing-hero .landing-scroll-cue {
+    display: none !important;
+  }
+
+  .landing-viz-wrapper {
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+  }
+
+  .landing-viz-wrapper .landing-activity-feed {
+    width: 100% !important;
+  }
+
+  .landing-viz-graph {
+    height: 320px !important;
+  }
+
+  .landing-ai-section {
+    padding: 3rem 1rem !important;
+  }
+
+  .landing-ai-layout {
+    flex-direction: column !important;
+    gap: 2rem !important;
+  }
+
+  .landing-orbit {
+    transform: scale(0.85);
+    transform-origin: center;
+  }
+
+  .landing-ticker {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .landing-features-section {
+    padding: 3rem 1rem !important;
+    gap: 3rem !important;
+  }
+
+  .landing-features-header {
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+  }
+
+  .landing-feature-row {
+    gap: 2rem !important;
+  }
+
+  .landing-pipeline-flow {
+    transform: scale(0.65) !important;
+    margin-bottom: -120px !important;
+    margin-right: -245px !important;
+  }
+
+  .landing-bottom-cta {
+    white-space: normal !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .landing-hero {
+    padding-top: 4rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Hero CTA buttons smaller on mobile */
+  .landing-hero .landing-cta-row {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    align-items: stretch !important;
+  }
+
+  .landing-hero .landing-cta-row a {
+    padding: 0.6rem 1.25rem !important;
+    font-size: 0.82rem !important;
+    justify-content: center !important;
+    border-radius: 10px !important;
+  }
+
+  .landing-nav {
+    padding: 0.4rem 0.5rem 0.4rem 0.85rem !important;
+  }
+
+  .landing-nav .landing-nav-title {
+    font-size: 0.78rem !important;
+  }
+
+  .landing-viz-wrapper {
+    gap: 0.5rem !important;
+  }
+
+  .landing-viz-graph {
+    height: 240px !important;
+  }
+
+  .landing-activity-feed {
+    width: 100% !important;
+    padding: 1rem !important;
+  }
+
+  .landing-taskbar {
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    gap: 0.5rem !important;
+  }
+
+  .landing-integration-strip .landing-strip-card {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .landing-orbit {
+    transform: scale(0.65);
+  }
+
+  .landing-ai-section {
+    padding: 2rem 1rem !important;
+  }
+
+  .landing-stats-row {
+    gap: 1.5rem !important;
+  }
+
+  .landing-features-section {
+    padding: 2rem 1rem !important;
+    gap: 2.5rem !important;
+  }
+
+  .landing-feature-row {
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+  }
+
+  .landing-feature-text {
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+
+  .landing-feature-visual {
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+
+  .landing-features-header {
+    gap: 1rem !important;
+  }
+
+  .landing-pipeline-flow {
+    transform: scale(0.5) !important;
+    margin-bottom: -170px !important;
+    margin-right: -350px !important;
+  }
+
+  /* Bottom CTA: hide text, just show button on mobile */
+  .landing-bottom-cta {
+    gap: 0 !important;
+    padding: 0.35rem !important;
+  }
+
+  .landing-bottom-cta .landing-bottom-cta-text {
+    display: none !important;
+  }
+
+  .landing-footer {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 1.25rem !important;
+  }
+
+  .landing-footer-links {
+    gap: 1rem !important;
+  }
+}

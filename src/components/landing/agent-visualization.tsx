@@ -184,27 +184,27 @@ function ActivityFeed() {
   }, []);
 
   const feed: CSSProperties = {
-    width: 260,
+    width: 340,
     flexShrink: 0,
-    borderRadius: 14,
+    borderRadius: 18,
     border: "1px solid var(--glass-border)",
     background: "var(--glass-bg)",
     backdropFilter: "blur(12px)",
     WebkitBackdropFilter: "blur(12px)",
-    padding: "1rem",
+    padding: "1.25rem 1.5rem",
     animation: "landing-fade-up 0.6s ease-out 0.5s both",
   };
 
   return (
-    <div style={feed}>
+    <div className="landing-activity-feed" style={feed}>
       <div style={{
-        fontSize: "0.65rem",
+        fontSize: "0.75rem",
         fontWeight: 700,
         color: "var(--text-muted)",
         textTransform: "uppercase",
         letterSpacing: "0.1em",
-        marginBottom: "0.75rem",
-        paddingBottom: "0.5rem",
+        marginBottom: "1rem",
+        paddingBottom: "0.65rem",
         borderBottom: "1px solid var(--glass-border)",
       }}>
         Activity
@@ -215,16 +215,16 @@ function ActivityFeed() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "0.6rem",
-            padding: "0.55rem 0",
+            gap: "0.85rem",
+            padding: "0.75rem 0",
             borderBottom: i < ACTIVITY_ITEMS.length - 1 ? "1px solid var(--glass-border)" : "none",
             animation: "landing-fade-up 0.3s ease-out both",
           }}
         >
           <div style={{
-            width: 30,
-            height: 30,
-            borderRadius: 8,
+            width: 40,
+            height: 40,
+            borderRadius: 10,
             background: `${item.color}12`,
             border: `1px solid ${item.color}25`,
             display: "flex",
@@ -232,14 +232,14 @@ function ActivityFeed() {
             justifyContent: "center",
             flexShrink: 0,
           }}>
-            {item.icon === "clipboard" && <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={item.color} strokeWidth="2" strokeLinecap="round"><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></svg>}
-            {item.icon === "code" && <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={item.color} strokeWidth="2" strokeLinecap="round"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>}
-            {item.icon === "check" && <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={item.color} strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>}
-            {item.icon === "rocket" && <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={item.color} strokeWidth="2" strokeLinecap="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" /><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" /></svg>}
+            {item.icon === "clipboard" && <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={item.color} strokeWidth="2" strokeLinecap="round"><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></svg>}
+            {item.icon === "code" && <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={item.color} strokeWidth="2" strokeLinecap="round"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>}
+            {item.icon === "check" && <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={item.color} strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>}
+            {item.icon === "rocket" && <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={item.color} strokeWidth="2" strokeLinecap="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" /><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" /></svg>}
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: "0.72rem", fontWeight: 500, color: "var(--text)", lineHeight: 1.3 }}>{item.text}</div>
-            <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", marginTop: 1 }}>Just now</div>
+            <div style={{ fontSize: "0.88rem", fontWeight: 500, color: "var(--text)", lineHeight: 1.35 }}>{item.text}</div>
+            <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: 2 }}>Just now</div>
           </div>
         </div>
       ))}
@@ -325,14 +325,14 @@ function AgentGraph() {
       onNodesChange={onNodesChange}
       nodeTypes={nodeTypes}
       fitView
-      fitViewOptions={{ padding: 0.3 }}
+      fitViewOptions={{ padding: 0.45 }}
       proOptions={{ hideAttribution: true }}
       panOnDrag
       zoomOnScroll={false}
       zoomOnPinch={false}
       zoomOnDoubleClick={false}
       preventScrolling={false}
-      minZoom={0.8}
+      minZoom={0.4}
       maxZoom={1.2}
       style={{ width: "100%", height: "100%", background: "transparent" }}
     >
@@ -361,14 +361,14 @@ const vizWrapper: CSSProperties = {
 export function AgentVisualization() {
   return (
     <section style={section}>
-      <div style={vizWrapper}>
-        <div style={{ flex: "1 1 600px", borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-          <div style={{ width: "100%", height: 480 }}>
+      <div className="landing-viz-wrapper" style={vizWrapper}>
+        <div style={{ flex: "1 1 auto", minWidth: 0, borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <div className="landing-viz-graph" style={{ width: "100%", height: 480 }}>
             <ReactFlowProvider>
               <AgentGraph />
             </ReactFlowProvider>
           </div>
-          <TaskBar />
+          <div className="landing-taskbar"><TaskBar /></div>
         </div>
         <ActivityFeed />
       </div>

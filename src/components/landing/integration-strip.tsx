@@ -62,7 +62,7 @@ const card: CSSProperties = {
 
 function ToolIcon({ tool }: { tool: Tool }) {
   return (
-    <div style={card}>
+    <div className="landing-strip-card" style={card}>
       <div style={{ color: tool.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {tool.icon}
       </div>
@@ -75,7 +75,7 @@ export function IntegrationStrip() {
   const tripled2 = [...TOOLS_ROW_2, ...TOOLS_ROW_2, ...TOOLS_ROW_2];
 
   return (
-    <section style={section}>
+    <section className="landing-integration-strip" style={section}>
       <p style={sectionLabel}>Connects to everything you use</p>
 
       {/* Fade masks */}

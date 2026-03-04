@@ -70,8 +70,8 @@ function FeatureRow({
   };
 
   return (
-    <div style={rowStyle}>
-      <div style={textCol}>
+    <div className="landing-feature-row" style={rowStyle}>
+      <div className="landing-feature-text" style={textCol}>
         <p style={{ ...sectionLabel, textAlign: "left" }}>{label}</p>
         <h3 style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--text)", letterSpacing: "-0.02em", marginBottom: "0.75rem" }}>
           {title}
@@ -80,7 +80,7 @@ function FeatureRow({
           {description}
         </p>
       </div>
-      <div style={vizCol}>{visual}</div>
+      <div className="landing-feature-visual" style={vizCol}>{visual}</div>
     </div>
   );
 }
@@ -437,7 +437,7 @@ function DecorativePipelineFlow() {
   });
 
   return (
-    <div style={{
+    <div className="landing-pipeline-flow" style={{
       position: "relative",
       width: 700,
       height: 340,
@@ -511,15 +511,15 @@ function DecorativePipelineFlow() {
 
 export function FeaturesSection() {
   return (
-    <section id="how-it-works" style={section}>
+    <section id="how-it-works" className="landing-features-section" style={section}>
       {/* Header with decorative flow */}
-      <div style={{ display: "flex", alignItems: "center", gap: "3.5rem", maxWidth: 960, width: "100%", flexWrap: "wrap" }}>
-        <div style={{ flex: "1 1 400px", minWidth: 340, overflow: "hidden" }}>
+      <div className="landing-features-header" style={{ display: "flex", alignItems: "center", gap: "3.5rem", maxWidth: 960, width: "100%", flexWrap: "wrap" }}>
+        <div className="landing-feature-visual" style={{ flex: "1 1 400px", minWidth: 340, overflow: "hidden" }}>
           <DecorativePipelineFlow />
         </div>
-        <div style={{ flex: "1 1 300px", minWidth: 260 }}>
+        <div className="landing-feature-text" style={{ flex: "1 1 300px", minWidth: 260 }}>
           <p style={{ ...sectionLabel, textAlign: "left" }}>How it works</p>
-          <h2 style={{ ...sectionTitle, textAlign: "left", marginBottom: "0.75rem" }}>Agents that actually ship</h2>
+          <h2 style={{ ...sectionTitle, textAlign: "left", marginBottom: "0.75rem" }}>Agents actually ship</h2>
           <p style={{ fontSize: "0.92rem", color: "var(--text-muted)", lineHeight: 1.7, maxWidth: 360 }}>
             A structured pipeline where each agent completes its phase before handing off — from planning to deployment, fully automated.
           </p>

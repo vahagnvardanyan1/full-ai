@@ -42,7 +42,7 @@ const linkStyle: CSSProperties = {
 
 export function LandingFooter() {
   return (
-    <footer style={footer}>
+    <footer className="landing-footer" style={footer}>
       <div style={logoRow}>
         <svg width={16} height={16} viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="3" stroke="var(--accent)" strokeWidth="1.8" />
@@ -56,7 +56,7 @@ export function LandingFooter() {
           &copy; {new Date().getFullYear()}
         </span>
       </div>
-      <div style={links}>
+      <div className="landing-footer-links" style={links}>
         <a
           href="/app"
           style={linkStyle}

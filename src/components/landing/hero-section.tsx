@@ -65,7 +65,7 @@ const primaryBtn: CSSProperties = {
   padding: "0.75rem 1.75rem",
   borderRadius: 10,
   border: "none",
-  background: "#22c55e",
+  background: "linear-gradient(135deg, #22c55e, #16a34a)",
   color: "#fff",
   fontSize: "0.9rem",
   fontWeight: 600,
@@ -73,6 +73,7 @@ const primaryBtn: CSSProperties = {
   cursor: "pointer",
   transition: "all 0.2s ease",
   textDecoration: "none",
+  boxShadow: "0 2px 16px rgba(34,197,94,0.3)",
 };
 
 const secondaryBtn: CSSProperties = {
@@ -108,7 +109,7 @@ const scrollCue: CSSProperties = {
 
 export function HeroSection() {
   return (
-    <section style={section}>
+    <section className="landing-hero" style={section}>
       {/* Ambient glow */}
       <div
         style={{
@@ -139,17 +140,17 @@ export function HeroSection() {
         Your AI-powered dev team that plans, builds, tests, and deploys — all orchestrated from a single command.
       </p>
 
-      <div style={ctaRow}>
+      <div className="landing-cta-row" style={ctaRow}>
         <a
           href="/app"
           style={primaryBtn}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#16a34a";
-            e.currentTarget.style.boxShadow = "0 0 32px rgba(34,197,94,0.3)";
+            e.currentTarget.style.background = "linear-gradient(135deg, #16a34a, #15803d)";
+            e.currentTarget.style.boxShadow = "0 0 32px rgba(34,197,94,0.4)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = "#22c55e";
-            e.currentTarget.style.boxShadow = "none";
+            e.currentTarget.style.background = "linear-gradient(135deg, #22c55e, #16a34a)";
+            e.currentTarget.style.boxShadow = "0 2px 16px rgba(34,197,94,0.3)";
           }}
         >
           Launch Orchestrator
@@ -174,7 +175,7 @@ export function HeroSection() {
         </a>
       </div>
 
-      <div style={scrollCue}>
+      <div className="landing-scroll-cue" style={scrollCue}>
         <span>Scroll to explore</span>
         <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <line x1="12" y1="5" x2="12" y2="19" />

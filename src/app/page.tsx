@@ -12,7 +12,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 function BottomCTA({ visible }: { visible: boolean }) {
   return (
     <div
-      className="landing-nav"
+      className="landing-nav landing-bottom-cta"
       style={{
         position: "fixed",
         bottom: visible ? 16 : -80,
@@ -33,7 +33,7 @@ function BottomCTA({ visible }: { visible: boolean }) {
         whiteSpace: "nowrap" as const,
       }}
     >
-      <span style={{ fontSize: "0.8rem", fontWeight: 500, color: "var(--text-muted)" }}>
+      <span className="landing-bottom-cta-text" style={{ fontSize: "0.8rem", fontWeight: 500, color: "var(--text-muted)" }}>
         Ready to ship faster?
       </span>
       <a
@@ -44,7 +44,7 @@ function BottomCTA({ visible }: { visible: boolean }) {
           gap: "0.4rem",
           padding: "0.45rem 1.15rem",
           borderRadius: 50,
-          background: "#22c55e",
+          background: "linear-gradient(135deg, #22c55e, #16a34a)",
           color: "#fff",
           fontSize: "0.78rem",
           fontWeight: 600,
@@ -53,11 +53,11 @@ function BottomCTA({ visible }: { visible: boolean }) {
           boxShadow: "0 2px 12px rgba(34,197,94,0.3)",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = "#16a34a";
+          e.currentTarget.style.background = "linear-gradient(135deg, #16a34a, #15803d)";
           e.currentTarget.style.boxShadow = "0 2px 20px rgba(34,197,94,0.5)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = "#22c55e";
+          e.currentTarget.style.background = "linear-gradient(135deg, #22c55e, #16a34a)";
           e.currentTarget.style.boxShadow = "0 2px 12px rgba(34,197,94,0.3)";
         }}
       >
@@ -134,6 +134,7 @@ export default function LandingPage() {
           >
             AI Team
           </span>
+          {/* className applied via parent nav.landing-nav */}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <ThemeToggle />
@@ -142,7 +143,7 @@ export default function LandingPage() {
             style={{
               padding: "0.45rem 1.15rem",
               borderRadius: 50,
-              background: "#22c55e",
+              background: "linear-gradient(135deg, #22c55e, #16a34a)",
               color: "#fff",
               fontSize: "0.78rem",
               fontWeight: 600,
@@ -151,11 +152,11 @@ export default function LandingPage() {
               boxShadow: "0 2px 12px rgba(34,197,94,0.3)",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#16a34a";
+              e.currentTarget.style.background = "linear-gradient(135deg, #16a34a, #15803d)";
               e.currentTarget.style.boxShadow = "0 2px 20px rgba(34,197,94,0.5)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#22c55e";
+              e.currentTarget.style.background = "linear-gradient(135deg, #22c55e, #16a34a)";
               e.currentTarget.style.boxShadow = "0 2px 12px rgba(34,197,94,0.3)";
             }}
           >

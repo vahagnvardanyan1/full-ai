@@ -141,6 +141,7 @@ function OrbitingProviders() {
   return (
     <div
       ref={containerRef}
+      className="landing-orbit"
       style={{
         position: "relative",
         width: ORBIT_SIZE,
@@ -329,6 +330,7 @@ function RoutingTicker() {
   return (
     <div
       ref={containerRef}
+      className="landing-ticker"
       style={{
         flex: 1,
         minWidth: 340,
@@ -510,6 +512,7 @@ function StatsRow() {
 
   return (
     <div
+      className="landing-stats-row"
       style={{
         display: "flex",
         gap: "2rem",
@@ -588,7 +591,7 @@ const sectionSubtitle: CSSProperties = {
 
 export function AiProviders() {
   return (
-    <section style={section}>
+    <section className="landing-ai-section" style={section}>
       <p style={sectionLabel}>Intelligent model routing</p>
       <h2 style={sectionTitle}>The right model, every time</h2>
       <p style={sectionSubtitle}>
@@ -597,6 +600,7 @@ export function AiProviders() {
       </p>
 
       <div
+        className="landing-ai-layout"
         style={{
           display: "flex",
           gap: "2.5rem",
