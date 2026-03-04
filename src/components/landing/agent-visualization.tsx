@@ -351,7 +351,6 @@ const section: CSSProperties = {
 
 const vizWrapper: CSSProperties = {
   position: "relative",
-  width: "100%",
   maxWidth: 960,
   display: "flex",
   gap: "2rem",
@@ -360,7 +359,7 @@ const vizWrapper: CSSProperties = {
 
 export function AgentVisualization() {
   return (
-    <section style={section}>
+    <section className="landing-viz-section" style={section}>
       <div className="landing-viz-wrapper" style={vizWrapper}>
         <div style={{ flex: "1 1 auto", minWidth: 0, borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <div className="landing-viz-graph" style={{ width: "100%", height: 480 }}>
