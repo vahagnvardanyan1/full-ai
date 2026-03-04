@@ -126,7 +126,7 @@ function ErrorBanner({ message, onRetry, onDismiss }: { message: string; onRetry
   const { title, hint } = classifyError(message);
 
   return (
-    <div className="mx-5 mb-2 px-3.5 py-[0.65rem] rounded-[10px] bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.18)] flex items-start gap-[0.6rem] animate-slide-in">
+    <div className="mx-2 sm:mx-5 mb-2 px-3 sm:px-3.5 py-[0.65rem] rounded-[10px] bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.18)] flex items-start gap-[0.6rem] animate-slide-in">
       <div className="size-7 rounded-full bg-[rgba(239,68,68,0.12)] flex items-center justify-center shrink-0 mt-px">
         <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="1.8" />
@@ -323,21 +323,21 @@ export default function WorkspaceTeamPage({
     <div className={cn("w-full h-[calc(100vh)] flex flex-col overflow-hidden")}>
       {/* ── Top bar ──────────────────────────────────── */}
       {hasPipeline && (
-        <div className="absolute top-3.5 left-1/2 -translate-x-1/2 z-20" style={{ width: "min(720px, calc(100% - 32px))" }}>
+        <div className="absolute top-3.5 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-[720px]">
           <nav
-            className="landing-nav flex items-center gap-3 py-[0.55rem] pl-5 pr-[0.6rem] rounded-full border border-[rgba(255,255,255,0.1)] shadow-[0_4px_30px_rgba(0,0,0,0.25),0_0_0_0.5px_rgba(255,255,255,0.05)_inset]"
+            className="flex items-center gap-2 sm:gap-3 py-[0.55rem] pl-3 sm:pl-5 pr-[0.5rem] rounded-full border border-[rgba(255,255,255,0.1)] shadow-[0_4px_30px_rgba(0,0,0,0.25),0_0_0_0.5px_rgba(255,255,255,0.05)_inset]"
             style={{
               background: "rgba(10, 10, 10, 0.75)",
               backdropFilter: "blur(20px) saturate(1.4)",
               WebkitBackdropFilter: "blur(20px) saturate(1.4)",
             }}
           >
-            <span className="text-[0.72rem] text-[var(--text-muted)] flex-1 overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
+            <span className="text-[0.68rem] sm:text-[0.72rem] text-[var(--text-muted)] flex-1 overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
               {latestEntry?.plan ?? "Planning..."}
             </span>
             <button
               className={cn(
-                "px-[0.65rem] py-[0.3rem] rounded-full border text-[0.73rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.3rem] shrink-0",
+                "px-[0.55rem] sm:px-[0.65rem] py-[0.3rem] rounded-full border text-[0.68rem] sm:text-[0.73rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.3rem] shrink-0",
                 showKanban
                   ? "bg-[rgba(34,197,94,0.1)] text-[#22c55e] border-[#22c55e80]"
                   : "bg-[rgba(255,255,255,0.04)] text-[var(--text-muted)] border-[rgba(255,255,255,0.08)]"
@@ -349,7 +349,7 @@ export default function WorkspaceTeamPage({
                 <rect x="6" y="2" width="4" height="8" rx="1" stroke="currentColor" strokeWidth="1.2" />
                 <rect x="11" y="2" width="4" height="10" rx="1" stroke="currentColor" strokeWidth="1.2" />
               </svg>
-              Tasks{allTasks.length > 0 ? ` (${allTasks.length})` : ""}
+              <span className="hidden sm:inline">Tasks</span>{allTasks.length > 0 ? ` (${allTasks.length})` : ""}
             </button>
           </nav>
         </div>
@@ -361,10 +361,10 @@ export default function WorkspaceTeamPage({
         {showOrchestrator && (
           <div className="absolute inset-0 flex flex-col landing-dot-grid">
             {/* Centered orchestrator */}
-            <div className="flex-1 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-4">
+            <div className="flex-1 flex items-center justify-center px-4">
+              <div className="flex flex-col items-center gap-3 sm:gap-4">
                 <div
-                  className="size-20 rounded-full flex items-center justify-center"
+                  className="size-16 sm:size-20 rounded-full flex items-center justify-center"
                   style={{
                     background: isWaitingForPlan ? "rgba(96, 165, 250, 0.12)" : "rgba(96, 165, 250, 0.08)",
                     border: `1.5px solid rgba(96, 165, 250, ${isWaitingForPlan ? "0.5" : "0.3"})`,
@@ -374,29 +374,28 @@ export default function WorkspaceTeamPage({
                     "--glow-color": "rgba(96, 165, 250, 0.3)",
                   }}
                 >
-                  <AgentAvatar role="orchestrator" size={56} status={isWaitingForPlan ? "working" : "idle"} />
+                  <AgentAvatar role="orchestrator" size={44} status={isWaitingForPlan ? "working" : "idle"} />
                 </div>
                 <div className="text-center">
-                  <div className="text-[0.95rem] font-semibold text-[var(--text)]">Orchestrator</div>
-                  <div className="text-[0.75rem] text-[var(--text-muted)] mt-1">
+                  <div className="text-[0.88rem] sm:text-[0.95rem] font-semibold text-[var(--text)]">Orchestrator</div>
+                  <div className="text-[0.7rem] sm:text-[0.75rem] text-[var(--text-muted)] mt-1">
                     {isWaitingForPlan ? "Planning the pipeline..." : "Describe a task to start the pipeline"}
                   </div>
                 </div>
               </div>
             </div>
             {/* Bottom input bar */}
-            <div className="px-4 pb-4 flex justify-center">
+            <div className="px-2 sm:px-4 pb-3 sm:pb-4 flex justify-center">
               <div
-                className="flex items-center gap-3 px-4 py-2 border border-[var(--glass-border)] rounded-[14px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] z-[90]"
-                style={{ width: "min(720px, 100%)" }}
+                className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 border border-[var(--glass-border)] rounded-[14px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] z-[90] w-full max-w-[720px]"
               >
-                <span className="text-[0.65rem] text-[var(--text-muted)] whitespace-nowrap shrink-0">
+                <span className="text-[0.6rem] sm:text-[0.65rem] text-[var(--text-muted)] whitespace-nowrap shrink-0">
                   {isWaitingForPlan ? "Working..." : "Ready"}
                 </span>
                 <div className="flex-1 min-w-0">
                   <ChatInput onSubmit={handleSubmit} disabled={isLoading} loading={isLoading} compact />
                 </div>
-                <span className="text-[0.6rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60">
+                <span className="text-[0.6rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60 hidden sm:inline">
                   {"\u2318"} Enter
                 </span>
               </div>
@@ -439,10 +438,9 @@ export default function WorkspaceTeamPage({
         {/* Bottom bar */}
         {hasPipeline && (
           <div
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-2 border border-[var(--glass-border)] rounded-[14px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] z-[90]"
-            style={{ width: "min(720px, calc(100% - 2rem))" }}
+            className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 border border-[var(--glass-border)] rounded-[14px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] z-[90] w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-[720px]"
           >
-            <span className="text-[0.65rem] text-[var(--text-muted)] whitespace-nowrap shrink-0">
+            <span className="text-[0.6rem] sm:text-[0.65rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 hidden sm:inline">
               {isLoading
                 ? `Working... (${latestEntry?.workingAgents.map((a) => a.split("_").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ")).join(", ") || "planning"})`
                 : latestEntry?.done
@@ -452,7 +450,7 @@ export default function WorkspaceTeamPage({
             <div className="flex-1 min-w-0">
               <ChatInput onSubmit={handleSubmit} disabled={isLoading} loading={isLoading} compact />
             </div>
-            <span className="text-[0.6rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60">
+            <span className="text-[0.6rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60 hidden sm:inline">
               {"\u2318"} Enter
             </span>
           </div>
@@ -470,7 +468,7 @@ export default function WorkspaceTeamPage({
 
       {/* Toasts */}
       {toasts.length > 0 && (
-        <div className="fixed bottom-4 left-4 flex flex-col-reverse gap-[0.4rem] z-[100] pointer-events-none">
+        <div className="fixed bottom-16 sm:bottom-4 left-2 sm:left-4 flex flex-col-reverse gap-[0.4rem] z-[100] pointer-events-none">
           {toasts.map((t) => (
             <AgentToast
               key={t.id}
