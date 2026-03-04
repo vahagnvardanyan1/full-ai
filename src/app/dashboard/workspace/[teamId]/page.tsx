@@ -527,18 +527,6 @@ export default function WorkspaceTeamPage({
           <KanbanBoard tasks={allTasks} onClose={() => setShowKanban(false)} />
         )}
 
-        {/* Detail panel */}
-        {selectedOutput && selectedAgent && (
-          <DetailPanel
-            key={selectedAgent}
-            agent={selectedAgent}
-            response={selectedOutput.response}
-            tasks={selectedOutput.tasks}
-            files={selectedOutput.files}
-            onClose={() => setSelectedAgent(null)}
-          />
-        )}
-
         {/* Bottom bar */}
         {hasPipeline && (
           <div
@@ -560,6 +548,18 @@ export default function WorkspaceTeamPage({
           </div>
         )}
       </div>
+
+      {/* Detail panel — outside overflow-hidden main area for proper centering */}
+      {selectedOutput && selectedAgent && (
+        <DetailPanel
+          key={selectedAgent}
+          agent={selectedAgent}
+          response={selectedOutput.response}
+          tasks={selectedOutput.tasks}
+          files={selectedOutput.files}
+          onClose={() => setSelectedAgent(null)}
+        />
+      )}
 
       {/* Error */}
       {latestEntry?.error && !dismissedErrors.has(latestEntry.id) && (
