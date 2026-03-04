@@ -550,7 +550,7 @@ function StatsRow() {
 /* ── Section styles ─────────────────────────────────── */
 
 const section: CSSProperties = {
-  padding: "3rem 1.5rem",
+  padding: "5rem 1.5rem",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",

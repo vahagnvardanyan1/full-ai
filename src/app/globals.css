@@ -230,6 +230,12 @@ pre {
   background-image: radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px);
 }
 
+[data-theme="light"] .landing-nav {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04) inset !important;
+}
+
 /* ── Landing Page Animations ─────────────────────────── */
 
 @keyframes landing-fade-up {

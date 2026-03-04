@@ -3,7 +3,7 @@
 import { CSSProperties } from "react";
 
 const footer: CSSProperties = {
-  padding: "3rem 1.5rem 2rem",
+  padding: "4rem 1.5rem 10rem",
   borderTop: "1px solid var(--glass-border)",
   display: "flex",
   justifyContent: "space-between",

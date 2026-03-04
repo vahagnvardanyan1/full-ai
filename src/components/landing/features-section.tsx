@@ -7,11 +7,11 @@ const PICSART_CDN = "https://cdn-cms-uploads.picsart.com/cms-uploads";
 /* ── Section wrapper ─────────────────────────────────── */
 
 const section: CSSProperties = {
-  padding: "3rem 1.5rem",
+  padding: "5rem 1.5rem",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: "3rem",
+  gap: "5rem",
 };
 
 const sectionLabel: CSSProperties = {
@@ -52,7 +52,7 @@ function FeatureRow({
   const rowStyle: CSSProperties = {
     display: "flex",
     alignItems: "center",
-    gap: "3rem",
+    gap: "4rem",
     maxWidth: 960,
     width: "100%",
     flexDirection: reversed ? "row-reverse" : "row",
@@ -442,10 +442,10 @@ function DecorativePipelineFlow() {
       width: 700,
       height: 340,
       borderRadius: 16,
-      transform: "scale(0.82)",
+      transform: "scale(0.75)",
       transformOrigin: "top left",
-      marginBottom: -60,
-      marginRight: -126,
+      marginBottom: -85,
+      marginRight: -175,
     }}>
       {/* Orchestrator node (small) */}
       <div style={{ position: "absolute", left: 0, top: 145 }}>
@@ -513,16 +513,16 @@ export function FeaturesSection() {
   return (
     <section id="how-it-works" style={section}>
       {/* Header with decorative flow */}
-      <div style={{ display: "flex", alignItems: "center", gap: "3rem", maxWidth: 960, width: "100%", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "3.5rem", maxWidth: 960, width: "100%", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 400px", minWidth: 340, overflow: "hidden" }}>
+          <DecorativePipelineFlow />
+        </div>
         <div style={{ flex: "1 1 300px", minWidth: 260 }}>
           <p style={{ ...sectionLabel, textAlign: "left" }}>How it works</p>
           <h2 style={{ ...sectionTitle, textAlign: "left", marginBottom: "0.75rem" }}>Agents that actually ship</h2>
           <p style={{ fontSize: "0.92rem", color: "var(--text-muted)", lineHeight: 1.7, maxWidth: 360 }}>
             A structured pipeline where each agent completes its phase before handing off — from planning to deployment, fully automated.
           </p>
-        </div>
-        <div style={{ flex: "1 1 400px", minWidth: 340 }}>
-          <DecorativePipelineFlow />
         </div>
       </div>
 
