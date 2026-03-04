@@ -111,7 +111,7 @@ const workflowRunSchema = new mongoose.Schema<IWorkflowRunDocument>(
     planSummary: { type: String, default: "" },
     phases: { type: [[String]], default: [] },
     // Store every SSE event so the UI can replay on reload
-    events: { type: [mongoose.Schema.Types.Mixed], default: [] },
+    events: { type: mongoose.Schema.Types.Mixed, default: [] },
     tasks: { type: [taskSchema], default: [] },
     files: { type: [codeFileSchema], default: [] },
     agentResults: { type: [agentResultSchema], default: [] },
