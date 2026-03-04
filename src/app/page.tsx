@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, CSSProperties, useMemo, useEffect } from "react";
+import { useState, useCallback, useRef, CSSProperties, useMemo, useEffect } from "react";
 import { ChatInput } from "@/components/chat-input";
 import { AgentPipeline } from "@/components/agent-pipeline";
 import { DetailPanel } from "@/components/detail-panel";
@@ -95,11 +95,11 @@ const heroEmpty: CSSProperties = {
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: "1.5rem",
+  gap: "0.75rem",
 };
 
 const heroTitle: CSSProperties = {
-  fontSize: "2.5rem",
+  fontSize: "1.75rem",
   fontWeight: 700,
   fontFamily: "var(--font-display)",
   background: "linear-gradient(135deg, var(--gradient-title-from), var(--gradient-title-to))",
@@ -427,6 +427,7 @@ export default function Home() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [dismissedErrors, setDismissedErrors] = useState<Set<string>>(new Set());
   const [lastMessage, setLastMessage] = useState<string | null>(null);
+  const heroTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isLoading = history.some((h) => !h.done && !h.error);
   const latestEntry = [...history].reverse().find((h) => h.phases);
@@ -607,16 +608,15 @@ export default function Home() {
             <div style={{ position: "absolute", top: "1rem", right: "1rem" }}>
               <ThemeToggle />
             </div>
+
+            {/* Icon */}
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.75rem",
                 animation: "hero-fade-in 0.5s ease-out both",
                 animationDelay: "0s",
               }}
             >
-              <svg width={36} height={36} viewBox="0 0 24 24" fill="none">
+              <svg width={48} height={48} viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="3.5" stroke="var(--accent)" strokeWidth="1.5" />
                 <circle cx="12" cy="3.5" r="2" fill="#a78bfa" opacity="0.6" />
                 <circle cx="20.5" cy="12" r="2" fill="#34d399" opacity="0.6" />
@@ -627,8 +627,20 @@ export default function Home() {
                 <line x1="12" y1="15.5" x2="12" y2="18.5" stroke="#eab308" strokeWidth="1" opacity="0.4" />
                 <line x1="5.5" y1="12" x2="8.5" y2="12" stroke="#f97316" strokeWidth="1" opacity="0.4" />
               </svg>
-              <h1 style={heroTitle}>AI Team</h1>
             </div>
+
+            {/* Title */}
+            <h1
+              style={{
+                ...heroTitle,
+                animation: "hero-fade-in 0.5s ease-out both",
+                animationDelay: "0.05s",
+              }}
+            >
+              AI Team
+            </h1>
+
+            {/* Subtitle */}
             <p
               style={{
                 ...heroSub,
@@ -636,20 +648,74 @@ export default function Home() {
                 animationDelay: "0.1s",
               }}
             >
-              Describe a feature, report a bug, or request a deployment.
-              Your AI team will plan, build, test, and deploy.
+              Your AI-powered dev team that plans, builds, tests, and deploys.
             </p>
+
+            {/* Input */}
             <div
               style={{
                 ...heroInputWrap,
+                marginTop: "0.5rem",
                 animation: "hero-fade-in 0.5s ease-out both",
-                animationDelay: "0.2s",
+                animationDelay: "0.15s",
               }}
             >
-              <ChatInput onSubmit={handleSubmit} disabled={isLoading} loading={isLoading} />
-              <p style={{ textAlign: "center", fontSize: "0.66rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>
-                Cmd + Enter to send
-              </p>
+              <ChatInput onSubmit={handleSubmit} disabled={isLoading} loading={isLoading} textareaRef={heroTextareaRef} />
+            </div>
+
+            {/* Suggestion chips */}
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                justifyContent: "center",
+                gap: "0.4rem",
+                maxWidth: 560,
+                padding: "0 1.5rem",
+                animation: "hero-fade-in 0.5s ease-out both",
+                animationDelay: "0.25s",
+              }}
+            >
+              {[
+                "Build a landing page with auth",
+                "Fix the checkout flow bug",
+                "Add dark mode support",
+                "Deploy to production",
+              ].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => {
+                    if (heroTextareaRef.current) {
+                      heroTextareaRef.current.value = suggestion;
+                      heroTextareaRef.current.focus();
+                    }
+                  }}
+                  disabled={isLoading}
+                  style={{
+                    padding: "0.3rem 0.7rem",
+                    borderRadius: 9999,
+                    border: "1px solid var(--surface-border)",
+                    background: "var(--surface-hover)",
+                    color: "var(--text-muted)",
+                    fontSize: "0.7rem",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    whiteSpace: "nowrap",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "var(--accent)";
+                    e.currentTarget.style.color = "var(--accent)";
+                    e.currentTarget.style.background = "var(--accent-glow)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "var(--surface-border)";
+                    e.currentTarget.style.color = "var(--text-muted)";
+                    e.currentTarget.style.background = "var(--surface-hover)";
+                  }}
+                >
+                  {suggestion}
+                </button>
+              ))}
             </div>
           </div>
         )}

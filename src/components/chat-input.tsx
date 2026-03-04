@@ -38,10 +38,12 @@ interface ChatInputProps {
   disabled?: boolean;
   loading?: boolean;
   compact?: boolean;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
-export function ChatInput({ onSubmit, disabled, loading, compact }: ChatInputProps) {
-  const ref = useRef<HTMLTextAreaElement>(null);
+export function ChatInput({ onSubmit, disabled, loading, compact, textareaRef }: ChatInputProps) {
+  const internalRef = useRef<HTMLTextAreaElement>(null);
+  const ref = textareaRef ?? internalRef;
 
   function handleSubmit() {
     const value = ref.current?.value.trim();
@@ -78,46 +80,65 @@ export function ChatInput({ onSubmit, disabled, loading, compact }: ChatInputPro
 
 // ── Hero variant (landing page) ──────────────────────────
 
-const heroForm: CSSProperties = {
-  display: "flex",
-  gap: "0.75rem",
-  alignItems: "flex-end",
-};
-
-const heroTextarea: CSSProperties = {
-  flex: 1,
-  minHeight: 72,
-  maxHeight: 200,
-  padding: "1rem 1.25rem",
+const heroContainer: CSSProperties = {
   borderRadius: 16,
   border: "1px solid var(--glass-border)",
   background: "var(--glass-bg)",
   backdropFilter: "blur(var(--glass-blur))",
   WebkitBackdropFilter: "blur(var(--glass-blur))",
-  boxShadow: "inset 0 1px 3px rgba(0,0,0,0.06)",
-  color: "var(--text)",
-  fontSize: "0.95rem",
-  fontFamily: "inherit",
-  resize: "vertical",
-  outline: "none",
+  boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
   transition: "border-color 0.2s, box-shadow 0.2s",
+  overflow: "hidden",
+};
+
+const heroTextarea: CSSProperties = {
+  width: "100%",
+  minHeight: 80,
+  maxHeight: 200,
+  padding: "1rem 1.15rem 0.5rem",
+  border: "none",
+  background: "transparent",
+  color: "var(--text)",
+  fontSize: "0.92rem",
+  fontFamily: "inherit",
+  resize: "none",
+  outline: "none",
+  lineHeight: 1.5,
+};
+
+const heroFooter: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-end",
+  padding: "0.35rem 0.65rem 0.65rem",
+  gap: "0.5rem",
+};
+
+const heroHint: CSSProperties = {
+  fontSize: "0.62rem",
+  color: "var(--text-muted)",
+  opacity: 0.7,
+  marginRight: "auto",
+  padding: "0.15rem 0.45rem",
+  borderRadius: 6,
+  background: "var(--surface-hover)",
+  letterSpacing: "0.01em",
 };
 
 const heroBtnBase: CSSProperties = {
-  padding: "0.75rem 1.35rem",
-  borderRadius: 14,
+  padding: "0.4rem 0.85rem",
+  borderRadius: 10,
   border: "none",
-  background: "linear-gradient(135deg, #3b82f6, #2563eb)",
+  background: "var(--accent)",
   color: "#fff",
   fontWeight: 600,
-  fontSize: "0.9rem",
+  fontSize: "0.78rem",
   cursor: "pointer",
-  transition: "opacity 0.15s, transform 0.15s, box-shadow 0.15s",
+  transition: "opacity 0.15s, transform 0.15s, background 0.15s",
   whiteSpace: "nowrap",
   display: "flex",
   alignItems: "center",
-  gap: "0.45rem",
-  boxShadow: "0 2px 14px rgba(59, 130, 246, 0.3)",
+  gap: "0.35rem",
 };
 
 interface InputVariantProps {
@@ -131,48 +152,51 @@ interface InputVariantProps {
 function HeroInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: InputVariantProps) {
   const isOff = disabled || loading;
 
-  const btnStyle: CSSProperties = loading
-    ? { ...heroBtnBase, opacity: 0.7, cursor: "default", pointerEvents: "none" }
-    : isOff
-      ? { ...heroBtnBase, opacity: 0.4, cursor: "not-allowed", boxShadow: "none" }
-      : heroBtnBase;
+  const btnStyle: CSSProperties = isOff
+    ? { ...heroBtnBase, opacity: 0.4, cursor: "not-allowed" }
+    : heroBtnBase;
 
   return (
-    <div style={heroForm}>
+    <div
+      style={heroContainer}
+      onFocus={(e) => {
+        const wrap = e.currentTarget;
+        wrap.style.borderColor = "var(--accent)";
+        wrap.style.boxShadow = "0 0 0 2px var(--accent-glow), 0 4px 24px rgba(0,0,0,0.08)";
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+          const wrap = e.currentTarget;
+          wrap.style.borderColor = "var(--glass-border)";
+          wrap.style.boxShadow = "0 4px 24px rgba(0,0,0,0.08)";
+        }
+      }}
+    >
       <textarea
         ref={inputRef}
         rows={3}
         style={heroTextarea}
-        placeholder="Describe a feature, bug, or request for your AI team..."
+        placeholder="What would you like your AI team to build?"
         disabled={isOff}
         onKeyDown={onKeyDown}
-        onFocus={(e) => {
-          e.currentTarget.style.borderColor = "var(--accent)";
-          e.currentTarget.style.boxShadow = "0 0 0 2px var(--accent-glow), inset 0 1px 3px rgba(0,0,0,0.06)";
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.borderColor = "var(--glass-border)";
-          e.currentTarget.style.boxShadow = "inset 0 1px 3px rgba(0,0,0,0.06)";
-        }}
       />
-      <button
-        style={btnStyle}
-        onClick={onSubmit}
-        disabled={isOff}
-        onMouseEnter={(e) => {
-          if (!isOff) {
-            e.currentTarget.style.transform = "translateY(-1px)";
-            e.currentTarget.style.boxShadow = "0 4px 20px rgba(59, 130, 246, 0.4)";
-          }
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "0 2px 14px rgba(59, 130, 246, 0.3)";
-        }}
-      >
-        {loading ? <SpinnerIcon size={16} /> : <SendIcon />}
-        {loading ? "Sending..." : "Send"}
-      </button>
+      <div style={heroFooter}>
+        <span style={heroHint}>{"\u2318"} Enter</span>
+        <button
+          style={btnStyle}
+          onClick={onSubmit}
+          disabled={isOff}
+          onMouseEnter={(e) => {
+            if (!isOff) e.currentTarget.style.opacity = "0.85";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = "1";
+          }}
+        >
+          {loading ? <SpinnerIcon size={13} /> : <SendIcon />}
+          {loading ? "Sending..." : "Send"}
+        </button>
+      </div>
     </div>
   );
 }
