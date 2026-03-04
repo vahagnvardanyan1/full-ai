@@ -716,6 +716,17 @@ export default function WorkspaceTeamPage({
         />
       )}
 
+      {/* Detail panel */}
+      {selectedOutput && selectedAgent && (
+        <DetailPanel
+          agent={selectedAgent}
+          response={selectedOutput.response}
+          tasks={selectedOutput.tasks ?? []}
+          files={selectedOutput.files ?? []}
+          onClose={() => setSelectedAgent(null)}
+        />
+      )}
+
       {/* Toasts */}
       {toasts.length > 0 && (
         <div className="fixed bottom-16 sm:bottom-4 left-2 sm:left-4 flex flex-col-reverse gap-[0.4rem] z-[100] pointer-events-none">
