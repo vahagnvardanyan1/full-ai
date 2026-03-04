@@ -1,5 +1,4 @@
 export const SIDEBAR_NAV = [
-  { label: "Overview", href: "/", icon: "home" },
   { label: "Dashboard", href: "/dashboard", icon: "layout-dashboard" },
   { label: "Agents Marketplace", href: "/dashboard/agents", icon: "bot" },
   { label: "Team Marketplace", href: "/dashboard/teams", icon: "users" },
