@@ -1,3 +1,6 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+
 /* ── Theme System ─────────────────────────────────────── */
 
 :root {
@@ -49,6 +52,37 @@
   /* React Flow */
   --rf-dot-color: rgba(255, 255, 255, 0.03);
   --rf-edge-idle: rgba(255, 255, 255, 0.06);
+
+  /* shadcn mappings */
+  --background: #0a0a0a;
+  --foreground: #e0e4ed;
+  --card: rgba(0, 0, 0, 0.94);
+  --card-foreground: #e0e4ed;
+  --popover: rgba(0, 0, 0, 0.94);
+  --popover-foreground: #e0e4ed;
+  --primary: #0ea5e9;
+  --primary-foreground: #ffffff;
+  --secondary: #141414;
+  --secondary-foreground: #e0e4ed;
+  --muted: #141414;
+  --muted-foreground: #586578;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --ring: rgba(14, 165, 233, 0.25);
+  --input: #1c1c1c;
+  --chart-1: #a78bfa;
+  --chart-2: #34d399;
+  --chart-3: #facc15;
+  --chart-4: #f97316;
+  --chart-5: #0ea5e9;
+  --sidebar-background: #0f0f0f;
+  --sidebar-foreground: #e0e4ed;
+  --sidebar-primary: #0ea5e9;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #141414;
+  --sidebar-accent-foreground: #e0e4ed;
+  --sidebar-border: #1c1c1c;
+  --sidebar-ring: rgba(14, 165, 233, 0.25);
 }
 
 /* ── Light Theme ─────────────────────────────────────── */
@@ -86,60 +120,91 @@
 
   --rf-dot-color: rgba(0, 0, 0, 0.04);
   --rf-edge-idle: rgba(0, 0, 0, 0.08);
+
+  /* shadcn mappings */
+  --background: #f4f1ec;
+  --foreground: #1a1d24;
+  --card: rgba(244, 241, 236, 0.96);
+  --card-foreground: #1a1d24;
+  --popover: rgba(244, 241, 236, 0.96);
+  --popover-foreground: #1a1d24;
+  --primary: #0284c7;
+  --primary-foreground: #ffffff;
+  --secondary: #dfdcd4;
+  --secondary-foreground: #1a1d24;
+  --muted: #dfdcd4;
+  --muted-foreground: #6b6f78;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --ring: rgba(2, 132, 199, 0.2);
+  --input: #ccc8be;
+  --chart-1: #a78bfa;
+  --chart-2: #34d399;
+  --chart-3: #facc15;
+  --chart-4: #f97316;
+  --chart-5: #0284c7;
+  --sidebar-background: #eae7e0;
+  --sidebar-foreground: #1a1d24;
+  --sidebar-primary: #0284c7;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #dfdcd4;
+  --sidebar-accent-foreground: #1a1d24;
+  --sidebar-border: #ccc8be;
+  --sidebar-ring: rgba(2, 132, 199, 0.2);
 }
 
-/* ── Base Reset ──────────────────────────────────────── */
+/* ── Base Reset & Typography (in @layer base so Tailwind utilities override) */
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-html {
-  height: 100%;
-  color-scheme: dark light;
-}
+  html {
+    height: 100%;
+    color-scheme: dark light;
+  }
 
-body {
-  height: 100%;
-  font-family: var(--font-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
-  background: var(--bg);
-  color: var(--text);
-  -webkit-font-smoothing: antialiased;
-  transition: background-color 0.35s ease, color 0.25s ease;
-}
+  body {
+    height: 100%;
+    font-family: var(--font-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.35s ease, color 0.25s ease;
+  }
 
-body > * {
-  position: relative;
-  z-index: 1;
-}
+  body > * {
+    position: relative;
+    z-index: 1;
+  }
 
-/* ── Typography ──────────────────────────────────────── */
+  h1, h2, h3, h4 {
+    font-family: var(--font-display, var(--font-body, sans-serif));
+  }
 
-h1, h2, h3, h4 {
-  font-family: var(--font-display, var(--font-body, sans-serif));
-}
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
-}
-a:hover {
-  text-decoration: underline;
-}
+  code, pre {
+    font-family: var(--font-mono, "SF Mono", "Fira Code", Menlo, monospace);
+    font-size: 0.85rem;
+  }
 
-code, pre {
-  font-family: var(--font-mono, "SF Mono", "Fira Code", Menlo, monospace);
-  font-size: 0.85rem;
-}
-
-pre {
-  background: var(--code-bg);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius);
-  padding: 1rem;
-  overflow-x: auto;
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    overflow-x: auto;
+  }
 }
 
 /* ── Keyframes ──────────────────────────────────────── */
@@ -219,20 +284,68 @@ pre {
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* ── React Flow Overrides ────────────────────────────── */
+/* ── Landing Page Dot Grid ──────────────────────────── */
 
-.react-flow__edge-path {
-  stroke: var(--border) !important;
-  stroke-width: 2px;
+.landing-dot-grid {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
+[data-theme="light"] .landing-dot-grid {
+  background-image: radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px);
+}
+
+[data-theme="light"] .landing-nav {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04) inset !important;
+}
+
+/* ── Landing Page Animations ─────────────────────────── */
+
+@keyframes landing-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes landing-scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+
+@keyframes landing-scroll-right {
+  0% { transform: translateX(-33.333%); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes landing-progress {
+  0% { width: 30%; }
+  50% { width: 75%; }
+  100% { width: 30%; }
+}
+
+/* ── Avatar Animations ──────────────────────────────── */
+
+@keyframes avatar-ring-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes avatar-badge-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ── React Flow Overrides ────────────────────────────── */
+
 .react-flow__edge.animated .react-flow__edge-path {
-  stroke-dasharray: 6;
-  animation: react-flow-dash 0.6s linear infinite;
+  stroke-dasharray: 8;
+  animation: react-flow-dash 0.5s linear infinite;
 }
 
 @keyframes react-flow-dash {
-  to { stroke-dashoffset: -12; }
+  to { stroke-dashoffset: -16; }
 }
 
 .react-flow__attribution {
@@ -257,4 +370,259 @@ pre {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--surface-border);
+}
+
+/* ── Pixel Robot Workers (Hero Section) ─────────────── */
+
+@keyframes pixel-walk-ltr {
+  0%   { transform: translateX(-120px); }
+  100% { transform: translateX(calc(100vw + 120px)); }
+}
+
+@keyframes pixel-walk-rtl {
+  0%   { transform: translateX(calc(100vw + 120px)); }
+  100% { transform: translateX(-120px); }
+}
+
+@keyframes pixel-leg-a {
+  0%, 100% { transform: rotate(-20deg); }
+  50%       { transform: rotate(20deg); }
+}
+
+@keyframes pixel-leg-b {
+  0%, 100% { transform: rotate(20deg); }
+  50%       { transform: rotate(-20deg); }
+}
+
+@keyframes pixel-bob {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-2px); }
+}
+
+@keyframes pixel-thinking-cycle {
+  0%, 8%    { opacity: 0; transform: translateY(5px) scale(0.85); }
+  18%, 78%  { opacity: 1; transform: translateY(0)    scale(1);    }
+  90%, 100% { opacity: 0; transform: translateY(5px) scale(0.85); }
+}
+
+@keyframes pixel-eye-glow-anim {
+  0%, 100% { opacity: 1; }
+  45%, 55% { opacity: 0.6; }
+}
+
+@keyframes pixel-antenna-pulse-anim {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  50%       { opacity: 0.5; transform: scale(0.75); }
+}
+
+@keyframes pixel-status-pulse-anim {
+  0%, 100% { opacity: 0.95; }
+  50%       { opacity: 0.2;  }
+}
+
+@keyframes pixel-meeting-pop {
+  0%   { opacity: 0; transform: scale(0.5) translateY(8px); }
+  55%  { opacity: 1; transform: scale(1.12) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+.pixel-char-lleg       { animation: pixel-leg-a              0.44s ease-in-out infinite; }
+.pixel-char-rleg       { animation: pixel-leg-b              0.44s ease-in-out infinite; }
+.pixel-char-larm       { animation: pixel-leg-b              0.44s ease-in-out infinite; }
+.pixel-char-rarm       { animation: pixel-leg-a              0.44s ease-in-out infinite; }
+.pixel-char-bob        { animation: pixel-bob                0.44s ease-in-out infinite; }
+.pixel-thinking        { animation: pixel-thinking-cycle     5.5s  ease-in-out infinite; }
+.pixel-eye-glow        { animation: pixel-eye-glow-anim      2.4s  ease-in-out infinite; }
+.pixel-antenna-pulse   { animation: pixel-antenna-pulse-anim 1.6s  ease-in-out infinite; }
+.pixel-status-pulse    { animation: pixel-status-pulse-anim  1.1s  ease-in-out infinite; }
+.pixel-meeting-pop     { animation: pixel-meeting-pop        0.28s ease-out      forwards; }
+
+/* ── Landing Page Responsive ─────────────────────────── */
+
+/* Tablet */
+@media (max-width: 768px) {
+  .landing-hero {
+    padding-top: 5rem !important;
+    padding-bottom: 2rem !important;
+    min-height: auto !important;
+  }
+
+  .landing-hero .landing-scroll-cue {
+    display: none !important;
+  }
+
+  .landing-viz-wrapper {
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+  }
+
+  .landing-viz-wrapper .landing-activity-feed {
+    width: 100% !important;
+  }
+
+  .landing-viz-graph {
+    height: 320px !important;
+  }
+
+  .landing-ai-section {
+    padding: 3rem 1rem !important;
+  }
+
+  .landing-ai-layout {
+    flex-direction: column !important;
+    gap: 2rem !important;
+  }
+
+  .landing-orbit {
+    transform: scale(0.85);
+    transform-origin: center;
+  }
+
+  .landing-ticker {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .landing-features-section {
+    padding: 3rem 1rem !important;
+    gap: 3rem !important;
+  }
+
+  .landing-features-header {
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+  }
+
+  .landing-feature-row {
+    gap: 2rem !important;
+  }
+
+  .landing-pipeline-flow {
+    transform: scale(0.65) !important;
+    margin-bottom: -120px !important;
+    margin-right: -245px !important;
+  }
+
+  .landing-bottom-cta {
+    white-space: normal !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .landing-hero {
+    padding-top: 6rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Hero CTA buttons smaller on mobile */
+  .landing-hero .landing-cta-row {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    align-items: stretch !important;
+  }
+
+  .landing-hero .landing-cta-row a {
+    padding: 0.6rem 1.25rem !important;
+    font-size: 0.82rem !important;
+    justify-content: center !important;
+    border-radius: 10px !important;
+  }
+
+  .landing-nav {
+    padding: 0.4rem 0.5rem 0.4rem 0.85rem !important;
+  }
+
+  .landing-nav .landing-nav-title {
+    font-size: 0.78rem !important;
+  }
+
+  .landing-viz-wrapper {
+    gap: 0.5rem !important;
+  }
+
+  .landing-viz-graph {
+    height: 240px !important;
+  }
+
+  .landing-activity-feed {
+    width: 100% !important;
+    padding: 1rem !important;
+  }
+
+  .landing-taskbar {
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    gap: 0.5rem !important;
+  }
+
+  .landing-integration-strip .landing-strip-card {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .landing-orbit {
+    transform: scale(0.65);
+  }
+
+  .landing-ai-section {
+    padding: 2rem 1rem !important;
+  }
+
+  .landing-stats-row {
+    gap: 1.5rem !important;
+  }
+
+  .landing-features-section {
+    padding: 2rem 1rem !important;
+    gap: 2.5rem !important;
+  }
+
+  .landing-feature-row {
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+  }
+
+  .landing-feature-text {
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+
+  .landing-feature-visual {
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+
+  .landing-features-header {
+    gap: 1rem !important;
+  }
+
+  .landing-pipeline-flow {
+    transform: scale(0.5) !important;
+    margin-bottom: -170px !important;
+    margin-right: -350px !important;
+  }
+
+  /* Bottom CTA: hide text, just show button on mobile */
+  .landing-bottom-cta {
+    gap: 0 !important;
+    padding: 0.35rem !important;
+  }
+
+  .landing-bottom-cta .landing-bottom-cta-text {
+    display: none !important;
+  }
+
+  .landing-footer {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 1.25rem !important;
+  }
+
+  .landing-footer-links {
+    gap: 1rem !important;
+  }
 }

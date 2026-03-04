@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, CSSProperties } from "react";
+import { useState } from "react";
 import type { TaskItem, TaskStatus } from "@/lib/agents/types";
 import { AgentAvatar } from "@/components/agent-avatar";
-
-// ── Status column config ─────────────────────────────────
+import { panelBase, closeBtnBase } from "@/lib/styles";
 
 interface ColumnConfig {
   status: TaskStatus;
@@ -20,156 +19,6 @@ const COLUMNS: ColumnConfig[] = [
   { status: "done", label: "Done", color: "#22c55e" },
 ];
 
-// ── Styles ───────────────────────────────────────────────
-
-const boardContainer: CSSProperties = {
-  position: "absolute",
-  top: 10,
-  right: 10,
-  bottom: 10,
-  width: 360,
-  maxWidth: "calc(100% - 20px)",
-  overflowY: "auto",
-  display: "flex",
-  flexDirection: "column",
-  background: "var(--panel-bg)",
-  backdropFilter: "blur(24px)",
-  WebkitBackdropFilter: "blur(24px)",
-  border: "1px solid var(--panel-border)",
-  borderRadius: 16,
-  zIndex: 50,
-  animation: "panel-slide-in 0.25s ease-out",
-  boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-};
-
-const boardHeader: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "0.5rem",
-  padding: "1rem 1.25rem",
-  borderBottom: "1px solid var(--panel-border)",
-  flexShrink: 0,
-  position: "sticky",
-  top: 0,
-  background: "var(--panel-bg)",
-  backdropFilter: "blur(12px)",
-  borderRadius: "16px 16px 0 0",
-  zIndex: 2,
-};
-
-const closeBtnStyle: CSSProperties = {
-  marginLeft: "auto",
-  background: "var(--surface-raised)",
-  border: "1px solid var(--surface-border)",
-  borderRadius: 8,
-  width: 28,
-  height: 28,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  cursor: "pointer",
-  color: "var(--text-muted)",
-  fontSize: "0.85rem",
-  transition: "background 0.15s",
-};
-
-const boardTitle: CSSProperties = {
-  fontSize: "0.78rem",
-  fontWeight: 700,
-  letterSpacing: "0.04em",
-  textTransform: "uppercase",
-  color: "var(--text-muted)",
-};
-
-const totalBadge: CSSProperties = {
-  fontSize: "0.65rem",
-  fontWeight: 600,
-  padding: "0.15rem 0.5rem",
-  borderRadius: 99,
-  background: "var(--surface-hover)",
-  border: "1px solid var(--surface-border)",
-  color: "var(--text-muted)",
-};
-
-const columnsWrap: CSSProperties = {
-  flex: 1,
-  overflowY: "auto",
-  padding: "0.5rem 0.65rem",
-  display: "flex",
-  flexDirection: "column",
-  gap: "0.2rem",
-};
-
-const columnHeader: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  padding: "0.45rem 0.6rem",
-  borderRadius: 8,
-  cursor: "pointer",
-  userSelect: "none",
-  fontSize: "0.74rem",
-  fontWeight: 600,
-  transition: "background 0.15s",
-};
-
-const countBadge: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minWidth: 18,
-  height: 18,
-  borderRadius: 99,
-  fontSize: "0.62rem",
-  fontWeight: 700,
-};
-
-const cardStyle: CSSProperties = {
-  background: "var(--surface-raised)",
-  border: "1px solid var(--surface-border)",
-  borderRadius: 10,
-  padding: "0.6rem 0.7rem",
-  display: "flex",
-  flexDirection: "column",
-  gap: "0.4rem",
-  transition: "background 0.15s, border-color 0.15s",
-  cursor: "default",
-};
-
-const cardTitle: CSSProperties = {
-  fontSize: "0.76rem",
-  fontWeight: 600,
-  lineHeight: 1.35,
-  color: "var(--text)",
-};
-
-const cardMeta: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "0.35rem",
-  fontSize: "0.62rem",
-};
-
-const priorityPill: CSSProperties = {
-  display: "inline-block",
-  padding: "0.1rem 0.35rem",
-  borderRadius: 4,
-  fontSize: "0.55rem",
-  fontWeight: 700,
-  textTransform: "uppercase",
-  letterSpacing: "0.04em",
-};
-
-const emptyState: CSSProperties = {
-  textAlign: "center",
-  color: "var(--text-muted)",
-  fontSize: "0.78rem",
-  padding: "3rem 1.5rem",
-  lineHeight: 1.5,
-};
-
-// ── Color maps ───────────────────────────────────────────
-
 const PRIORITY_COLORS: Record<string, string> = {
   high: "#ef4444",
   medium: "#eab308",
@@ -183,51 +32,28 @@ function formatAssignee(role: string): string {
     .join(" ");
 }
 
-// ── Components ───────────────────────────────────────────
-
 function TaskCard({ task, accentColor }: { task: TaskItem; accentColor: string }) {
   const priorityColor = PRIORITY_COLORS[task.priority] ?? "#888";
 
   return (
     <div
-      style={{ ...cardStyle, borderLeft: `2.5px solid ${accentColor}` }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "var(--surface-hover)";
-        e.currentTarget.style.borderColor = `${accentColor}40`;
-        e.currentTarget.style.borderLeftColor = accentColor;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "var(--surface-raised)";
-        e.currentTarget.style.borderColor = "var(--surface-border)";
-        e.currentTarget.style.borderLeftColor = accentColor;
-      }}
+      className="bg-[var(--surface-raised)] border border-[var(--surface-border)] rounded-[10px] px-3 py-2.5 flex flex-col gap-1.5 transition-colors cursor-default hover:bg-[var(--surface-hover)]"
+      style={{ borderLeft: `2.5px solid ${accentColor}` }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
-        <span style={cardTitle}>{task.title}</span>
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "0.55rem",
-            color: "var(--text-muted)",
-            flexShrink: 0,
-            opacity: 0.6,
-            marginTop: 1,
-          }}
-        >
+      <div className="flex justify-between items-start gap-2">
+        <span className="text-[0.76rem] font-semibold leading-tight text-[var(--text)]">{task.title}</span>
+        <span className="font-mono text-[0.55rem] text-[var(--text-muted)] shrink-0 opacity-60 mt-px">
           {task.id}
         </span>
       </div>
-      <div style={cardMeta}>
-        <AgentAvatar role={task.assignedTo} size={14} />
-        <span style={{ color: "var(--text-muted)" }}>
+      <div className="flex items-center gap-1.5 text-[0.62rem]">
+        <AgentAvatar role={task.assignedTo} size={22} />
+        <span className="text-[var(--text-muted)]">
           {formatAssignee(task.assignedTo)}
         </span>
         <span
-          style={{
-            ...priorityPill,
-            color: priorityColor,
-            background: `${priorityColor}15`,
-          }}
+          className="inline-block px-1.5 py-0.5 rounded text-[0.55rem] font-bold uppercase tracking-tight"
+          style={{ color: priorityColor, background: `${priorityColor}15` }}
         >
           {task.priority}
         </span>
@@ -249,27 +75,18 @@ function StatusColumn({
   return (
     <div>
       <div
-        style={columnHeader}
+        className="flex items-center justify-between px-2.5 py-2 rounded-lg cursor-pointer select-none text-[0.74rem] font-semibold transition-colors hover:bg-white/[0.03]"
         onClick={() => setExpanded(!expanded)}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = `${config.color}08`;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "transparent";
-        }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+        <div className="flex items-center gap-2">
           <span
+            className="size-[7px] rounded-full shrink-0"
             style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
               background: config.color,
-              flexShrink: 0,
               boxShadow: count > 0 ? `0 0 6px ${config.color}40` : "none",
             }}
           />
-          <span style={{ color: count > 0 ? "var(--text)" : "var(--text-muted)" }}>
+          <span className={count > 0 ? "text-[var(--text)]" : "text-[var(--text-muted)]"}>
             {config.label}
           </span>
           <svg
@@ -277,18 +94,15 @@ function StatusColumn({
             height={10}
             viewBox="0 0 10 10"
             fill="none"
-            style={{
-              transition: "transform 0.2s",
-              transform: expanded ? "rotate(0deg)" : "rotate(-90deg)",
-              opacity: 0.4,
-            }}
+            className="transition-transform duration-200 opacity-40"
+            style={{ transform: expanded ? "rotate(0deg)" : "rotate(-90deg)" }}
           >
             <path d="M2.5 3.5L5 6.5L7.5 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
         <span
+          className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[0.62rem] font-bold"
           style={{
-            ...countBadge,
             color: count > 0 ? config.color : "var(--text-muted)",
             background: count > 0 ? `${config.color}15` : "transparent",
           }}
@@ -297,14 +111,7 @@ function StatusColumn({
         </span>
       </div>
       {expanded && count > 0 && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.35rem",
-            padding: "0.35rem 0.25rem 0.5rem 0.25rem",
-          }}
-        >
+        <div className="flex flex-col gap-1.5 px-1 py-1.5 pb-2">
           {tasks.map((task) => (
             <TaskCard key={task.id} task={task} accentColor={config.color} />
           ))}
@@ -314,13 +121,11 @@ function StatusColumn({
   );
 }
 
-// ── Main export ──────────────────────────────────────────
-
 export function KanbanBoard({ tasks, onClose }: { tasks: TaskItem[]; onClose: () => void }) {
   const totalCount = tasks.length;
 
   const closeButton = (
-    <button style={closeBtnStyle} onClick={onClose} title="Close">
+    <button className={closeBtnBase} onClick={onClose} title="Close">
       <svg width={12} height={12} viewBox="0 0 12 12" fill="none">
         <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
@@ -329,12 +134,12 @@ export function KanbanBoard({ tasks, onClose }: { tasks: TaskItem[]; onClose: ()
 
   if (totalCount === 0) {
     return (
-      <div style={boardContainer}>
-        <div style={boardHeader}>
-          <span style={boardTitle}>Tasks</span>
+      <div className={`${panelBase} absolute top-2.5 right-2.5 bottom-2.5 w-[360px] max-w-[calc(100%-20px)] overflow-y-auto flex flex-col rounded-2xl z-50 animate-panel-slide-in shadow-[0_8px_32px_rgba(0,0,0,0.12)]`}>
+        <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--panel-border)] shrink-0 sticky top-0 bg-[var(--panel-bg)] backdrop-blur-[12px] rounded-t-2xl z-2">
+          <span className="text-[0.78rem] font-bold tracking-wide uppercase text-[var(--text-muted)]">Tasks</span>
           {closeButton}
         </div>
-        <p style={emptyState}>
+        <p className="text-center text-[var(--text-muted)] text-[0.78rem] py-12 px-6 leading-relaxed">
           No tasks yet. Send a request to get started.
         </p>
       </div>
@@ -357,15 +162,15 @@ export function KanbanBoard({ tasks, onClose }: { tasks: TaskItem[]; onClose: ()
   const doneCount = grouped.get("done")?.length ?? 0;
 
   return (
-    <div style={boardContainer}>
-      <div style={boardHeader}>
-        <span style={boardTitle}>Tasks</span>
-        <span style={totalBadge}>
+    <div className={`${panelBase} absolute top-2.5 right-2.5 bottom-2.5 w-[360px] max-w-[calc(100%-20px)] overflow-y-auto flex flex-col rounded-2xl z-50 animate-panel-slide-in shadow-[0_8px_32px_rgba(0,0,0,0.12)]`}>
+      <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--panel-border)] shrink-0 sticky top-0 bg-[var(--panel-bg)] backdrop-blur-[12px] rounded-t-2xl z-2">
+        <span className="text-[0.78rem] font-bold tracking-wide uppercase text-[var(--text-muted)]">Tasks</span>
+        <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full bg-[var(--surface-hover)] border border-[var(--surface-border)] text-[var(--text-muted)]">
           {doneCount}/{totalCount} done
         </span>
         {closeButton}
       </div>
-      <div style={columnsWrap}>
+      <div className="flex-1 overflow-y-auto p-2.5 flex flex-col gap-0.5">
         {COLUMNS.map((col) => (
           <StatusColumn
             key={col.status}

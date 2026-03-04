@@ -1,84 +1,9 @@
 "use client";
 
-import { CSSProperties, useState } from "react";
+import { useState } from "react";
 import type { GeneratedFile } from "@/lib/agents/types";
 import { AgentAvatar } from "@/components/agent-avatar";
-
-// ── Styling ──────────────────────────────────────────────
-
-const wrapper: CSSProperties = {
-  background: "var(--glass-bg)",
-  backdropFilter: "blur(var(--glass-blur))",
-  WebkitBackdropFilter: "blur(var(--glass-blur))",
-  border: "1px solid var(--glass-border)",
-  borderRadius: "var(--radius-lg)",
-  padding: "0.75rem 0.875rem",
-  display: "flex",
-  flexDirection: "column",
-  gap: "0.5rem",
-  animation: "slide-in 0.3s ease-out",
-};
-
-const sectionTitle: CSSProperties = {
-  fontSize: "0.8rem",
-  fontWeight: 600,
-  color: "var(--text-muted)",
-  display: "flex",
-  alignItems: "center",
-  gap: "0.4rem",
-};
-
-const fileCard: CSSProperties = {
-  background: "rgba(255, 255, 255, 0.02)",
-  border: "1px solid var(--glass-border)",
-  borderRadius: "var(--radius)",
-  overflow: "hidden",
-};
-
-const fileHeader: CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  padding: "0.5rem 0.75rem",
-  cursor: "pointer",
-  userSelect: "none",
-  gap: "0.5rem",
-};
-
-const filePathStyle: CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: "0.75rem",
-  fontWeight: 600,
-  color: "var(--accent)",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-};
-
-const codeBlock: CSSProperties = {
-  margin: 0,
-  padding: "0.75rem",
-  background: "var(--bg)",
-  fontFamily: "var(--font-mono)",
-  fontSize: "0.75rem",
-  lineHeight: 1.5,
-  overflowX: "auto",
-  whiteSpace: "pre",
-  color: "var(--text)",
-  maxHeight: 300,
-  overflowY: "auto",
-  borderTop: "1px solid var(--border)",
-};
-
-const pill: CSSProperties = {
-  display: "inline-block",
-  padding: "0.1rem 0.4rem",
-  borderRadius: "9999px",
-  fontSize: "0.6rem",
-  fontWeight: 600,
-  textTransform: "uppercase",
-  letterSpacing: "0.04em",
-};
+import { glassCard } from "@/lib/styles";
 
 const AGENT_COLORS: Record<string, string> = {
   frontend_developer: "#34d399",
@@ -87,34 +12,12 @@ const AGENT_COLORS: Record<string, string> = {
   product_manager: "#a78bfa",
 };
 
-const copyBtn: CSSProperties = {
-  padding: "0.15rem 0.45rem",
-  borderRadius: "4px",
-  border: "1px solid var(--glass-border)",
-  background: "rgba(255, 255, 255, 0.04)",
-  color: "var(--text-muted)",
-  fontSize: "0.6rem",
-  cursor: "pointer",
-  fontFamily: "var(--font-mono)",
-  transition: "background 0.15s",
-  flexShrink: 0,
-};
-
-const rightGroup: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "0.35rem",
-  flexShrink: 0,
-};
-
 function formatAgent(role: string): string {
   return role
     .split("_")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 }
-
-// ── Single file ──────────────────────────────────────────
 
 function FileItem({ file }: { file: GeneratedFile }) {
   const [open, setOpen] = useState(false);
@@ -129,41 +32,32 @@ function FileItem({ file }: { file: GeneratedFile }) {
   }
 
   return (
-    <div style={fileCard}>
-      <div style={fileHeader} onClick={() => setOpen((v) => !v)}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", minWidth: 0, flex: 1 }}>
-          <span style={{ color: "var(--text-muted)", fontSize: "0.7rem", flexShrink: 0 }}>
+    <div className="bg-white/[0.02] border border-[var(--glass-border)] rounded overflow-hidden">
+      <div className="flex justify-between items-center px-3 py-2 cursor-pointer select-none gap-2" onClick={() => setOpen((v) => !v)}>
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <span className="text-[var(--text-muted)] text-[0.7rem] shrink-0">
             {open ? "\u25BE" : "\u25B8"}
           </span>
-          <span style={filePathStyle}>{file.filePath}</span>
-          <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", flexShrink: 0 }}>
+          <span className="font-mono text-[0.75rem] font-semibold text-[var(--accent)] overflow-hidden text-ellipsis whitespace-nowrap">
+            {file.filePath}
+          </span>
+          <span className="text-[0.6rem] text-[var(--text-muted)] shrink-0">
             {lineCount}L
           </span>
         </div>
-        <div style={rightGroup}>
-          <AgentAvatar role={file.createdBy} size={16} />
+        <div className="flex items-center gap-1.5 shrink-0">
+          <AgentAvatar role={file.createdBy} size={24} />
           <span
-            style={{
-              ...pill,
-              color,
-              background: `${color}12`,
-              border: `1px solid ${color}25`,
-            }}
+            className="inline-block px-1.5 py-0.5 rounded-full text-[0.6rem] font-semibold uppercase tracking-tight"
+            style={{ color, background: `${color}12`, border: `1px solid ${color}25` }}
           >
             {formatAgent(file.createdBy)}
           </span>
-          <span
-            style={{
-              ...pill,
-              color: "var(--text-muted)",
-              background: "rgba(255, 255, 255, 0.03)",
-              border: "1px solid var(--glass-border)",
-            }}
-          >
+          <span className="inline-block px-1.5 py-0.5 rounded-full text-[0.6rem] font-semibold uppercase tracking-tight text-[var(--text-muted)] bg-white/[0.03] border border-[var(--glass-border)]">
             {file.language}
           </span>
           <button
-            style={copyBtn}
+            className="px-2 py-0.5 rounded border border-[var(--glass-border)] bg-white/[0.04] text-[var(--text-muted)] text-[0.6rem] cursor-pointer font-mono transition-colors shrink-0 hover:bg-white/[0.08]"
             onClick={(e) => {
               e.stopPropagation();
               handleCopy();
@@ -176,17 +70,11 @@ function FileItem({ file }: { file: GeneratedFile }) {
       {open && (
         <>
           {file.description && (
-            <div
-              style={{
-                fontSize: "0.7rem",
-                color: "var(--text-muted)",
-                padding: "0.3rem 0.75rem 0",
-              }}
-            >
+            <div className="text-[0.7rem] text-[var(--text-muted)] px-3 pt-1">
               {file.description}
             </div>
           )}
-          <pre style={codeBlock}>
+          <pre className="m-0 p-3 bg-[var(--bg)] font-mono text-[0.75rem] leading-normal overflow-x-auto whitespace-pre text-[var(--text)] max-h-[300px] overflow-y-auto border-t border-[var(--border)]">
             <code>{file.code}</code>
           </pre>
         </>
@@ -195,14 +83,12 @@ function FileItem({ file }: { file: GeneratedFile }) {
   );
 }
 
-// ── Main component ───────────────────────────────────────
-
 export function CodeViewer({ files }: { files: GeneratedFile[] }) {
   if (files.length === 0) return null;
 
   return (
-    <div style={wrapper}>
-      <div style={sectionTitle}>
+    <div className={`${glassCard} p-3 flex flex-col gap-2 animate-slide-in`}>
+      <div className="text-[0.8rem] font-semibold text-[var(--text-muted)] flex items-center gap-1.5">
         <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
           <rect x="2" y="1" width="12" height="14" rx="2" stroke="var(--text-muted)" strokeWidth="1.3" />
           <line x1="5" y1="5" x2="11" y2="5" stroke="var(--text-muted)" strokeWidth="1" strokeLinecap="round" />

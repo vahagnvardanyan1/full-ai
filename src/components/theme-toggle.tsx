@@ -1,21 +1,6 @@
 "use client";
 
-import { useState, useEffect, CSSProperties } from "react";
-
-const btn: CSSProperties = {
-  width: 32,
-  height: 32,
-  borderRadius: 8,
-  border: "1px solid var(--surface-border)",
-  background: "var(--surface-hover)",
-  color: "var(--text-muted)",
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  transition: "background 0.15s, border-color 0.15s, color 0.15s",
-  flexShrink: 0,
-};
+import { useState, useEffect } from "react";
 
 function SunIcon() {
   return (
@@ -58,11 +43,11 @@ export function ThemeToggle() {
     setTheme(next);
   }
 
-  if (!mounted) return <div style={{ ...btn, opacity: 0 }} />;
+  if (!mounted) return <div className="size-8 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-hover)] opacity-0 shrink-0" />;
 
   return (
     <button
-      style={btn}
+      className="size-8 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-hover)] text-[var(--text-muted)] cursor-pointer flex items-center justify-center transition-colors shrink-0 hover:bg-[var(--surface-raised)] hover:text-[var(--text)]"
       onClick={toggle}
       title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
