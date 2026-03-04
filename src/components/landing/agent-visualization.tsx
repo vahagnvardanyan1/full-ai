@@ -279,7 +279,7 @@ function AgentGraph() {
 export function AgentVisualization() {
   return (
     <section className="landing-viz-section relative px-6 py-4 pb-8">
-      <div className="landing-viz-wrapper relative max-w-[960px] mx-auto flex gap-8 items-start">
+      <div className="landing-viz-wrapper relative max-w-[960px] mx-auto flex gap-8 items-center md:items-start">
         <div className="flex-1 min-w-0 rounded-2xl overflow-hidden flex flex-col">
           <div className="landing-viz-graph w-full h-[480px]">
             <ReactFlowProvider>
