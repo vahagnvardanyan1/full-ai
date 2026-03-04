@@ -319,7 +319,6 @@ export default function WorkspaceTeamPage({
     setViewingEntryId(null);
     setShowHistory(false);
 
-  async function handleSubmit(message: string) {
     const entryId = crypto.randomUUID();
     setSelectedAgent(null);
     setShowKanban(false);
@@ -732,5 +731,4 @@ export default function WorkspaceTeamPage({
       )}
     </div>
   );
-}
 }

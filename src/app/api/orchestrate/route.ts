@@ -97,7 +97,6 @@ export async function POST(request: NextRequest) {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
-      // Prevent buffering that delays SSE delivery
       "X-Accel-Buffering": "no",
       "Content-Encoding": "none",
     },
