@@ -134,8 +134,8 @@ export function KanbanBoard({ tasks, onClose }: { tasks: TaskItem[]; onClose: ()
 
   if (totalCount === 0) {
     return (
-      <div className={`${panelBase} absolute top-2.5 right-2.5 bottom-2.5 w-[360px] max-w-[calc(100%-20px)] overflow-y-auto flex flex-col rounded-2xl z-50 animate-panel-slide-in shadow-[0_8px_32px_rgba(0,0,0,0.12)]`}>
-        <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--panel-border)] shrink-0 sticky top-0 bg-[var(--panel-bg)] backdrop-blur-[12px] rounded-t-2xl z-2">
+      <div className={`${panelBase} absolute inset-0 sm:inset-auto sm:top-2.5 sm:right-2.5 sm:bottom-2.5 sm:w-[360px] sm:max-w-[calc(100%-20px)] overflow-y-auto flex flex-col rounded-none sm:rounded-2xl z-50 animate-panel-slide-in shadow-[0_8px_32px_rgba(0,0,0,0.12)]`}>
+        <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--panel-border)] shrink-0 sticky top-0 bg-[var(--panel-bg)] backdrop-blur-[12px] sm:rounded-t-2xl z-2">
           <span className="text-[0.78rem] font-bold tracking-wide uppercase text-[var(--text-muted)]">Tasks</span>
           {closeButton}
         </div>
@@ -162,8 +162,8 @@ export function KanbanBoard({ tasks, onClose }: { tasks: TaskItem[]; onClose: ()
   const doneCount = grouped.get("done")?.length ?? 0;
 
   return (
-    <div className={`${panelBase} absolute top-2.5 right-2.5 bottom-2.5 w-[360px] max-w-[calc(100%-20px)] overflow-y-auto flex flex-col rounded-2xl z-50 animate-panel-slide-in shadow-[0_8px_32px_rgba(0,0,0,0.12)]`}>
-      <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--panel-border)] shrink-0 sticky top-0 bg-[var(--panel-bg)] backdrop-blur-[12px] rounded-t-2xl z-2">
+    <div className={`${panelBase} absolute inset-0 sm:inset-auto sm:top-2.5 sm:right-2.5 sm:bottom-2.5 sm:w-[360px] sm:max-w-[calc(100%-20px)] overflow-y-auto flex flex-col rounded-none sm:rounded-2xl z-50 animate-panel-slide-in shadow-[0_8px_32px_rgba(0,0,0,0.12)]`}>
+      <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--panel-border)] shrink-0 sticky top-0 bg-[var(--panel-bg)] backdrop-blur-[12px] sm:rounded-t-2xl z-2">
         <span className="text-[0.78rem] font-bold tracking-wide uppercase text-[var(--text-muted)]">Tasks</span>
         <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full bg-[var(--surface-hover)] border border-[var(--surface-border)] text-[var(--text-muted)]">
           {doneCount}/{totalCount} done
