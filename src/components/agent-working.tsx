@@ -65,7 +65,7 @@ export function AgentWorking({ agents }: { agents: string[] }) {
     <>
       {agents.map((agent) => (
         <div key={agent} style={wrapper}>
-          <AgentAvatar role={agent} size={28} status="working" />
+          <AgentAvatar role={agent} size={42} status="working" />
           <span style={text}>
             {formatName(agent)} is working
             <TypingDots />

@@ -193,7 +193,7 @@ export function AgentResponseCard({
       {/* Header: avatar + badge + actions count */}
       <div style={{ ...headerStyle, justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <AgentAvatar role={response.agent} size={26} status="done" />
+          <AgentAvatar role={response.agent} size={40} status="done" />
           <span
             style={{
               ...badge,

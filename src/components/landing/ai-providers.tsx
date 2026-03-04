@@ -38,12 +38,42 @@ const PROVIDERS = [
 ];
 
 const ROUTING_EVENTS = [
-  { task: "Analyzing product spec", provider: 0, latency: "1.2s", reason: "Deep reasoning" },
-  { task: "Generating React components", provider: 1, latency: "0.8s", reason: "Fast code gen" },
-  { task: "Writing E2E test suite", provider: 0, latency: "1.4s", reason: "Complex logic" },
-  { task: "Parsing image mockup", provider: 2, latency: "0.6s", reason: "Multimodal" },
-  { task: "Drafting API documentation", provider: 1, latency: "0.5s", reason: "Speed optimized" },
-  { task: "Reviewing security audit", provider: 0, latency: "1.8s", reason: "Deep analysis" },
+  {
+    task: "Analyzing product spec",
+    provider: 0,
+    latency: "1.2s",
+    reason: "Deep reasoning",
+  },
+  {
+    task: "Generating React components",
+    provider: 1,
+    latency: "0.8s",
+    reason: "Fast code gen",
+  },
+  {
+    task: "Writing E2E test suite",
+    provider: 0,
+    latency: "1.4s",
+    reason: "Complex logic",
+  },
+  {
+    task: "Parsing image mockup",
+    provider: 2,
+    latency: "0.6s",
+    reason: "Multimodal",
+  },
+  {
+    task: "Drafting API documentation",
+    provider: 1,
+    latency: "0.5s",
+    reason: "Speed optimized",
+  },
+  {
+    task: "Reviewing security audit",
+    provider: 0,
+    latency: "1.8s",
+    reason: "Deep analysis",
+  },
 ];
 
 /* ── Orbiting circles ───────────────────────────────── */
@@ -67,7 +97,10 @@ function OrbitingProviders() {
   const draggingIdx = useRef<number | null>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => setActiveIdx((i) => (i + 1) % PROVIDERS.length), 2500);
+    const timer = setInterval(
+      () => setActiveIdx((i) => (i + 1) % PROVIDERS.length),
+      2500,
+    );
     return () => clearInterval(timer);
   }, []);
 
@@ -79,68 +112,97 @@ function OrbitingProviders() {
     return Math.atan2(clientY - cy, clientX - cx) * (180 / Math.PI);
   };
 
-  const handlePointerDown = (idx: number) => (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    draggingIdx.current = idx;
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
+  const handlePointerDown =
+    (idx: number) => (e: React.PointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      draggingIdx.current = idx;
+      e.currentTarget.setPointerCapture(e.pointerId);
+    };
 
-  const handlePointerMove = (idx: number) => (e: React.PointerEvent<HTMLDivElement>) => {
-    if (draggingIdx.current !== idx) return;
-    const angle = getAngleFromPointer(e.clientX, e.clientY);
-    setAngles((prev) => {
-      const next = [...prev];
-      next[idx] = angle;
-      return next;
-    });
-  };
+  const handlePointerMove =
+    (idx: number) => (e: React.PointerEvent<HTMLDivElement>) => {
+      if (draggingIdx.current !== idx) return;
+      const angle = getAngleFromPointer(e.clientX, e.clientY);
+      setAngles((prev) => {
+        const next = [...prev];
+        next[idx] = angle;
+        return next;
+      });
+    };
 
-  const handlePointerUp = (idx: number) => (e: React.PointerEvent<HTMLDivElement>) => {
-    if (draggingIdx.current === idx) {
-      draggingIdx.current = null;
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-  };
+  const handlePointerUp =
+    (idx: number) => (e: React.PointerEvent<HTMLDivElement>) => {
+      if (draggingIdx.current === idx) {
+        draggingIdx.current = null;
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    };
 
   return (
     <div
       ref={containerRef}
-      style={{ position: "relative", width: ORBIT_SIZE, height: ORBIT_SIZE, flexShrink: 0 }}
+      style={{
+        position: "relative",
+        width: ORBIT_SIZE,
+        height: ORBIT_SIZE,
+        flexShrink: 0,
+      }}
     >
       {/* Orbit ring */}
-      <div style={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        width: ORBIT_RADIUS * 2,
-        height: ORBIT_RADIUS * 2,
-        borderRadius: "50%",
-        border: "1px solid var(--glass-border)",
-        transform: "translate(-50%, -50%)",
-      }} />
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          width: ORBIT_RADIUS * 2,
+          height: ORBIT_RADIUS * 2,
+          borderRadius: "50%",
+          border: "1px solid var(--glass-border)",
+          transform: "translate(-50%, -50%)",
+        }}
+      />
 
       {/* Center hub */}
-      <div style={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: 76,
-        height: 76,
-        borderRadius: 18,
-        background: "var(--surface-raised)",
-        border: "1px solid var(--glass-border)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 3,
-        zIndex: 2,
-      }}>
-        <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="var(--text)" strokeWidth="1.5" strokeLinecap="round">
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 76,
+          height: 76,
+          borderRadius: 18,
+          background: "var(--surface-raised)",
+          border: "1px solid var(--glass-border)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 3,
+          zIndex: 2,
+        }}
+      >
+        <svg
+          width={22}
+          height={22}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--text)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        >
           <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
         </svg>
-        <span style={{ fontSize: "0.58rem", fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.05em" }}>AUTO</span>
+        <span
+          style={{
+            fontSize: "0.58rem",
+            fontWeight: 700,
+            color: "var(--text-muted)",
+            letterSpacing: "0.05em",
+          }}
+        >
+          AUTO
+        </span>
       </div>
 
       {/* Provider nodes */}
@@ -152,12 +214,21 @@ function OrbitingProviders() {
           <div key={p.name} style={{ position: "absolute" }}>
             {/* Connection line to center */}
             <svg
-              style={{ position: "absolute", top: 0, left: 0, width: ORBIT_SIZE, height: ORBIT_SIZE, pointerEvents: "none" }}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: ORBIT_SIZE,
+                height: ORBIT_SIZE,
+                pointerEvents: "none",
+              }}
               viewBox={`0 0 ${ORBIT_SIZE} ${ORBIT_SIZE}`}
             >
               <line
-                x1={ORBIT_CENTER} y1={ORBIT_CENTER}
-                x2={x} y2={y}
+                x1={ORBIT_CENTER}
+                y1={ORBIT_CENTER}
+                x2={x}
+                y2={y}
                 stroke={isActive ? p.color : "var(--glass-border)"}
                 strokeWidth={isActive ? 2 : 1}
                 strokeDasharray={isActive ? "6 4" : "3 3"}
@@ -165,7 +236,13 @@ function OrbitingProviders() {
                 style={{ transition: "stroke 0.5s ease, opacity 0.5s ease" }}
               >
                 {isActive && (
-                  <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="0.8s" repeatCount="indefinite" />
+                  <animate
+                    attributeName="stroke-dashoffset"
+                    from="0"
+                    to="-20"
+                    dur="0.8s"
+                    repeatCount="indefinite"
+                  />
                 )}
               </line>
             </svg>
@@ -184,12 +261,15 @@ function OrbitingProviders() {
                 height: 54,
                 borderRadius: 14,
                 background: isActive ? `${p.color}15` : "var(--surface-raised)",
-                border: isActive ? `1.5px solid ${p.color}50` : "1px solid var(--glass-border)",
+                border: isActive
+                  ? `1.5px solid ${p.color}50`
+                  : "1px solid var(--glass-border)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 color: isActive ? p.color : "var(--text-muted)",
-                transition: "background 0.5s ease, border 0.5s ease, box-shadow 0.5s ease, color 0.5s ease",
+                transition:
+                  "background 0.5s ease, border 0.5s ease, box-shadow 0.5s ease, color 0.5s ease",
                 boxShadow: isActive ? `0 0 24px ${p.color}20` : "none",
                 zIndex: 3,
                 cursor: "grab",
@@ -262,16 +342,34 @@ function RoutingTicker() {
       }}
     >
       {/* Header */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "0.5rem",
-        paddingBottom: "0.6rem",
-        marginBottom: "0.5rem",
-        borderBottom: "1px solid var(--glass-border)",
-      }}>
-        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", animation: "landing-fade-up 1.5s ease-in-out infinite alternate" }} />
-        <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          paddingBottom: "0.6rem",
+          marginBottom: "0.5rem",
+          borderBottom: "1px solid var(--glass-border)",
+        }}
+      >
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: "#22c55e",
+            animation: "landing-fade-up 1.5s ease-in-out infinite alternate",
+          }}
+        />
+        <span
+          style={{
+            fontSize: "0.62rem",
+            fontWeight: 700,
+            color: "var(--text-muted)",
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+          }}
+        >
           Smart routing — live
         </span>
       </div>
@@ -287,51 +385,76 @@ function RoutingTicker() {
               alignItems: "flex-start",
               gap: "0.5rem",
               padding: "0.55rem 0",
-              borderBottom: i < events.length - 1 ? "1px solid var(--glass-border)" : "none",
+              borderBottom:
+                i < events.length - 1
+                  ? "1px solid var(--glass-border)"
+                  : "none",
               animation: "landing-fade-up 0.3s ease-out both",
             }}
           >
             {/* Provider badge */}
-            <div style={{
-              width: 34,
-              height: 34,
-              borderRadius: 9,
-              background: `${p.color}12`,
-              border: `1px solid ${p.color}20`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: p.color,
-              flexShrink: 0,
-              marginTop: 1,
-            }}>
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 9,
+                background: `${p.color}12`,
+                border: `1px solid ${p.color}20`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: p.color,
+                flexShrink: 0,
+                marginTop: 1,
+              }}
+            >
               {p.icon}
             </div>
 
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: "0.78rem", color: "var(--text)", fontWeight: 500, fontFamily: "var(--font-body)" }}>
-                {ev.task}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: 2 }}>
-                <span style={{
-                  fontSize: "0.58rem",
-                  fontWeight: 600,
-                  color: p.color,
-                }}>
-                  {p.model}
-                </span>
-                <span style={{ fontSize: "0.55rem", color: "var(--text-muted)" }}>
-                  {ev.latency}
-                </span>
-                <span style={{
-                  fontSize: "0.52rem",
-                  padding: "0.08rem 0.3rem",
-                  borderRadius: 4,
-                  background: `${p.color}10`,
-                  color: p.color,
+              <div
+                style={{
+                  fontSize: "0.78rem",
+                  color: "var(--text)",
                   fontWeight: 500,
                   fontFamily: "var(--font-body)",
-                }}>
+                }}
+              >
+                {ev.task}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  marginTop: 2,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "0.58rem",
+                    fontWeight: 600,
+                    color: p.color,
+                  }}
+                >
+                  {p.model}
+                </span>
+                <span
+                  style={{ fontSize: "0.55rem", color: "var(--text-muted)" }}
+                >
+                  {ev.latency}
+                </span>
+                <span
+                  style={{
+                    fontSize: "0.52rem",
+                    padding: "0.08rem 0.3rem",
+                    borderRadius: 4,
+                    background: `${p.color}10`,
+                    color: p.color,
+                    fontWeight: 500,
+                    fontFamily: "var(--font-body)",
+                  }}
+                >
                   {ev.reason}
                 </span>
               </div>
@@ -341,7 +464,14 @@ function RoutingTicker() {
       })}
 
       {/* Typing indicator */}
-      <div style={{ display: "flex", gap: "0.25rem", padding: "0.5rem 0 0.2rem", alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.25rem",
+          padding: "0.5rem 0 0.2rem",
+          alignItems: "center",
+        }}
+      >
         {[0, 1, 2].map((d) => (
           <div
             key={d}
@@ -355,7 +485,15 @@ function RoutingTicker() {
             }}
           />
         ))}
-        <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", marginLeft: "0.3rem" }}>routing next task...</span>
+        <span
+          style={{
+            fontSize: "0.55rem",
+            color: "var(--text-muted)",
+            marginLeft: "0.3rem",
+          }}
+        >
+          routing next task...
+        </span>
       </div>
     </div>
   );
@@ -371,25 +509,36 @@ function StatsRow() {
   ];
 
   return (
-    <div style={{
-      display: "flex",
-      gap: "2rem",
-      justifyContent: "center",
-      flexWrap: "wrap",
-      marginTop: "1.5rem",
-    }}>
+    <div
+      style={{
+        display: "flex",
+        gap: "2rem",
+        justifyContent: "center",
+        flexWrap: "wrap",
+        marginTop: "1.5rem",
+      }}
+    >
       {stats.map((s) => (
         <div key={s.label} style={{ textAlign: "center" }}>
-          <div style={{
-            fontSize: "1.8rem",
-            fontWeight: 800,
-            fontFamily: "var(--font-display)",
-            color: "var(--text)",
-            letterSpacing: "-0.02em",
-          }}>
+          <div
+            style={{
+              fontSize: "1.8rem",
+              fontWeight: 800,
+              fontFamily: "var(--font-display)",
+              color: "var(--text)",
+              letterSpacing: "-0.02em",
+            }}
+          >
             {s.value}
           </div>
-          <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", fontWeight: 500, marginTop: 2 }}>
+          <div
+            style={{
+              fontSize: "0.68rem",
+              color: "var(--text-muted)",
+              fontWeight: 500,
+              marginTop: 2,
+            }}
+          >
             {s.label}
           </div>
         </div>
@@ -443,18 +592,21 @@ export function AiProviders() {
       <p style={sectionLabel}>Intelligent model routing</p>
       <h2 style={sectionTitle}>The right model, every time</h2>
       <p style={sectionSubtitle}>
-        We analyze each task and automatically dispatch to the most capable model — so you get the best results without thinking about it.
+        We analyze each task and automatically dispatch to the most capable
+        model — so you get the best results without thinking about it.
       </p>
 
-      <div style={{
-        display: "flex",
-        gap: "2.5rem",
-        alignItems: "center",
-        justifyContent: "center",
-        flexWrap: "wrap",
-        maxWidth: 960,
-        width: "100%",
-      }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "2.5rem",
+          alignItems: "center",
+          justifyContent: "center",
+          flexWrap: "wrap",
+          maxWidth: 960,
+          width: "100%",
+        }}
+      >
         <OrbitingProviders />
         <RoutingTicker />
       </div>
