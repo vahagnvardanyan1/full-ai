@@ -381,7 +381,7 @@ pre {
 /* Mobile */
 @media (max-width: 480px) {
   .landing-hero {
-    padding-top: 4rem !important;
+    padding-top: 6rem !important;
     padding-left: 1rem !important;
     padding-right: 1rem !important;
   }
