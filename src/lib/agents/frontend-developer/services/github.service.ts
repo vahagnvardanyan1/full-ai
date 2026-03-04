@@ -351,7 +351,8 @@ export class GitHubService {
             await git.push("origin", branch, ["--set-upstream", "--force-with-lease"]);
             log.info({ branch }, "Force push succeeded");
             return;
-          } catch (forceErr) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          } catch (_forceErr) {
             throw new Error(`Failed to push after ${MAX_PUSH_RETRIES} retries: ${msg}`);
           }
         }

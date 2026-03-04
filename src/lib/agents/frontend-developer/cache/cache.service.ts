@@ -5,7 +5,8 @@
 import { createChildLogger } from "../utils/logger";
 import type { RepoKnowledge } from "../types";
 
-const log = createChildLogger("cache");
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _log = createChildLogger("cache");
 
 interface CacheEntry<T> {
   value: T;

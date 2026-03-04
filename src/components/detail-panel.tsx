@@ -134,8 +134,6 @@ function FileRow({ file }: { file: GeneratedFile }) {
 }
 
 export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPanelProps) {
-  const color = AGENT_COLORS[agent] ?? "#888";
-
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -145,7 +143,8 @@ export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPa
   }, [onClose]);
 
   return (
-    <div className={`${panelBase} absolute top-2.5 left-1/2 w-[min(560px,calc(100%-2rem))] max-h-[50vh] rounded-2xl flex flex-col z-[55] overflow-y-auto shadow-[0_8px_32px_rgba(0,0,0,0.12)]`} style={{ animation: "panel-slide-down 0.25s ease-out forwards" }}>
+    <div className="fixed inset-0 z-[55] flex items-start justify-center sm:pt-2.5 pointer-events-none">
+    <div className={`${panelBase} w-full sm:w-[min(560px,calc(100%-2rem))] max-w-[560px] h-full sm:h-auto sm:max-h-[50vh] rounded-none sm:rounded-2xl flex flex-col overflow-y-auto shadow-[0_8px_32px_rgba(0,0,0,0.12)] pointer-events-auto`} style={{ animation: "panel-slide-down 0.25s ease-out forwards" }}>
       {/* Header */}
       <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[var(--panel-border)] sticky top-0 bg-[var(--panel-bg)] backdrop-blur-[12px] rounded-t-2xl z-2">
         <AgentAvatar role={agent} size={48} status="done" />
@@ -200,7 +199,7 @@ export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPa
             {response.toolCalls.map((tc, i) => (
               <div
                 key={i}
-                className="text-[0.7rem] px-2 py-1 rounded-md bg-white/[0.02] border border-white/[0.05] font-mono text-[var(--text-muted)]"
+                className="text-[0.7rem] px-2 py-1 rounded-md bg-[var(--surface-raised)] border border-[var(--surface-border)] font-mono text-[var(--text-muted)]"
               >
                 <span className="text-[var(--accent)]">{tc.tool}</span>
               </div>
@@ -208,6 +207,7 @@ export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPa
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

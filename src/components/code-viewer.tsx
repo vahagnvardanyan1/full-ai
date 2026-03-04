@@ -32,7 +32,7 @@ function FileItem({ file }: { file: GeneratedFile }) {
   }
 
   return (
-    <div className="bg-white/[0.02] border border-[var(--glass-border)] rounded overflow-hidden">
+    <div className="bg-[var(--surface-raised)] border border-[var(--surface-border)] rounded overflow-hidden">
       <div className="flex justify-between items-center px-3 py-2 cursor-pointer select-none gap-2" onClick={() => setOpen((v) => !v)}>
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <span className="text-[var(--text-muted)] text-[0.7rem] shrink-0">
@@ -53,11 +53,11 @@ function FileItem({ file }: { file: GeneratedFile }) {
           >
             {formatAgent(file.createdBy)}
           </span>
-          <span className="inline-block px-1.5 py-0.5 rounded-full text-[0.6rem] font-semibold uppercase tracking-tight text-[var(--text-muted)] bg-white/[0.03] border border-[var(--glass-border)]">
+          <span className="inline-block px-1.5 py-0.5 rounded-full text-[0.6rem] font-semibold uppercase tracking-tight text-[var(--text-muted)] bg-[var(--surface-raised)] border border-[var(--surface-border)]">
             {file.language}
           </span>
           <button
-            className="px-2 py-0.5 rounded border border-[var(--glass-border)] bg-white/[0.04] text-[var(--text-muted)] text-[0.6rem] cursor-pointer font-mono transition-colors shrink-0 hover:bg-white/[0.08]"
+            className="px-2 py-0.5 rounded border border-[var(--surface-border)] bg-[var(--surface-hover)] text-[var(--text-muted)] text-[0.6rem] cursor-pointer font-mono transition-colors shrink-0 hover:brightness-95"
             onClick={(e) => {
               e.stopPropagation();
               handleCopy();

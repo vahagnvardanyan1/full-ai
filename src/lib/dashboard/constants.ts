@@ -19,7 +19,7 @@ export const AGENT_CATEGORIES = [
 export const TEAM_CATEGORIES = [
   "All",
   "IT",
-  "Marketing",
   "Design",
+  "Marketing",
   "Consulting",
 ] as const;

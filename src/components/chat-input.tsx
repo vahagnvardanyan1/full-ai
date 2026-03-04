@@ -88,7 +88,7 @@ function HeroInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: InputVa
       <textarea
         ref={inputRef}
         rows={3}
-        className="w-full min-h-[80px] max-h-[200px] px-4 pt-4 pb-2 border-none bg-transparent text-[var(--text)] text-[0.92rem] font-[inherit] resize-none outline-none leading-normal placeholder:text-[var(--text-muted)]"
+        className="w-full min-h-[150px] max-h-[220px] px-5 pt-4 pb-2 border-none bg-transparent text-[var(--text)] text-[1rem] font-[inherit] resize-none outline-none leading-normal placeholder:text-[var(--text-muted)]"
         placeholder="What would you like your AI team to build?"
         disabled={isOff}
         onKeyDown={onKeyDown}
@@ -117,24 +117,24 @@ function CompactInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: Inpu
   const isOff = disabled || loading;
 
   return (
-    <div className="flex items-center gap-0 border border-[var(--glass-border)] rounded-[12px] bg-[var(--glass-bg)] backdrop-blur-[var(--glass-blur)] [-webkit-backdrop-filter:blur(var(--glass-blur))] transition-[border-color,box-shadow] duration-200 overflow-hidden focus-within:border-[#22c55e80] focus-within:shadow-[0_0_0_2px_rgba(34,197,94,0.15)]">
+    <div className="flex items-center gap-0 border border-[var(--glass-border)] rounded-[14px] bg-[var(--glass-bg)] backdrop-blur-[var(--glass-blur)] [-webkit-backdrop-filter:blur(var(--glass-blur))] transition-[border-color,box-shadow] duration-200 overflow-hidden focus-within:border-[#22c55e80] focus-within:shadow-[0_0_0_2px_rgba(34,197,94,0.15)]">
       <textarea
         ref={inputRef}
         rows={1}
-        className="flex-1 h-[38px] min-h-[38px] max-h-[38px] px-3.5 border-none bg-transparent text-[var(--text)] text-[0.82rem] font-[inherit] resize-none outline-none leading-[38px] placeholder:text-[var(--text-muted)]"
+        className="flex-1 h-[54px] min-h-[54px] max-h-[54px] px-3 border-none bg-transparent text-[var(--text)] text-[0.92rem] font-[inherit] resize-none outline-none leading-[54px] placeholder:text-[var(--text-muted)]"
         placeholder="Follow-up message..."
         disabled={isOff}
         onKeyDown={onKeyDown}
       />
       <button
         className={cn(
-          "flex items-center justify-center gap-1.5 px-3.5 h-[38px] border-none border-l border-l-[var(--glass-border)] bg-transparent text-[#22c55e] text-[0.78rem] font-semibold cursor-pointer transition-colors whitespace-nowrap shrink-0 hover:bg-[rgba(34,197,94,0.06)]",
+          "flex items-center justify-center gap-1.5 px-3.5 h-[54px] border-none border-l border-l-[var(--glass-border)] bg-transparent text-[#22c55e] text-[0.88rem] font-semibold cursor-pointer transition-colors whitespace-nowrap shrink-0 hover:bg-[rgba(34,197,94,0.06)]",
           isOff && "opacity-40 cursor-not-allowed",
         )}
         onClick={onSubmit}
         disabled={isOff}
       >
-        {loading ? <SpinnerIcon size={13} /> : <SendIcon />}
+        {loading ? <SpinnerIcon size={15} /> : <SendIcon />}
         {loading ? "Sending" : "Send"}
       </button>
     </div>
