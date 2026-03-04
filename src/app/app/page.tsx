@@ -7,7 +7,6 @@ import { DetailPanel } from "@/components/detail-panel";
 import { KanbanBoard } from "@/components/kanban-board";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
-import { textGradientTitle } from "@/lib/styles";
 import type {
   AgentRole,
   AgentResponse,
@@ -336,44 +335,51 @@ export default function Home() {
   }, [isWaitingForPlan]);
 
   return (
-    <div className="w-full h-screen flex flex-col overflow-hidden">
+    <div className={cn("w-full h-screen flex flex-col overflow-hidden", !hasPipeline && "landing-dot-grid")}>
       {/* ── Top bar ──────────────────────────────────── */}
       {hasPipeline && (
-        <div className="flex items-center gap-3 px-5 py-[0.65rem] border-b border-[var(--panel-border)] bg-[var(--topbar-bg)] backdrop-blur-[16px] [-webkit-backdrop-filter:blur(16px)] z-20 shrink-0">
-          <div className="flex items-center gap-2 shrink-0">
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="3" stroke="var(--accent)" strokeWidth="1.8" />
-              <circle cx="12" cy="4" r="1.5" fill="var(--accent)" opacity="0.6" />
-              <circle cx="20" cy="12" r="1.5" fill="var(--accent)" opacity="0.6" />
-              <circle cx="12" cy="20" r="1.5" fill="var(--accent)" opacity="0.6" />
-              <circle cx="4" cy="12" r="1.5" fill="var(--accent)" opacity="0.6" />
-              <line x1="12" y1="5.5" x2="12" y2="9" stroke="var(--accent)" strokeWidth="1.2" />
-              <line x1="18.5" y1="12" x2="15" y2="12" stroke="var(--accent)" strokeWidth="1.2" />
-              <line x1="12" y1="15" x2="12" y2="18.5" stroke="var(--accent)" strokeWidth="1.2" />
-              <line x1="5.5" y1="12" x2="9" y2="12" stroke="var(--accent)" strokeWidth="1.2" />
-            </svg>
-            <span className={`text-base font-bold font-[var(--font-display)] ${textGradientTitle}`}>AI Team</span>
-          </div>
-          <span className="text-[0.76rem] text-[var(--text-muted)] flex-1 overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
-            {latestEntry?.plan ?? "Planning..."}
-          </span>
-          <button
-            className={cn(
-              "px-[0.65rem] py-[0.3rem] rounded-lg border text-[0.73rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.3rem] shrink-0",
-              showKanban
-                ? "bg-[var(--accent-glow)] text-[var(--accent)] border-[var(--accent)]"
-                : "bg-[var(--surface-hover)] text-[var(--text-muted)] border-[var(--surface-border)]"
-            )}
-            onClick={() => setShowKanban((v) => !v)}
+        <div className="absolute top-3.5 left-1/2 -translate-x-1/2 z-20" style={{ width: "min(720px, calc(100% - 32px))" }}>
+          <nav
+            className="landing-nav flex items-center gap-3 py-[0.55rem] pl-5 pr-[0.6rem] rounded-full border border-[rgba(255,255,255,0.1)] shadow-[0_4px_30px_rgba(0,0,0,0.25),0_0_0_0.5px_rgba(255,255,255,0.05)_inset]"
+            style={{
+              background: "rgba(10, 10, 10, 0.75)",
+              backdropFilter: "blur(20px) saturate(1.4)",
+              WebkitBackdropFilter: "blur(20px) saturate(1.4)",
+            }}
           >
-            <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
-              <rect x="1" y="2" width="4" height="12" rx="1" stroke="currentColor" strokeWidth="1.2" />
-              <rect x="6" y="2" width="4" height="8" rx="1" stroke="currentColor" strokeWidth="1.2" />
-              <rect x="11" y="2" width="4" height="10" rx="1" stroke="currentColor" strokeWidth="1.2" />
-            </svg>
-            Tasks{allTasks.length > 0 ? ` (${allTasks.length})` : ""}
-          </button>
-          <ThemeToggle />
+            <a href="/" className="flex items-center gap-[0.6rem] shrink-0 no-underline hover:opacity-80 transition-opacity">
+              <div className="size-7 rounded-full bg-[rgba(34,197,94,0.12)] border border-[rgba(34,197,94,0.25)] flex items-center justify-center">
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="3" stroke="#22c55e" strokeWidth="2" />
+                  <circle cx="12" cy="4" r="1.5" fill="#22c55e" opacity="0.7" />
+                  <circle cx="20" cy="12" r="1.5" fill="#22c55e" opacity="0.7" />
+                  <circle cx="12" cy="20" r="1.5" fill="#22c55e" opacity="0.7" />
+                  <circle cx="4" cy="12" r="1.5" fill="#22c55e" opacity="0.7" />
+                </svg>
+              </div>
+              <span className="text-[0.88rem] font-bold font-[var(--font-display)] text-[var(--text)] tracking-[-0.01em]">AI Team</span>
+            </a>
+            <span className="text-[0.72rem] text-[var(--text-muted)] flex-1 overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
+              {latestEntry?.plan ?? "Planning..."}
+            </span>
+            <button
+              className={cn(
+                "px-[0.65rem] py-[0.3rem] rounded-full border text-[0.73rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.3rem] shrink-0",
+                showKanban
+                  ? "bg-[rgba(34,197,94,0.1)] text-[#22c55e] border-[#22c55e80]"
+                  : "bg-[rgba(255,255,255,0.04)] text-[var(--text-muted)] border-[rgba(255,255,255,0.08)]"
+              )}
+              onClick={() => setShowKanban((v) => !v)}
+            >
+              <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
+                <rect x="1" y="2" width="4" height="12" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                <rect x="6" y="2" width="4" height="8" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                <rect x="11" y="2" width="4" height="10" rx="1" stroke="currentColor" strokeWidth="1.2" />
+              </svg>
+              Tasks{allTasks.length > 0 ? ` (${allTasks.length})` : ""}
+            </button>
+            <ThemeToggle />
+          </nav>
         </div>
       )}
 
@@ -382,6 +388,17 @@ export default function Home() {
         {/* Hero empty state */}
         {!hasPipeline && !isWaitingForPlan && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+            {/* Ambient glow — matches landing */}
+            <div
+              className="absolute left-1/2 -translate-x-1/2 rounded-full pointer-events-none"
+              style={{
+                top: "-30%",
+                width: "clamp(400px, 60vw, 800px)",
+                height: "clamp(400px, 60vw, 800px)",
+                background: "radial-gradient(circle, rgba(34,197,94,0.08) 0%, transparent 70%)",
+              }}
+            />
+
             <div className="absolute top-4 right-4">
               <ThemeToggle />
             </div>
@@ -389,7 +406,7 @@ export default function Home() {
             {/* Icon */}
             <div style={{ animation: "hero-fade-in 0.5s ease-out both", animationDelay: "0s" }}>
               <svg width={48} height={48} viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="3.5" stroke="var(--accent)" strokeWidth="1.5" />
+                <circle cx="12" cy="12" r="3.5" stroke="#22c55e" strokeWidth="1.5" />
                 <circle cx="12" cy="3.5" r="2" fill="#a78bfa" opacity="0.6" />
                 <circle cx="20.5" cy="12" r="2" fill="#34d399" opacity="0.6" />
                 <circle cx="12" cy="20.5" r="2" fill="#eab308" opacity="0.6" />
@@ -401,9 +418,18 @@ export default function Home() {
               </svg>
             </div>
 
+            {/* Badge — matches landing */}
+            <div
+              className="inline-flex items-center gap-[0.4rem] px-3.5 py-[0.35rem] rounded-full border border-[var(--glass-border)] bg-[var(--surface-raised)] text-[0.72rem] font-medium text-[var(--text-muted)]"
+              style={{ animation: "hero-fade-in 0.5s ease-out both", animationDelay: "0.03s" }}
+            >
+              <span className="inline-block size-1.5 rounded-full bg-[#22c55e]" />
+              Multi-Agent Orchestrator
+            </div>
+
             {/* Title */}
             <h1
-              className={`text-[1.75rem] font-bold font-[var(--font-display)] tracking-[-0.02em] ${textGradientTitle}`}
+              className="text-[2rem] font-bold font-[var(--font-display)] tracking-[-0.03em] text-[var(--text)]"
               style={{ animation: "hero-fade-in 0.5s ease-out both", animationDelay: "0.05s" }}
             >
               AI Team
@@ -445,7 +471,7 @@ export default function Home() {
                     }
                   }}
                   disabled={isLoading}
-                  className="px-[0.7rem] py-[0.3rem] rounded-full border border-[var(--surface-border)] bg-[var(--surface-hover)] text-[var(--text-muted)] text-[0.7rem] cursor-pointer transition-all duration-150 whitespace-nowrap hover:border-[var(--accent)] hover:text-[var(--accent)] hover:bg-[var(--accent-glow)]"
+                  className="px-[0.7rem] py-[0.3rem] rounded-full border border-[var(--glass-border)] bg-[var(--surface-raised)] text-[var(--text-muted)] text-[0.7rem] cursor-pointer transition-all duration-150 whitespace-nowrap hover:border-[#22c55e80] hover:text-[#22c55e] hover:bg-[rgba(34,197,94,0.08)]"
                 >
                   {suggestion}
                 </button>

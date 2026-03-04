@@ -84,7 +84,7 @@ function HeroInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: InputVa
   const isOff = disabled || loading;
 
   return (
-    <div className={`${glassCard} shadow-[0_4px_24px_rgba(0,0,0,0.08)] transition-[border-color,box-shadow] duration-200 overflow-hidden focus-within:border-[var(--accent)] focus-within:shadow-[0_0_0_2px_var(--accent-glow),0_4px_24px_rgba(0,0,0,0.08)]`}>
+    <div className={`${glassCard} shadow-[0_4px_24px_rgba(0,0,0,0.08)] transition-[border-color,box-shadow] duration-200 overflow-hidden focus-within:border-[#22c55e80] focus-within:shadow-[0_0_0_2px_rgba(34,197,94,0.15),0_4px_24px_rgba(0,0,0,0.08)]`}>
       <textarea
         ref={inputRef}
         rows={3}
@@ -99,7 +99,7 @@ function HeroInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: InputVa
         </span>
         <button
           className={cn(
-            "px-3.5 py-1.5 rounded-[10px] border-none bg-[var(--accent)] text-white font-semibold text-[0.78rem] cursor-pointer transition-opacity whitespace-nowrap flex items-center gap-1.5",
+            "px-3.5 py-1.5 rounded-[10px] border-none bg-gradient-to-br from-[#22c55e] to-[#16a34a] text-white font-semibold text-[0.78rem] cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5 shadow-[0_2px_12px_rgba(34,197,94,0.25)] hover:shadow-[0_2px_20px_rgba(34,197,94,0.4)]",
             isOff && "opacity-40 cursor-not-allowed",
           )}
           onClick={onSubmit}
@@ -117,7 +117,7 @@ function CompactInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: Inpu
   const isOff = disabled || loading;
 
   return (
-    <div className="flex items-center gap-0 border border-[var(--glass-border)] rounded-[12px] bg-[var(--glass-bg)] backdrop-blur-[var(--glass-blur)] [-webkit-backdrop-filter:blur(var(--glass-blur))] transition-[border-color,box-shadow] duration-200 overflow-hidden focus-within:border-[var(--accent)] focus-within:shadow-[0_0_0_2px_var(--accent-glow)]">
+    <div className="flex items-center gap-0 border border-[var(--glass-border)] rounded-[12px] bg-[var(--glass-bg)] backdrop-blur-[var(--glass-blur)] [-webkit-backdrop-filter:blur(var(--glass-blur))] transition-[border-color,box-shadow] duration-200 overflow-hidden focus-within:border-[#22c55e80] focus-within:shadow-[0_0_0_2px_rgba(34,197,94,0.15)]">
       <textarea
         ref={inputRef}
         rows={1}
@@ -128,7 +128,7 @@ function CompactInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: Inpu
       />
       <button
         className={cn(
-          "flex items-center justify-center gap-1.5 px-3.5 h-[38px] border-none border-l border-l-[var(--glass-border)] bg-transparent text-[var(--accent)] text-[0.78rem] font-semibold cursor-pointer transition-colors whitespace-nowrap shrink-0 hover:bg-[var(--surface-hover)]",
+          "flex items-center justify-center gap-1.5 px-3.5 h-[38px] border-none border-l border-l-[var(--glass-border)] bg-transparent text-[#22c55e] text-[0.78rem] font-semibold cursor-pointer transition-colors whitespace-nowrap shrink-0 hover:bg-[rgba(34,197,94,0.06)]",
           isOff && "opacity-40 cursor-not-allowed",
         )}
         onClick={onSubmit}
