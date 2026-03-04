@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, use } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback, use } from "react";
 
 import { ChatInput } from "@/components/chat-input";
 import { AgentPipeline } from "@/components/agent-pipeline";
@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils";
 import { useWorkspaceSession } from "@/hooks/use-workspace-session";
 import { useRunPolling } from "@/hooks/use-run-polling";
 import { WorkflowHistoryPanel } from "@/components/workflow-history-panel";
-import type { HistoryEntry } from "@/lib/workflow-replay";
+import type { HistoryEntry, StoredWorkflowRun } from "@/lib/workflow-replay";
+import { replayWorkflowRuns } from "@/lib/workflow-replay";
 import type {
   AgentRole,
   AgentResponse,
@@ -104,6 +105,31 @@ function classifyError(msg: string): { title: string; hint: string } {
     return { title: "Server error", hint: "Something went wrong on the server. Check the logs." };
   }
   return { title: "Something went wrong", hint: msg };
+}
+
+// ── Suggestion chips ─────────────────────────────────
+
+const SUGGESTIONS = [
+  "Generate landing page",
+  "Add dark mode",
+  "Write unit tests",
+  "Improve performance",
+];
+
+function SuggestionChips({ onSelect }: { onSelect: (text: string) => void }) {
+  return (
+    <div className="flex flex-wrap justify-center gap-1.5 px-2 animate-fade-in">
+      {SUGGESTIONS.map((s) => (
+        <button
+          key={s}
+          className="px-2.5 py-1 rounded-full bg-[var(--surface-hover)] text-[var(--text-muted)] text-[0.7rem] cursor-pointer border-none transition-all hover:text-[var(--text)] hover:bg-[var(--glass-border)]"
+          onClick={() => onSelect(s)}
+        >
+          {s}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 // ── Error banner component ───────────────────────────
@@ -252,7 +278,19 @@ export default function WorkspaceTeamPage({
     setHistory((prev) => prev.map((h) => (h.id === entryId ? { ...h, ...updater(h) } : h)));
   };
 
+  const followUpRef = useRef<HTMLTextAreaElement>(null);
+  const [followUpHasText, setFollowUpHasText] = useState(false);
+
+  const handleSuggestionSelect = useCallback((text: string) => {
+    if (followUpRef.current) {
+      followUpRef.current.value = text;
+      followUpRef.current.focus();
+      setFollowUpHasText(true);
+    }
+  }, []);
+
   const handleSubmit = async (message: string) => {
+    setFollowUpHasText(false);
     if (!sessionId) return;
 
     // New run uses the live SSE stream — stop polling and reset view to latest
@@ -287,18 +325,10 @@ export default function WorkspaceTeamPage({
       const decoder = new TextDecoder();
       let buffer = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+      let doneRequestId: string | null = null;
 
-        const lastDoubleNewline = buffer.lastIndexOf("\n\n");
-        if (lastDoubleNewline === -1) continue;
-
-        const complete = buffer.slice(0, lastDoubleNewline + 2);
-        buffer = buffer.slice(lastDoubleNewline + 2);
-
-        for (const event of parseSSE(complete)) {
+      const processEvents = (text: string) => {
+        for (const event of parseSSE(text)) {
           switch (event.type) {
             case "plan":
               patch(entryId, () => ({ plan: event.plan, phases: event.phases }));
@@ -337,18 +367,68 @@ export default function WorkspaceTeamPage({
               }
               break;
             case "done":
+              doneRequestId = event.requestId;
               patch(entryId, () => ({ done: true, workingAgents: [] }));
               break;
           }
         }
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lastDoubleNewline = buffer.lastIndexOf("\n\n");
+        if (lastDoubleNewline === -1) continue;
+
+        const complete = buffer.slice(0, lastDoubleNewline + 2);
+        buffer = buffer.slice(lastDoubleNewline + 2);
+        processEvents(complete);
       }
 
+      // Flush any remaining data in the decoder and buffer
+      buffer += decoder.decode();
+      if (buffer.trim()) processEvents(buffer);
+
       patch(entryId, () => ({ done: true, workingAgents: [] }));
+
+      // Reconcile final state from MongoDB to catch any SSE events
+      // that were lost due to response buffering/compression
+      if (doneRequestId) {
+        reconcileFromDB(doneRequestId, entryId);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       patch(entryId, () => ({ error: msg, done: true, workingAgents: [] }));
     }
   }
+
+  const reconcileFromDB = async (requestId: string, entryId: string) => {
+    try {
+      const res = await fetch(`/api/workflows?id=${encodeURIComponent(requestId)}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { run?: StoredWorkflowRun };
+      if (!data.run) return;
+
+      const { history: replayedHistory, allTasks: replayedTasks } = replayWorkflowRuns([data.run]);
+      const replayedEntry = replayedHistory[0];
+      if (!replayedEntry) return;
+
+      // Merge the DB state into the live history entry (keep entryId)
+      patch(entryId, () => ({
+        plan: replayedEntry.plan,
+        phases: replayedEntry.phases,
+        workingAgents: replayedEntry.workingAgents,
+        outputs: replayedEntry.outputs,
+        error: replayedEntry.error,
+        done: replayedEntry.done,
+      }));
+      setAllTasks((prev) => mergeTasks(prev, replayedTasks));
+    } catch {
+      // Non-critical — SSE data is the primary source, this is just a safety net
+    }
+  };
 
   const hasPipeline = !!latestEntry?.phases;
   const isWaitingForPlan = isLoading && !hasPipeline;
@@ -489,7 +569,10 @@ export default function WorkspaceTeamPage({
               </div>
             </div>
             {/* Bottom input bar */}
-            <div className="px-2 sm:px-4 pb-3 sm:pb-4 flex justify-center">
+            <div className="px-2 sm:px-4 pb-3 sm:pb-4 flex flex-col items-center gap-2">
+              {history.length === 0 && !isWaitingForPlan && !followUpHasText && (
+                <SuggestionChips onSelect={handleSuggestionSelect} />
+              )}
               <div
                 className="flex items-center gap-2.5 sm:gap-3.5 px-3.5 sm:px-5 py-2.5 border border-[var(--glass-border)] rounded-[16px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] z-[90] w-full max-w-[780px]"
               >
@@ -497,7 +580,14 @@ export default function WorkspaceTeamPage({
                   {isRestoring ? "Restoring..." : isWaitingForPlan ? "Working..." : "Ready"}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <ChatInput onSubmit={handleSubmit} disabled={isInputDisabled} loading={isInputDisabled} compact />
+                  <ChatInput
+                    onSubmit={handleSubmit}
+                    disabled={isInputDisabled}
+                    loading={isInputDisabled}
+                    compact
+                    textareaRef={followUpRef}
+                    onTextChange={setFollowUpHasText}
+                  />
                 </div>
                 <span className="text-[0.72rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60 hidden sm:inline">
                   {"\u2318"} Enter
@@ -529,22 +619,31 @@ export default function WorkspaceTeamPage({
 
         {/* Bottom bar */}
         {hasPipeline && (
-          <div
-            className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2.5 sm:gap-3.5 px-3 sm:px-4 py-2 border border-[var(--glass-border)] rounded-[18px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] z-[90] w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-[780px]"
-          >
-            <span className="text-[0.75rem] sm:text-[0.8rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 hidden sm:inline">
-              {isLoading
-                ? `Working... (${latestEntry?.workingAgents.map((a) => a.split("_").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ")).join(", ") || "planning"})`
-                : latestEntry?.done
-                  ? "Pipeline complete"
-                  : "Ready"}
-            </span>
-            <div className="flex-1 min-w-0">
-              <ChatInput onSubmit={handleSubmit} disabled={isInputDisabled} loading={isLoading} compact />
+          <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 z-[90] flex flex-col items-center gap-2 w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-[780px]">
+            <div
+              className="flex items-center gap-2.5 sm:gap-3.5 px-3 sm:px-4 py-2 border border-[var(--glass-border)] rounded-[18px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] w-full"
+            >
+              <span className="text-[0.75rem] sm:text-[0.8rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 hidden sm:inline">
+                {isLoading
+                  ? `Working... (${latestEntry?.workingAgents.map((a) => a.split("_").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ")).join(", ") || "planning"})`
+                  : latestEntry?.done
+                    ? "Pipeline complete"
+                    : "Ready"}
+              </span>
+              <div className="flex-1 min-w-0">
+                <ChatInput
+                  onSubmit={handleSubmit}
+                  disabled={isInputDisabled}
+                  loading={isLoading}
+                  compact
+                  textareaRef={followUpRef}
+                  onTextChange={setFollowUpHasText}
+                />
+              </div>
+              <span className="text-[0.72rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60 hidden sm:inline">
+                {"\u2318"} Enter
+              </span>
             </div>
-            <span className="text-[0.72rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60 hidden sm:inline">
-              {"\u2318"} Enter
-            </span>
           </div>
         )}
       </div>

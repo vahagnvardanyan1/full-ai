@@ -33,9 +33,10 @@ interface ChatInputProps {
   loading?: boolean;
   compact?: boolean;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+  onTextChange?: (hasText: boolean) => void;
 }
 
-export function ChatInput({ onSubmit, disabled, loading, compact, textareaRef }: ChatInputProps) {
+export function ChatInput({ onSubmit, disabled, loading, compact, textareaRef, onTextChange }: ChatInputProps) {
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const ref = textareaRef ?? internalRef;
 
@@ -60,6 +61,7 @@ export function ChatInput({ onSubmit, disabled, loading, compact, textareaRef }:
       loading={loading}
       onKeyDown={handleKeyDown}
       onSubmit={handleSubmit}
+      onTextChange={onTextChange}
     />;
   }
 
@@ -78,6 +80,7 @@ interface InputVariantProps {
   loading?: boolean;
   onKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
   onSubmit: () => void;
+  onTextChange?: (hasText: boolean) => void;
 }
 
 function HeroInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: InputVariantProps) {
@@ -113,7 +116,7 @@ function HeroInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: InputVa
   );
 }
 
-function CompactInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: InputVariantProps) {
+function CompactInput({ inputRef, disabled, loading, onKeyDown, onSubmit, onTextChange }: InputVariantProps) {
   const isOff = disabled || loading;
 
   return (
@@ -125,6 +128,7 @@ function CompactInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: Inpu
         placeholder="Follow-up message..."
         disabled={isOff}
         onKeyDown={onKeyDown}
+        onInput={(e) => onTextChange?.((e.target as HTMLTextAreaElement).value.length > 0)}
       />
       <button
         className={cn(
