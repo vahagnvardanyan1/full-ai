@@ -10,6 +10,8 @@
 // meaningful error report.
 // ──────────────────────────────────────────────────────────
 
+import * as fs from "fs/promises";
+import * as path from "path";
 import { logger } from "@/lib/logger";
 import { writeCode } from "@/lib/clients/code-store";
 
@@ -26,7 +28,7 @@ import type { CodeGenerationResponse, IssueInfo, PlanStep } from "./types";
 import type { AgentResponse, FEProgressStage } from "../types";
 
 const MAX_REVIEW_ITERATIONS = 3;
-const MAX_VALIDATION_FIXES = 2;
+const MAX_VALIDATION_FIXES = 3;
 
 /** Callback for sub-step progress events */
 export type ProgressCallback = (stage: FEProgressStage, message: string, progress: number) => void;
@@ -258,6 +260,7 @@ export async function runFrontendDeveloper(
         architecture: "unknown",
         keyFiles: {},
         dependencies: [],
+        linterRules: [],
         lastUpdated: new Date(),
       };
       warnings.push("Repo onboarding failed — using minimal defaults");
@@ -271,7 +274,10 @@ export async function runFrontendDeveloper(
       `Linter: ${repoKnowledge.linter}`,
       `Architecture: ${repoKnowledge.architecture}`,
       `Conventions:\n${repoKnowledge.conventions.map((c) => `  - ${c}`).join("\n")}`,
-    ].join("\n");
+      repoKnowledge.linterRules.length > 0
+        ? `Linter Rules (code MUST comply):\n${repoKnowledge.linterRules.map((r) => `  - ${r}`).join("\n")}`
+        : "",
+    ].filter(Boolean).join("\n");
 
     detailParts.push(`## Repo Onboarding\n${knowledgeContext}`);
     toolCalls.push({
@@ -475,6 +481,10 @@ export async function runFrontendDeveloper(
             repoKnowledge.conventions?.length
               ? `Follow conventions: ${repoKnowledge.conventions.slice(0, 5).join(", ")}`
               : "",
+            // Inject discovered linter rules so the LLM generates compliant code from the start
+            ...(repoKnowledge.linterRules.length > 0
+              ? [`LINTER RULES — your generated code MUST comply with ALL of these:\n${repoKnowledge.linterRules.map((r) => `  • ${r}`).join("\n")}`]
+              : []),
             "Preserve ALL existing imports — do NOT change any import path unless the new target actually exists in the repo",
             "If the existing file has 'use client', the output MUST also have 'use client' at the top",
             "In Next.js App Router: page.tsx must NOT include Header/Footer/Nav if layout.tsx already provides them",
@@ -609,9 +619,13 @@ export async function runFrontendDeveloper(
     allChanges = resolvePathConflicts(allChanges);
 
     // ══════════════════════════════════════════════
-    // Step 6: Real Tool Validation Loop
+    // Step 6: Real Tool Validation Loop (3-tier)
+    //
+    // Tier 1: Deterministic auto-fix (prettier --write, eslint --fix)
+    // Tier 2: LLM-assisted fix (targeted — only affected files)
+    // Tier 3: Hard gate (block push+MR if ANY check fails)
     // ══════════════════════════════════════════════
-    emit("validating", "Applying code to disk and running real validation tools...", 68);
+    emit("validating", "Applying code to disk...", 65);
 
     // Apply code to the cloned repo
     const applyResult = await github.applyChanges(dir, git, allChanges);
@@ -626,12 +640,44 @@ export async function runFrontendDeveloper(
       throw new Error("No files could be applied to disk. All file writes failed.");
     }
 
+    // ── Tier 1: Deterministic auto-fix (no LLM needed) ──
+    emit("validating", "Running auto-fix: prettier --write, eslint --fix...", 66);
+    try {
+      const autoFixes = await validator.autoFix(dir, repoKnowledge);
+      if (autoFixes.length > 0) {
+        logger.info(`Auto-fix applied: ${autoFixes.join(", ")}`);
+        detailParts.push(`## Auto-Fix (Tier 1)\nApplied: ${autoFixes.join(", ")}`);
+
+        // Read back auto-fixed files from disk so our in-memory changes stay in sync
+        for (let ci = 0; ci < allChanges.length; ci++) {
+          const filePath = path.join(dir, allChanges[ci].filename);
+          try {
+            const fixedContent = await fs.readFile(filePath, "utf-8");
+            allChanges[ci] = { ...allChanges[ci], code: fixedContent };
+          } catch { /* file may not exist on disk if it was skipped */ }
+        }
+      }
+    } catch (autoFixErr) {
+      logger.warn("Auto-fix tier failed — continuing to validation", { error: String(autoFixErr) });
+    }
+
+    // ── Tier 2: LLM-assisted fix loop (targeted at affected files only) ──
     let validationPassed = false;
+    /** Per-step pass/fail tracking for honest PR body */
+    const stepResults: Record<string, boolean> = {};
+
     for (let valIter = 1; valIter <= MAX_VALIDATION_FIXES; valIter++) {
-      emit("validating", `Tool validation iteration ${valIter}/${MAX_VALIDATION_FIXES} (tsc, eslint, tests)...`, 68 + valIter * 5);
+      emit("validating", `Validation iteration ${valIter}/${MAX_VALIDATION_FIXES} (tsc, eslint, prettier, tests)...`, 68 + valIter * 4);
 
       try {
         const validation = await validator.validate(dir, repoKnowledge);
+
+        // Track per-step results for the PR body
+        for (const step of validation.steps) {
+          if (!step.skipped) {
+            stepResults[step.name] = step.passed;
+          }
+        }
 
         toolCalls.push({
           tool: "tool_validation",
@@ -641,33 +687,59 @@ export async function runFrontendDeveloper(
 
         if (validation.passed) {
           validationPassed = true;
-          detailParts.push(`## Tool Validation\nPassed on iteration ${valIter}: ${validation.summary}`);
+          detailParts.push(`## Tool Validation\nAll checks passed on iteration ${valIter}: ${validation.summary}`);
           break;
         }
 
         logger.warn(`Tool validation iteration ${valIter} found issues: ${validation.summary}`);
 
-        // Fix files based on tool output
+        // Parse errors into structured format for targeted LLM fixes
         const failedSteps = validation.steps.filter((s) => !s.passed && !s.skipped);
-        const failureContext = failedSteps
-          .map((s) => `### ${s.name} FAILED:\n\`\`\`\n${s.output.slice(0, 2000)}\n\`\`\``)
-          .join("\n\n");
+        const allParsedErrors = failedSteps.flatMap((s) => validator.parseErrors(s));
 
+        // Fallback: if parser found zero errors but steps failed, use raw output
+        const failureContext = allParsedErrors.length > 0
+          ? validator.formatErrorsForLLM(allParsedErrors)
+          : failedSteps
+            .map((s) => `### ${s.name} FAILED:\n\`\`\`\n${s.output.slice(0, 2000)}\n\`\`\``)
+            .join("\n\n");
+
+        // Only send AFFECTED files to the LLM for fixing
+        let anyFixed = false;
         for (let ci = 0; ci < allChanges.length; ci++) {
           const change = allChanges[ci];
-          const isAffected = failedSteps.some((s) => s.output.includes(change.filename));
-          if (!isAffected && failedSteps.every((s) => s.name !== "type-check" && s.name !== "lint")) continue;
+
+          // Check if THIS file has parsed errors
+          const fileErrors = validator.formatErrorsForLLM(allParsedErrors, change.filename);
+          // Also check raw output for mentions
+          const isInRawOutput = failedSteps.some((s) => s.output.includes(change.filename));
+          // tsc/lint can affect files not directly named
+          const isGlobalCheck = failedSteps.some((s) => s.name === "type-check" || s.name === "lint");
+
+          if (!fileErrors && !isInRawOutput && !isGlobalCheck) continue;
+
+          // Build targeted fix prompt: structured errors for this specific file
+          const fixPrompt = fileErrors
+            ? `Fix these SPECIFIC errors in ${change.filename}:\n\n${fileErrors}`
+            : `Tool validation failures (find errors affecting ${change.filename}):\n\n${failureContext}`;
 
           try {
             const fixed = await openai.fixCodeIssues(
               { filename: change.filename, code: change.code, language: change.language },
-              [{ issue: `Tool validation failures:\n${failureContext}`, fix: "Fix ALL the issues shown in the tool output above" }],
+              [{ issue: fixPrompt, fix: "Fix ONLY the listed errors. Do NOT change anything else. Preserve all working code, imports, types, and styling." }],
               enrichedContext,
             );
             allChanges[ci] = fixed;
+            anyFixed = true;
           } catch (fixErr) {
             logger.warn(`Failed to fix ${change.filename} from validation: ${fixErr}`);
           }
+        }
+
+        if (!anyFixed) {
+          logger.warn("No files were fixed in this iteration — breaking to avoid infinite loop");
+          detailParts.push(`## Tool Validation\nNo fixes could be applied on iteration ${valIter}. Last: ${validation.summary}`);
+          break;
         }
 
         // Re-deduplicate and re-apply fixed code
@@ -675,34 +747,20 @@ export async function runFrontendDeveloper(
         allChanges = resolvePathConflicts(allChanges);
         await github.applyChanges(dir, git, allChanges);
 
+        // After re-applying, run auto-fix again (fixes any formatting the LLM broke)
+        try {
+          await validator.autoFix(dir, repoKnowledge);
+          for (let ci = 0; ci < allChanges.length; ci++) {
+            const filePath = path.join(dir, allChanges[ci].filename);
+            try {
+              const fixedContent = await fs.readFile(filePath, "utf-8");
+              allChanges[ci] = { ...allChanges[ci], code: fixedContent };
+            } catch { /* ignore */ }
+          }
+        } catch { /* non-critical */ }
+
         if (valIter === MAX_VALIDATION_FIXES) {
           detailParts.push(`## Tool Validation\nMax iterations reached. Last: ${validation.summary}`);
-
-          // ── HARD GATE: block push if type-check fails ──
-          // If tsc fails, the code is fundamentally broken. Pushing it would
-          // create a PR that can never pass CI. This is the #1 weakness found
-          // in agent code reviews — pushing despite all validations failing.
-          const tscStep = validation.steps.find((s) => s.name === "type-check");
-          const tscFailed = tscStep && !tscStep.passed && !tscStep.skipped;
-
-          if (tscFailed) {
-            logger.error("HARD GATE: TypeScript compilation failed after all fix iterations — blocking push");
-            detailParts.push(`## ❌ Push Blocked\nTypeScript compilation failed after ${MAX_VALIDATION_FIXES} fix iterations. Pushing broken code is not allowed.`);
-            return {
-              agent: "frontend_developer",
-              summary: buildStructuredSummary({
-                title: "Implementation blocked — TypeScript compilation failed",
-                filesChanged: allChanges.length,
-                validationPassed: false,
-                branchName,
-                warnings: [...warnings, "BLOCKED: tsc --noEmit failed after all fix iterations. Code was NOT pushed."],
-              }),
-              toolCalls,
-              detail: detailParts.join("\n\n"),
-            };
-          }
-
-          warnings.push("Some validation checks had issues — pushing best-effort code (tsc passed)");
         }
       } catch (valErr) {
         const msg = valErr instanceof Error ? valErr.message : String(valErr);
@@ -714,6 +772,32 @@ export async function runFrontendDeveloper(
         }
         break;
       }
+    }
+
+    // ── Tier 3: Hard gate — block push+MR if ANY validation fails ──
+    // A mid-level engineer does NOT open a PR when their code fails CI.
+    // They fix it first. This gate enforces that behavior.
+    if (!validationPassed) {
+      const failedCheckNames = Object.entries(stepResults)
+        .filter(([, passed]) => !passed)
+        .map(([name]) => name)
+        .join(", ");
+
+      logger.error(`HARD GATE: Validation failed after ${MAX_VALIDATION_FIXES} fix iterations — blocking push. Failed: ${failedCheckNames}`);
+      detailParts.push(`## ❌ Push Blocked\nValidation checks failed after ${MAX_VALIDATION_FIXES} fix iterations (including auto-fix + LLM fixes).\nFailed checks: ${failedCheckNames}\nPushing code that fails CI is not allowed.`);
+
+      return {
+        agent: "frontend_developer",
+        summary: buildStructuredSummary({
+          title: `Implementation blocked — validation failed (${failedCheckNames})`,
+          filesChanged: allChanges.length,
+          validationPassed: false,
+          branchName,
+          warnings: [...warnings, `BLOCKED: ${failedCheckNames} failed after all fix iterations. Code was NOT pushed. No MR was created.`],
+        }),
+        toolCalls,
+        detail: detailParts.join("\n\n"),
+      };
     }
 
     // ══════════════════════════════════════════════
@@ -796,7 +880,7 @@ export async function runFrontendDeveloper(
     // ══════════════════════════════════════════════
     emit("pushing", "Opening pull request...", 92);
 
-    const prBody = buildPRBody(issue, plan, allChanges, validationPassed, warnings);
+    const prBody = buildPRBody(issue, plan, allChanges, validationPassed, warnings, stepResults);
 
     let prNumber: number;
     let prUrl: string;
@@ -955,10 +1039,17 @@ function buildPRBody(
   changes: CodeGenerationResponse[],
   validationPassed: boolean,
   warnings: string[],
+  stepResults?: Record<string, boolean>,
 ): string {
   const warningsSection = warnings.length > 0
     ? `\n### Pipeline Warnings\n${warnings.map((w) => `- ⚠️ ${w}`).join("\n")}\n`
     : "";
+
+  // Build per-check status lines — show actual pass/fail per tool
+  const checkIcon = (name: string) => {
+    if (!stepResults || !(name in stepResults)) return "⏭️"; // skipped
+    return stepResults[name] ? "✅" : "❌";
+  };
 
   return `## 🤖 Automated Implementation
 
@@ -977,15 +1068,18 @@ ${changes.map((c) => `- \`${c.filename}\`: ${c.explanation}`).join("\n")}
 ${plan.steps.map((s) => `${s.order}. ${s.description}`).join("\n")}
 
 ### Quality Checks
-- ${validationPassed ? "✅" : "⚠️"} TypeScript type-checking (\`tsc --noEmit\`)
-- ${validationPassed ? "✅" : "⚠️"} Linter validation (ESLint/project linter)
-- ${validationPassed ? "✅" : "⚠️"} Test suite execution
+- ${checkIcon("type-check")} TypeScript type-checking (\`tsc --noEmit\`)
+- ${checkIcon("lint")} Linter validation (ESLint/project linter)
+- ${checkIcon("format-check")} Formatting (Prettier)
+- ${checkIcon("build")} Production build (\`npm run build\`)
+- ${checkIcon("test")} Test suite execution
+- ✅ Auto-fix applied (prettier --write, eslint --fix)
 - ✅ LLM self-review (up to ${MAX_REVIEW_ITERATIONS} iterations)
-- ✅ Real tool validation (up to ${MAX_VALIDATION_FIXES} iterations)
-- ✅ Rebased onto latest \`${issue.labels.length > 0 ? "main" : "main"}\` before push
+- ✅ LLM-assisted validation fixes (up to ${MAX_VALIDATION_FIXES} iterations)
+- ✅ Rebased onto latest \`main\` before push
 ${warningsSection}
 ${plan.risks.length ? `### Risks\n${plan.risks.map((r: string) => `- ${r}`).join("\n")}` : ""}
 
 ---
-*Generated by AI Engineer Agent v3 — validated with real tools before submission.*`;
+*Generated by AI Engineer Agent v3 — all quality checks must pass before PR is created.*`;
 }

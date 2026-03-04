@@ -12,7 +12,7 @@ import type {
   TaskItem,
   GeneratedFile,
   StreamEvent,
-  FEProgressStage,
+  AgentProgressStage,
 } from "@/lib/agents/types";
 
 // ── Types ────────────────────────────────────────────────
@@ -25,7 +25,7 @@ interface AgentOutput {
 
 /** Tracks an agent's pipeline sub-step progress */
 interface AgentProgressInfo {
-  stage: FEProgressStage;
+  stage: AgentProgressStage;
   message: string;
   progress: number;
 }

@@ -95,7 +95,16 @@ Respond in JSON:
     "e.g., 'Uses barrel exports (index.ts)'"
   ],
   "architecture": "brief architecture description",
-  "dependencies": ["key dependencies/libraries used"]
+  "dependencies": ["key dependencies/libraries used"],
+  "linterRules": [
+    "Extract KEY linter/formatter rules from config files (.eslintrc*, .prettierrc*, etc.)",
+    "Focus on rules that affect generated code: import order, unused vars, semicolons, quotes, etc.",
+    "e.g., 'no-unused-vars: error'",
+    "e.g., 'import/order: alphabetical groups [builtin, external, internal]'",
+    "e.g., 'prettier: singleQuote=true, trailingComma=all, semi=true'",
+    "e.g., '@typescript-eslint/no-explicit-any: warn'",
+    "List up to 15 most impactful rules. If no config files found, return empty array."
+  ]
 }`,
       },
       {
@@ -128,6 +137,7 @@ Analyze this codebase.`,
       architecture: parsed.architecture,
       keyFiles: Object.fromEntries(Object.entries(keyFiles).map(([k]) => [k, "analyzed"])),
       dependencies: parsed.dependencies,
+      linterRules: Array.isArray(parsed.linterRules) ? parsed.linterRules : [],
       lastUpdated: new Date(),
     };
   }

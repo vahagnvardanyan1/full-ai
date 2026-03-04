@@ -80,11 +80,25 @@ export type FEProgressStage =
   | "pushing"
   | "pr_created";
 
+/** Progress stages emitted by the PM pipeline */
+export type PMProgressStage =
+  | "gathering_context"
+  | "analyzing_requirements"
+  | "assessing_feasibility"
+  | "planning_tasks"
+  | "writing_stories"
+  | "assessing_risks"
+  | "creating_tasks"
+  | "complete";
+
+/** All possible progress stages across all agents */
+export type AgentProgressStage = FEProgressStage | PMProgressStage;
+
 /** Sub-step progress event for agents that run multi-stage pipelines */
 export interface AgentProgressEvent {
   type: "agent_progress";
   agent: AgentRole;
-  stage: FEProgressStage;
+  stage: AgentProgressStage;
   message: string;
   /** 0-100 */
   progress: number;

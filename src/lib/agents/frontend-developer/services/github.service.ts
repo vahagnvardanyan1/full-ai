@@ -297,6 +297,34 @@ export class GitHubService {
 
     await git.commit(message);
 
+    // ── Sync with remote feature branch before pushing ──
+    // The rebase step (Step 8) only fetches main. If someone pushed
+    // new commits to the feature branch (e.g. manual system-prompt fix),
+    // our local branch is behind origin/<feature-branch>.
+    // Fetch the feature branch and rebase our commit on top.
+    try {
+      await git.fetch("origin", branch);
+      // Check if remote branch exists and has diverged
+      try {
+        await git.rebase([`origin/${branch}`]);
+        log.info({ branch }, "Rebased onto remote feature branch");
+      } catch {
+        // Rebase conflict — try merge instead
+        try { await git.rebase(["--abort"]); } catch { /* ignore */ }
+        try {
+          await git.merge([`origin/${branch}`]);
+          log.info({ branch }, "Merged remote feature branch");
+        } catch {
+          // Merge also conflicts — abort and continue (force-with-lease will handle)
+          try { await git.merge(["--abort"]); } catch { /* ignore */ }
+          log.warn({ branch }, "Could not rebase or merge remote feature branch — will attempt force push");
+        }
+      }
+    } catch {
+      // Branch doesn't exist on remote yet — that's fine, first push
+      log.info({ branch }, "Remote feature branch not found — first push");
+    }
+
     // Push with retry (network can be flaky)
     const MAX_PUSH_RETRIES = 3;
     for (let attempt = 1; attempt <= MAX_PUSH_RETRIES; attempt++) {

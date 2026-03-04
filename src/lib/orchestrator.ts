@@ -11,7 +11,7 @@
 
 import { getOpenAIClient } from "@/lib/clients/openai";
 import { logger } from "@/lib/logger";
-import { runProductManager } from "@/lib/agents/product-manager";
+import { runProductManager, type PMProgressCallback } from "@/lib/agents/product-manager";
 import { runFrontendDeveloper, type ProgressCallback } from "@/lib/agents/frontend-developer";
 import { runQAAgent } from "@/lib/agents/qa-agent";
 import { runDevOpsAgent } from "@/lib/agents/devops-agent";
@@ -147,12 +147,11 @@ async function createPlan(userMessage: string, context: string): Promise<Plan> {
 
 // ── Agent dispatcher ─────────────────────────────────────
 
-/** Simple agent runners (PM, QA, DevOps) — same signature as before */
+/** Simple agent runners (QA, DevOps) — PM and FE use autonomous pipelines */
 const SIMPLE_RUNNERS: Record<
   string,
   (msg: string) => Promise<AgentResponse>
 > = {
-  product_manager: runProductManager,
   qa: runQAAgent,
   devops: runDevOpsAgent,
 };
@@ -161,6 +160,7 @@ async function dispatchAgent(
   role: AgentRole,
   instructions: string,
   onProgress?: ProgressCallback,
+  onPMProgress?: PMProgressCallback,
 ): Promise<AgentResponse> {
   // Frontend developer uses the v3 pipeline with progress callback
   if (role === "frontend_developer") {
@@ -169,6 +169,22 @@ async function dispatchAgent(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       logger.error("Frontend developer failed", { error: msg });
+      return {
+        agent: role,
+        summary: `Agent ${role} encountered an error: ${msg}`,
+        toolCalls: [],
+        detail: msg,
+      };
+    }
+  }
+
+  // Product manager uses the v3 autonomous pipeline
+  if (role === "product_manager") {
+    try {
+      return await runProductManager(instructions, onPMProgress);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error("Product manager failed", { error: msg });
       return {
         agent: role,
         summary: `Agent ${role} encountered an error: ${msg}`,
@@ -265,12 +281,16 @@ export async function orchestrateStream(
       emitTasksSnapshot();
     }
 
-    // Build progress callback for agents that support it (frontend_developer)
+    // Build progress callbacks for agents with autonomous pipelines
     const progressCb: ProgressCallback = (stage, message, progress) => {
       onEvent({ type: "agent_progress", agent: role, stage, message, progress });
     };
 
-    const result = await dispatchAgent(role, instructions, progressCb);
+    const pmProgressCb: PMProgressCallback = (stage, message, progress) => {
+      onEvent({ type: "agent_progress", agent: role, stage, message, progress });
+    };
+
+    const result = await dispatchAgent(role, instructions, progressCb, pmProgressCb);
 
     const newTasks = getTasksForRequestByCreator(requestId, role);
     const newFiles = getFilesForRequestByCreator(requestId, role);

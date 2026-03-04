@@ -167,14 +167,18 @@ Review EVERY file strictly. Focus especially on:
 
     return this.generateCode({
       task: `Fix the following issues in this file:\n${issueList}`,
-      context: repoContext.slice(0, 2000),
+      context: repoContext.slice(0, 6000),
       existingCode: original.code,
       language: original.language,
       constraints: [
         `Target file: ${original.filename}`,
         "Action: modify",
-        "Fix ALL listed issues while preserving working code",
-        "Do not introduce new issues",
+        "CRITICAL: Fix ALL listed issues while preserving EVERY line of working code",
+        "Do NOT remove or change any import, type annotation, className, prop, or function that is not mentioned in the errors",
+        "Do NOT reformat the file — only change the specific lines with errors",
+        "Do NOT introduce new issues — the fix must be surgical",
+        "If an error mentions a specific line number, fix ONLY that line",
+        "If an error mentions a specific ESLint rule, fix the code to comply with that rule",
       ],
     });
   }

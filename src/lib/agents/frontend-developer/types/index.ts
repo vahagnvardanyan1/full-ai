@@ -13,6 +13,8 @@ export interface RepoKnowledge {
   architecture: string;
   keyFiles: Record<string, string>;
   dependencies: string[];
+  /** Key linter/formatter rules extracted from project config (e.g. eslint, prettier) */
+  linterRules: string[];
   lastUpdated: Date;
 }
 
