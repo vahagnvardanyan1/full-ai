@@ -26,12 +26,12 @@ interface LandingNodeData {
 }
 
 const AGENT_DEFS = [
-  { id: "orchestrator", label: "Orchestrator", color: "#22c55e", videoSrc: `${PICSART_CDN}/70483c73-3cd7-428f-ab17-95a56f4343d4.mp4`, x: 300, y: 240, isCenter: true },
-  { id: "product_manager", label: "PM", color: "#a78bfa", videoSrc: `${PICSART_CDN}/c5d7d947-756b-4da6-bf6d-f5b3a830736c.mp4`, x: 100, y: 60 },
-  { id: "frontend_developer", label: "Developer", color: "#34d399", videoSrc: `${PICSART_CDN}/7aab607b-d861-44d3-b5e0-d0233be39ff6.mp4`, x: 500, y: 70 },
-  { id: "qa", label: "QA", color: "#facc15", videoSrc: `${PICSART_CDN}/71fd37ab-de45-474e-89ce-edc39a060935.mp4`, x: 60, y: 400 },
-  { id: "devops", label: "DevOps", color: "#f97316", videoSrc: `${PICSART_CDN}/254781f4-6575-4cea-b2ac-18ad2e2fc7ca.mp4`, x: 420, y: 430 },
-  { id: "add", label: "+", color: "var(--text-muted)", videoSrc: "", x: 560, y: 280, isPlaceholder: true },
+  { id: "orchestrator", label: "Orchestrator", color: "#22c55e", videoSrc: `${PICSART_CDN}/70483c73-3cd7-428f-ab17-95a56f4343d4.mp4`, x: 250, y: 200, isCenter: true },
+  { id: "product_manager", label: "PM", color: "#a78bfa", videoSrc: `${PICSART_CDN}/c5d7d947-756b-4da6-bf6d-f5b3a830736c.mp4`, x: 80, y: 40 },
+  { id: "frontend_developer", label: "Developer", color: "#34d399", videoSrc: `${PICSART_CDN}/7aab607b-d861-44d3-b5e0-d0233be39ff6.mp4`, x: 420, y: 40 },
+  { id: "qa", label: "QA", color: "#facc15", videoSrc: `${PICSART_CDN}/71fd37ab-de45-474e-89ce-edc39a060935.mp4`, x: 80, y: 370 },
+  { id: "devops", label: "DevOps", color: "#f97316", videoSrc: `${PICSART_CDN}/254781f4-6575-4cea-b2ac-18ad2e2fc7ca.mp4`, x: 420, y: 370 },
+  { id: "add", label: "+", color: "var(--text-muted)", videoSrc: "", x: 480, y: 200, isPlaceholder: true },
 ];
 
 const ACTIVITY_ITEMS = [
