@@ -30,7 +30,10 @@ const AGENT_COLORS: Record<string, string> = {
 };
 
 function formatAgentName(role: string): string {
-  return role.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  return role
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 // ── Toast ────────────────────────────────────────────────
@@ -42,7 +45,15 @@ interface Toast {
   isError?: boolean;
 }
 
-function AgentToast({ toast, onDone, onClick }: { toast: Toast; onDone: () => void; onClick: () => void }) {
+function AgentToast({
+  toast,
+  onDone,
+  onClick,
+}: {
+  toast: Toast;
+  onDone: () => void;
+  onClick: () => void;
+}) {
   const isErr = toast.isError;
   const color = isErr ? "#ef4444" : (AGENT_COLORS[toast.agent] ?? "#888");
 
@@ -53,7 +64,10 @@ function AgentToast({ toast, onDone, onClick }: { toast: Toast; onDone: () => vo
 
   return (
     <div
-      onClick={() => { onClick(); onDone(); }}
+      onClick={() => {
+        onClick();
+        onDone();
+      }}
       className="flex items-center gap-[0.6rem] px-3.5 py-2 rounded-[10px] bg-[var(--panel-bg)] backdrop-blur-[16px] [-webkit-backdrop-filter:blur(16px)] animate-toast-in max-w-[300px] cursor-pointer pointer-events-auto transition-transform hover:scale-[1.02]"
       style={{
         border: `1px solid ${color}30`,
@@ -62,20 +76,60 @@ function AgentToast({ toast, onDone, onClick }: { toast: Toast; onDone: () => vo
       }}
     >
       {isErr ? (
-        <svg width={14} height={14} viewBox="0 0 16 16" fill="none" className="shrink-0">
+        <svg
+          width={14}
+          height={14}
+          viewBox="0 0 16 16"
+          fill="none"
+          className="shrink-0"
+        >
           <circle cx="8" cy="8" r="7" fill={`${color}20`} />
-          <line x1="5.5" y1="5.5" x2="10.5" y2="10.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
-          <line x1="10.5" y1="5.5" x2="5.5" y2="10.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+          <line
+            x1="5.5"
+            y1="5.5"
+            x2="10.5"
+            y2="10.5"
+            stroke={color}
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <line
+            x1="10.5"
+            y1="5.5"
+            x2="5.5"
+            y2="10.5"
+            stroke={color}
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
         </svg>
       ) : (
-        <svg width={14} height={14} viewBox="0 0 16 16" fill="none" className="shrink-0">
+        <svg
+          width={14}
+          height={14}
+          viewBox="0 0 16 16"
+          fill="none"
+          className="shrink-0"
+        >
           <circle cx="8" cy="8" r="7" fill={`${color}20`} />
-          <polyline points="5,8 7.2,10.5 11,5.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          <polyline
+            points="5,8 7.2,10.5 11,5.5"
+            stroke={color}
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
         </svg>
       )}
       <div className="min-w-0">
-        <div className="text-[0.72rem] font-semibold" style={{ color: isErr ? color : "var(--text)" }}>
-          {isErr ? `${formatAgentName(toast.agent)} failed` : formatAgentName(toast.agent)}
+        <div
+          className="text-[0.72rem] font-semibold"
+          style={{ color: isErr ? color : "var(--text)" }}
+        >
+          {isErr
+            ? `${formatAgentName(toast.agent)} failed`
+            : formatAgentName(toast.agent)}
         </div>
         <div className="text-[0.62rem] text-[var(--text-muted)] overflow-hidden text-ellipsis whitespace-nowrap">
           {toast.summary}
@@ -89,20 +143,44 @@ function AgentToast({ toast, onDone, onClick }: { toast: Toast; onDone: () => vo
 
 function classifyError(msg: string): { title: string; hint: string } {
   const lower = msg.toLowerCase();
-  if (lower.includes("fetch") || lower.includes("network") || lower.includes("failed to fetch") || lower.includes("aborterror")) {
-    return { title: "Connection failed", hint: "Check your internet connection and try again." };
+  if (
+    lower.includes("fetch") ||
+    lower.includes("network") ||
+    lower.includes("failed to fetch") ||
+    lower.includes("aborterror")
+  ) {
+    return {
+      title: "Connection failed",
+      hint: "Check your internet connection and try again.",
+    };
   }
   if (lower.includes("timeout") || lower.includes("timed out")) {
-    return { title: "Request timed out", hint: "The server took too long to respond. Try a simpler request." };
+    return {
+      title: "Request timed out",
+      hint: "The server took too long to respond. Try a simpler request.",
+    };
   }
   if (lower.includes("429") || lower.includes("rate limit")) {
-    return { title: "Rate limited", hint: "Too many requests. Please wait a moment and try again." };
+    return {
+      title: "Rate limited",
+      hint: "Too many requests. Please wait a moment and try again.",
+    };
   }
-  if (lower.includes("401") || lower.includes("unauthorized") || lower.includes("api key")) {
-    return { title: "Authentication error", hint: "The server API key may be misconfigured." };
+  if (
+    lower.includes("401") ||
+    lower.includes("unauthorized") ||
+    lower.includes("api key")
+  ) {
+    return {
+      title: "Authentication error",
+      hint: "The server API key may be misconfigured.",
+    };
   }
   if (lower.includes("500") || lower.includes("internal server")) {
-    return { title: "Server error", hint: "Something went wrong on the server. Check the logs." };
+    return {
+      title: "Server error",
+      hint: "Something went wrong on the server. Check the logs.",
+    };
   }
   return { title: "Something went wrong", hint: msg };
 }
@@ -134,7 +212,15 @@ function SuggestionChips({ onSelect }: { onSelect: (text: string) => void }) {
 
 // ── Error banner component ───────────────────────────
 
-function ErrorBanner({ message, onRetry, onDismiss }: { message: string; onRetry?: () => void; onDismiss: () => void }) {
+function ErrorBanner({
+  message,
+  onRetry,
+  onDismiss,
+}: {
+  message: string;
+  onRetry?: () => void;
+  onDismiss: () => void;
+}) {
   const { title, hint } = classifyError(message);
 
   return (
@@ -142,13 +228,25 @@ function ErrorBanner({ message, onRetry, onDismiss }: { message: string; onRetry
       <div className="size-7 rounded-full bg-[rgba(239,68,68,0.12)] flex items-center justify-center shrink-0 mt-px">
         <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="1.8" />
-          <line x1="12" y1="8" x2="12" y2="13" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+          <line
+            x1="12"
+            y1="8"
+            x2="12"
+            y2="13"
+            stroke="#ef4444"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
           <circle cx="12" cy="16.5" r="1.2" fill="#ef4444" />
         </svg>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[0.78rem] font-semibold text-[var(--error)] mb-0.5">{title}</div>
-        <div className="text-[0.72rem] text-[var(--text-muted)] leading-[1.4] break-words">{hint}</div>
+        <div className="text-[0.78rem] font-semibold text-[var(--error)] mb-0.5">
+          {title}
+        </div>
+        <div className="text-[0.72rem] text-[var(--text-muted)] leading-[1.4] break-words">
+          {hint}
+        </div>
       </div>
       <div className="flex items-center gap-[0.35rem] shrink-0">
         {onRetry && (
@@ -164,8 +262,24 @@ function ErrorBanner({ message, onRetry, onDismiss }: { message: string; onRetry
           onClick={onDismiss}
         >
           <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
-            <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <line
+              x1="4"
+              y1="4"
+              x2="12"
+              y2="12"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+            <line
+              x1="12"
+              y1="4"
+              x2="4"
+              y2="12"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
           </svg>
         </button>
       </div>
@@ -180,7 +294,11 @@ function parseSSE(text: string): StreamEvent[] {
   for (const block of text.split("\n\n")) {
     const dataLine = block.split("\n").find((l) => l.startsWith("data: "));
     if (dataLine) {
-      try { events.push(JSON.parse(dataLine.slice(6)) as StreamEvent); } catch { /* skip */ }
+      try {
+        events.push(JSON.parse(dataLine.slice(6)) as StreamEvent);
+      } catch {
+        /* skip */
+      }
     }
   }
   return events;
@@ -202,15 +320,23 @@ export default function WorkspaceTeamPage({
 }) {
   const { teamId } = use(params);
 
-  const { sessionId, isRestoring, restoredHistory, restoredTasks, activeRunRequestId } =
-    useWorkspaceSession({ teamId });
+  const {
+    sessionId,
+    isRestoring,
+    restoredHistory,
+    restoredTasks,
+    activeRunRequestId,
+    resetSession,
+  } = useWorkspaceSession({ teamId });
 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [allTasks, setAllTasks] = useState<TaskItem[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [showKanban, setShowKanban] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [dismissedErrors, setDismissedErrors] = useState<Set<string>>(new Set());
+  const [dismissedErrors, setDismissedErrors] = useState<Set<string>>(
+    new Set(),
+  );
   const [lastMessage, setLastMessage] = useState<string | null>(null);
   const [githubWarning, setGithubWarning] = useState<string | null>(null);
   // Polling stops once the run completes or goes stale; set to null to stop
@@ -226,7 +352,7 @@ export default function WorkspaceTeamPage({
     if (restoredHistory.length > 0) setHistory(restoredHistory);
     if (restoredTasks.length > 0) setAllTasks(restoredTasks);
     if (activeRunRequestId) setPollingRequestId(activeRunRequestId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRestoring]);
 
   // Live-reconnect to a run that was still executing when the page reloaded
@@ -246,6 +372,21 @@ export default function WorkspaceTeamPage({
     setPollingRequestId(null);
   }, []);
 
+  const handleNewSession = useCallback(() => {
+    resetSession();
+    setHistory([]);
+    setAllTasks([]);
+    setSelectedAgent(null);
+    setShowKanban(false);
+    setToasts([]);
+    setDismissedErrors(new Set());
+    setLastMessage(null);
+    setGithubWarning(null);
+    setPollingRequestId(null);
+    setShowHistory(false);
+    setViewingEntryId(null);
+  }, [resetSession]);
+
   useRunPolling({
     requestId: pollingRequestId,
     onUpdate: handlePollingUpdate,
@@ -261,7 +402,9 @@ export default function WorkspaceTeamPage({
       } else {
         setGithubWarning(null);
       }
-    } catch { /* ignore — non-blocking */ }
+    } catch {
+      /* ignore — non-blocking */
+    }
   }, []);
 
   useEffect(() => {
@@ -270,13 +413,15 @@ export default function WorkspaceTeamPage({
       if (document.visibilityState === "visible") checkGitHubStatus();
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", onVisibilityChange);
   }, [checkGitHubStatus]);
 
   const isLoading = history.some((h) => !h.done && !h.error);
   // If user selected a past run from the history panel, show that; otherwise show the latest
   const latestEntry = viewingEntryId
-    ? (history.find((h) => h.id === viewingEntryId) ?? [...history].reverse().find((h) => h.phases))
+    ? (history.find((h) => h.id === viewingEntryId) ??
+      [...history].reverse().find((h) => h.phases))
     : [...history].reverse().find((h) => h.phases);
 
   const completedAgents = latestEntry
@@ -284,7 +429,10 @@ export default function WorkspaceTeamPage({
     : [];
 
   const agentOutputs = useMemo(() => {
-    const map = new Map<string, { response: AgentResponse; tasks: TaskItem[]; files: GeneratedFile[] }>();
+    const map = new Map<
+      string,
+      { response: AgentResponse; tasks: TaskItem[]; files: GeneratedFile[] }
+    >();
     if (latestEntry) {
       for (const output of latestEntry.outputs) {
         map.set(output.response.agent, output);
@@ -295,8 +443,13 @@ export default function WorkspaceTeamPage({
 
   const selectedOutput = selectedAgent ? agentOutputs.get(selectedAgent) : null;
 
-  const patch = (entryId: string, updater: (prev: HistoryEntry) => Partial<HistoryEntry>) => {
-    setHistory((prev) => prev.map((h) => (h.id === entryId ? { ...h, ...updater(h) } : h)));
+  const patch = (
+    entryId: string,
+    updater: (prev: HistoryEntry) => Partial<HistoryEntry>,
+  ) => {
+    setHistory((prev) =>
+      prev.map((h) => (h.id === entryId ? { ...h, ...updater(h) } : h)),
+    );
   };
 
   const followUpRef = useRef<HTMLTextAreaElement>(null);
@@ -327,7 +480,16 @@ export default function WorkspaceTeamPage({
 
     setHistory((prev) => [
       ...prev,
-      { id: entryId, userMessage: message, plan: null, phases: null, workingAgents: [], outputs: [], error: null, done: false },
+      {
+        id: entryId,
+        userMessage: message,
+        plan: null,
+        phases: null,
+        workingAgents: [],
+        outputs: [],
+        error: null,
+        done: false,
+      },
     ]);
 
     // Pre-flight: check GitHub connection before running pipeline
@@ -336,11 +498,17 @@ export default function WorkspaceTeamPage({
       const ghStatus = await ghRes.json();
       if (!ghStatus.ready) {
         setGithubWarning(ghStatus.error ?? "GitHub is not connected.");
-        setHistory(prev => [...prev.map(h => h.id === entryId ? { ...h, error: ghStatus.error, done: true } : h)]);
+        setHistory((prev) => [
+          ...prev.map((h) =>
+            h.id === entryId ? { ...h, error: ghStatus.error, done: true } : h,
+          ),
+        ]);
         return;
       }
       setGithubWarning(null);
-    } catch { /* non-blocking — proceed if status endpoint unavailable */ }
+    } catch {
+      /* non-blocking — proceed if status endpoint unavailable */
+    }
 
     try {
       const res = await fetch("/api/orchestrate", {
@@ -364,25 +532,44 @@ export default function WorkspaceTeamPage({
         for (const event of parseSSE(text)) {
           switch (event.type) {
             case "plan":
-              patch(entryId, () => ({ plan: event.plan, phases: event.phases }));
+              patch(entryId, () => ({
+                plan: event.plan,
+                phases: event.phases,
+              }));
               break;
             case "agent_start":
-              patch(entryId, (prev) => ({ workingAgents: [...prev.workingAgents, event.agent] }));
+              patch(entryId, (prev) => ({
+                workingAgents: [...prev.workingAgents, event.agent],
+              }));
               break;
             case "agent_complete":
               patch(entryId, (prev) => ({
-                outputs: [...prev.outputs, { response: event.response, tasks: event.tasks, files: event.files }],
-                workingAgents: prev.workingAgents.filter((a) => a !== event.response.agent),
+                outputs: [
+                  ...prev.outputs,
+                  {
+                    response: event.response,
+                    tasks: event.tasks,
+                    files: event.files,
+                  },
+                ],
+                workingAgents: prev.workingAgents.filter(
+                  (a) => a !== event.response.agent,
+                ),
               }));
               {
                 const t: Toast = {
-                  id: Math.random().toString(36).slice(2) + Date.now().toString(36),
+                  id:
+                    Math.random().toString(36).slice(2) +
+                    Date.now().toString(36),
                   agent: event.response.agent,
-                  summary: event.response.summary.slice(0, 80).replace(/\n/g, " "),
+                  summary: event.response.summary
+                    .slice(0, 80)
+                    .replace(/\n/g, " "),
                 };
                 setToasts((prev) => [...prev, t]);
               }
-              if (event.tasks.length > 0) setAllTasks((prev) => mergeTasks(prev, event.tasks));
+              if (event.tasks.length > 0)
+                setAllTasks((prev) => mergeTasks(prev, event.tasks));
               break;
             case "tasks_updated":
               setAllTasks((prev) => mergeTasks(prev, event.tasks));
@@ -391,7 +578,9 @@ export default function WorkspaceTeamPage({
               patch(entryId, () => ({ error: event.message }));
               {
                 const errToast: Toast = {
-                  id: Math.random().toString(36).slice(2) + Date.now().toString(36),
+                  id:
+                    Math.random().toString(36).slice(2) +
+                    Date.now().toString(36),
                   agent: event.agent,
                   summary: event.message.slice(0, 80),
                   isError: true,
@@ -435,16 +624,19 @@ export default function WorkspaceTeamPage({
       const msg = err instanceof Error ? err.message : String(err);
       patch(entryId, () => ({ error: msg, done: true, workingAgents: [] }));
     }
-  }
+  };
 
   const reconcileFromDB = async (requestId: string, entryId: string) => {
     try {
-      const res = await fetch(`/api/workflows?id=${encodeURIComponent(requestId)}`);
+      const res = await fetch(
+        `/api/workflows?id=${encodeURIComponent(requestId)}`,
+      );
       if (!res.ok) return;
       const data = (await res.json()) as { run?: StoredWorkflowRun };
       if (!data.run) return;
 
-      const { history: replayedHistory, allTasks: replayedTasks } = replayWorkflowRuns([data.run]);
+      const { history: replayedHistory, allTasks: replayedTasks } =
+        replayWorkflowRuns([data.run]);
       const replayedEntry = replayedHistory[0];
       if (!replayedEntry) return;
 
@@ -470,6 +662,8 @@ export default function WorkspaceTeamPage({
 
   return (
     <div className={cn("w-full h-[calc(100vh)] flex flex-col overflow-hidden")}>
+      {/* ── New Session button — always visible ──────── */}
+
       {/* ── Top bar ──────────────────────────────────── */}
       {hasPipeline && (
         <div className="absolute top-3.5 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-[720px]">
@@ -490,16 +684,69 @@ export default function WorkspaceTeamPage({
                 "px-[0.55rem] sm:px-[0.65rem] py-[0.3rem] rounded-full border text-[0.68rem] sm:text-[0.73rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.3rem] shrink-0",
                 showKanban
                   ? "bg-[rgba(34,197,94,0.1)] text-[#22c55e] border-[#22c55e80]"
-                  : "bg-[var(--surface-raised)] text-[var(--text-muted)] border-[var(--surface-border)]"
+                  : "bg-[var(--surface-raised)] text-[var(--text-muted)] border-[var(--surface-border)]",
               )}
               onClick={() => setShowKanban((v) => !v)}
             >
               <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
-                <rect x="1" y="2" width="4" height="12" rx="1" stroke="currentColor" strokeWidth="1.2" />
-                <rect x="6" y="2" width="4" height="8" rx="1" stroke="currentColor" strokeWidth="1.2" />
-                <rect x="11" y="2" width="4" height="10" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                <rect
+                  x="1"
+                  y="2"
+                  width="4"
+                  height="12"
+                  rx="1"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                />
+                <rect
+                  x="6"
+                  y="2"
+                  width="4"
+                  height="8"
+                  rx="1"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                />
+                <rect
+                  x="11"
+                  y="2"
+                  width="4"
+                  height="10"
+                  rx="1"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                />
               </svg>
-              <span className="hidden sm:inline">Tasks</span>{allTasks.length > 0 ? ` (${allTasks.length})` : ""}
+              <div className="absolute top-3.5 left-2 sm:left-4 z-20">
+                <button
+                  onClick={handleNewSession}
+                  className="inline-flex items-center gap-1.5 px-3 py-[0.4rem] rounded-full border text-[0.72rem] font-semibold cursor-pointer transition-all duration-150"
+                  style={{
+                    background: "rgba(34,197,94,0.08)",
+                    borderColor: "rgba(34,197,94,0.25)",
+                    color: "#22c55e",
+                    backdropFilter: "blur(16px)",
+                    WebkitBackdropFilter: "blur(16px)",
+                  }}
+                >
+                  <svg
+                    width={11}
+                    height={11}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.8"
+                    strokeLinecap="round"
+                  >
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  <span className="hidden sm:inline">New Session 1</span>
+                  <span className="sm:hidden">New</span>
+                </button>
+              </div>
+              <span className="hidden sm:inline">Tasks</span>
+              {allTasks.length > 0 ? ` (${allTasks.length})` : ""}
             </button>
             {/* History toggle — only shown when there are multiple runs */}
             {history.length > 1 && (
@@ -508,16 +755,30 @@ export default function WorkspaceTeamPage({
                   "px-[0.55rem] sm:px-[0.65rem] py-[0.3rem] rounded-full border text-[0.68rem] sm:text-[0.73rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.3rem] shrink-0",
                   showHistory
                     ? "bg-[rgba(167,139,250,0.12)] text-[#a78bfa] border-[#a78bfa60]"
-                    : "bg-[rgba(255,255,255,0.04)] text-[var(--text-muted)] border-[rgba(255,255,255,0.08)]"
+                    : "bg-[rgba(255,255,255,0.04)] text-[var(--text-muted)] border-[rgba(255,255,255,0.08)]",
                 )}
                 onClick={() => setShowHistory((v) => !v)}
               >
                 <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
-                  <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.3" />
-                  <polyline points="8,4.5 8,8 10.2,9.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle
+                    cx="8"
+                    cy="8"
+                    r="6.2"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                  />
+                  <polyline
+                    points="8,4.5 8,8 10.2,9.4"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
                 <span className="hidden sm:inline">History</span>
-                <span className="text-[0.6rem] opacity-70">({history.length})</span>
+                <span className="text-[0.6rem] opacity-70">
+                  ({history.length})
+                </span>
               </button>
             )}
           </nav>
@@ -542,7 +803,7 @@ export default function WorkspaceTeamPage({
               "px-3 py-[0.4rem] rounded-full border text-[0.72rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.35rem]",
               showHistory
                 ? "bg-[rgba(167,139,250,0.12)] text-[#a78bfa] border-[#a78bfa60]"
-                : "bg-[rgba(255,255,255,0.04)] text-[var(--text-muted)] border-[rgba(255,255,255,0.1)]"
+                : "bg-[rgba(255,255,255,0.04)] text-[var(--text-muted)] border-[rgba(255,255,255,0.1)]",
             )}
             style={{
               backdropFilter: "blur(16px)",
@@ -551,8 +812,20 @@ export default function WorkspaceTeamPage({
             onClick={() => setShowHistory((v) => !v)}
           >
             <svg width={13} height={13} viewBox="0 0 16 16" fill="none">
-              <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.3" />
-              <polyline points="8,4.5 8,8 10.2,9.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              <circle
+                cx="8"
+                cy="8"
+                r="6.2"
+                stroke="currentColor"
+                strokeWidth="1.3"
+              />
+              <polyline
+                points="8,4.5 8,8 10.2,9.4"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
             History ({history.length})
           </button>
@@ -579,18 +852,28 @@ export default function WorkspaceTeamPage({
                 <div
                   className="size-16 sm:size-20 rounded-full flex items-center justify-center"
                   style={{
-                    background: isWaitingForPlan ? "rgba(96, 165, 250, 0.12)" : "rgba(96, 165, 250, 0.08)",
+                    background: isWaitingForPlan
+                      ? "rgba(96, 165, 250, 0.12)"
+                      : "rgba(96, 165, 250, 0.08)",
                     border: `1.5px solid rgba(96, 165, 250, ${isWaitingForPlan ? "0.5" : "0.3"})`,
                     boxShadow: `0 0 30px rgba(96, 165, 250, ${isWaitingForPlan ? "0.25" : "0.15"})`,
-                    animation: isWaitingForPlan ? "glow-pulse 2s ease-in-out infinite" : undefined,
+                    animation: isWaitingForPlan
+                      ? "glow-pulse 2s ease-in-out infinite"
+                      : undefined,
                     // @ts-expect-error CSS custom property
                     "--glow-color": "rgba(96, 165, 250, 0.3)",
                   }}
                 >
-                  <AgentAvatar role="orchestrator" size={44} status={isWaitingForPlan ? "working" : "idle"} />
+                  <AgentAvatar
+                    role="orchestrator"
+                    size={44}
+                    status={isWaitingForPlan ? "working" : "idle"}
+                  />
                 </div>
                 <div className="text-center">
-                  <div className="text-[0.88rem] sm:text-[0.95rem] font-semibold text-[var(--text)]">Orchestrator</div>
+                  <div className="text-[0.88rem] sm:text-[0.95rem] font-semibold text-[var(--text)]">
+                    Orchestrator
+                  </div>
                   <div className="text-[0.7rem] sm:text-[0.75rem] text-[var(--text-muted)] mt-1">
                     {isRestoring
                       ? "Restoring session..."
@@ -603,14 +886,18 @@ export default function WorkspaceTeamPage({
             </div>
             {/* Bottom input bar */}
             <div className="px-2 sm:px-4 pb-3 sm:pb-4 flex flex-col items-center gap-2">
-              {history.length === 0 && !isWaitingForPlan && !followUpHasText && (
-                <SuggestionChips onSelect={handleSuggestionSelect} />
-              )}
-              <div
-                className="flex items-center gap-2.5 sm:gap-3.5 px-3.5 sm:px-5 py-2.5 border border-[var(--glass-border)] rounded-[16px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] z-[90] w-full max-w-[780px]"
-              >
-                  <span className="text-[0.6rem] sm:text-[0.65rem] text-[var(--text-muted)] whitespace-nowrap shrink-0">
-                  {isRestoring ? "Restoring..." : isWaitingForPlan ? "Working..." : "Ready"}
+              {history.length === 0 &&
+                !isWaitingForPlan &&
+                !followUpHasText && (
+                  <SuggestionChips onSelect={handleSuggestionSelect} />
+                )}
+              <div className="flex items-center gap-2.5 sm:gap-3.5 px-3.5 sm:px-5 py-2.5 border border-[var(--glass-border)] rounded-[16px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] z-[90] w-full max-w-[780px]">
+                <span className="text-[0.6rem] sm:text-[0.65rem] text-[var(--text-muted)] whitespace-nowrap shrink-0">
+                  {isRestoring
+                    ? "Restoring..."
+                    : isWaitingForPlan
+                      ? "Working..."
+                      : "Ready"}
                 </span>
                 <div className="flex-1 min-w-0">
                   <ChatInput
@@ -653,12 +940,19 @@ export default function WorkspaceTeamPage({
         {/* Bottom bar */}
         {hasPipeline && (
           <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 z-[90] flex flex-col items-center gap-2 w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-[780px]">
-            <div
-              className="flex items-center gap-2.5 sm:gap-3.5 px-3 sm:px-4 py-2 border border-[var(--glass-border)] rounded-[18px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] w-full"
-            >
+            <div className="flex items-center gap-2.5 sm:gap-3.5 px-3 sm:px-4 py-2 border border-[var(--glass-border)] rounded-[18px] bg-[var(--topbar-bg)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] shadow-[0_4px_24px_rgba(0,0,0,0.15)] w-full">
               <span className="text-[0.75rem] sm:text-[0.8rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 hidden sm:inline">
                 {isLoading
-                  ? `Working... (${latestEntry?.workingAgents.map((a) => a.split("_").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ")).join(", ") || "planning"})`
+                  ? `Working... (${
+                      latestEntry?.workingAgents
+                        .map((a) =>
+                          a
+                            .split("_")
+                            .map((w) => w[0].toUpperCase() + w.slice(1))
+                            .join(" "),
+                        )
+                        .join(", ") || "planning"
+                    })`
                   : latestEntry?.done
                     ? "Pipeline complete"
                     : "Ready"}
@@ -686,22 +980,55 @@ export default function WorkspaceTeamPage({
         <div className="mx-5 mb-2 px-3.5 py-[0.65rem] rounded-[10px] bg-[rgba(234,179,8,0.08)] border border-[rgba(234,179,8,0.18)] flex items-start gap-[0.6rem] animate-slide-in">
           <div className="size-7 rounded-full bg-[rgba(234,179,8,0.12)] flex items-center justify-center shrink-0 mt-px">
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L2 22h20L12 2z" stroke="#eab308" strokeWidth="1.8" fill="none" />
-              <line x1="12" y1="10" x2="12" y2="15" stroke="#eab308" strokeWidth="2" strokeLinecap="round" />
+              <path
+                d="M12 2L2 22h20L12 2z"
+                stroke="#eab308"
+                strokeWidth="1.8"
+                fill="none"
+              />
+              <line
+                x1="12"
+                y1="10"
+                x2="12"
+                y2="15"
+                stroke="#eab308"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
               <circle cx="12" cy="18" r="1.2" fill="#eab308" />
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[0.78rem] font-semibold text-[#eab308] mb-0.5">GitHub disconnected</div>
-            <div className="text-[0.72rem] text-[var(--text-muted)] leading-[1.4]">{githubWarning}</div>
+            <div className="text-[0.78rem] font-semibold text-[#eab308] mb-0.5">
+              GitHub disconnected
+            </div>
+            <div className="text-[0.72rem] text-[var(--text-muted)] leading-[1.4]">
+              {githubWarning}
+            </div>
           </div>
           <button
             className="p-[0.2rem] rounded border-none bg-transparent text-[var(--text-muted)] cursor-pointer flex items-center justify-center transition-colors duration-150 hover:text-[#eab308]"
             onClick={() => setGithubWarning(null)}
           >
             <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
-              <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <line
+                x1="4"
+                y1="4"
+                x2="12"
+                y2="12"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+              <line
+                x1="12"
+                y1="4"
+                x2="4"
+                y2="12"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
         </div>
@@ -712,7 +1039,9 @@ export default function WorkspaceTeamPage({
         <ErrorBanner
           message={latestEntry.error}
           onRetry={lastMessage ? () => handleSubmit(lastMessage) : undefined}
-          onDismiss={() => setDismissedErrors((prev) => new Set(prev).add(latestEntry.id))}
+          onDismiss={() =>
+            setDismissedErrors((prev) => new Set(prev).add(latestEntry.id))
+          }
         />
       )}
 
@@ -734,7 +1063,9 @@ export default function WorkspaceTeamPage({
             <AgentToast
               key={t.id}
               toast={t}
-              onDone={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+              onDone={() =>
+                setToasts((prev) => prev.filter((x) => x.id !== t.id))
+              }
               onClick={() => setSelectedAgent(t.agent)}
             />
           ))}

@@ -121,4 +121,4 @@ const workflowRunSchema = new mongoose.Schema<IWorkflowRunDocument>(
 
 export const WorkflowRunModel: Model<IWorkflowRunDocument> =
   (mongoose.models.WorkflowRun as Model<IWorkflowRunDocument>) ??
-  mongoose.model<IWorkflowRunDocument>("WorkflowRun", workflowRunSchema, "workflows-run");
+  mongoose.model<IWorkflowRunDocument>("WorkflowRun", workflowRunSchema, "workflows_run");
