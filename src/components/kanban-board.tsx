@@ -23,24 +23,54 @@ const COLUMNS: ColumnConfig[] = [
 // ── Styles ───────────────────────────────────────────────
 
 const boardContainer: CSSProperties = {
+  position: "absolute",
+  top: 10,
+  right: 10,
+  bottom: 10,
   width: 360,
-  height: "100%",
+  maxWidth: "calc(100% - 20px)",
   overflowY: "auto",
   display: "flex",
   flexDirection: "column",
   background: "var(--panel-bg)",
   backdropFilter: "blur(24px)",
   WebkitBackdropFilter: "blur(24px)",
-  borderLeft: "1px solid var(--panel-border)",
+  border: "1px solid var(--panel-border)",
+  borderRadius: 16,
+  zIndex: 50,
+  animation: "panel-slide-in 0.25s ease-out",
+  boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
 };
 
 const boardHeader: CSSProperties = {
   display: "flex",
   alignItems: "center",
-  justifyContent: "space-between",
-  padding: "0.85rem 1rem",
+  gap: "0.5rem",
+  padding: "1rem 1.25rem",
   borderBottom: "1px solid var(--panel-border)",
   flexShrink: 0,
+  position: "sticky",
+  top: 0,
+  background: "var(--panel-bg)",
+  backdropFilter: "blur(12px)",
+  borderRadius: "16px 16px 0 0",
+  zIndex: 2,
+};
+
+const closeBtnStyle: CSSProperties = {
+  marginLeft: "auto",
+  background: "var(--surface-raised)",
+  border: "1px solid var(--surface-border)",
+  borderRadius: 8,
+  width: 28,
+  height: 28,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+  color: "var(--text-muted)",
+  fontSize: "0.85rem",
+  transition: "background 0.15s",
 };
 
 const boardTitle: CSSProperties = {
@@ -286,14 +316,23 @@ function StatusColumn({
 
 // ── Main export ──────────────────────────────────────────
 
-export function KanbanBoard({ tasks }: { tasks: TaskItem[] }) {
+export function KanbanBoard({ tasks, onClose }: { tasks: TaskItem[]; onClose: () => void }) {
   const totalCount = tasks.length;
+
+  const closeButton = (
+    <button style={closeBtnStyle} onClick={onClose} title="Close">
+      <svg width={12} height={12} viewBox="0 0 12 12" fill="none">
+        <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    </button>
+  );
 
   if (totalCount === 0) {
     return (
       <div style={boardContainer}>
         <div style={boardHeader}>
           <span style={boardTitle}>Tasks</span>
+          {closeButton}
         </div>
         <p style={emptyState}>
           No tasks yet. Send a request to get started.
@@ -324,6 +363,7 @@ export function KanbanBoard({ tasks }: { tasks: TaskItem[] }) {
         <span style={totalBadge}>
           {doneCount}/{totalCount} done
         </span>
+        {closeButton}
       </div>
       <div style={columnsWrap}>
         {COLUMNS.map((col) => (

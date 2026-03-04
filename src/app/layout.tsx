@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit, DM_Sans, JetBrains_Mono } from "next/font/google";
+import { ErrorBoundary } from "@/components/error-boundary";
 import "@xyflow/react/dist/style.css";
 import "./globals.css";
 
@@ -45,7 +46,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>{children}</body>
+      <body><ErrorBoundary>{children}</ErrorBoundary></body>
     </html>
   );
 }

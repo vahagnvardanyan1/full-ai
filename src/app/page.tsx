@@ -141,14 +141,80 @@ const bottomBar: CSSProperties = {
   zIndex: 90,
 };
 
-const errorBanner: CSSProperties = {
+const errorBannerStyle: CSSProperties = {
   margin: "0 1.25rem 0.5rem",
-  padding: "0.5rem 0.75rem",
-  borderRadius: 8,
+  padding: "0.65rem 0.85rem",
+  borderRadius: 10,
   background: "rgba(239, 68, 68, 0.08)",
-  border: "1px solid rgba(239, 68, 68, 0.2)",
+  border: "1px solid rgba(239, 68, 68, 0.18)",
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "0.6rem",
+  animation: "slide-in 0.25s ease-out",
+};
+
+const errorBannerIcon: CSSProperties = {
+  width: 28,
+  height: 28,
+  borderRadius: "50%",
+  background: "rgba(239, 68, 68, 0.12)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+  marginTop: 1,
+};
+
+const errorBannerText: CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+};
+
+const errorBannerTitle: CSSProperties = {
+  fontSize: "0.78rem",
+  fontWeight: 600,
   color: "var(--error)",
-  fontSize: "0.8rem",
+  marginBottom: 2,
+};
+
+const errorBannerMsg: CSSProperties = {
+  fontSize: "0.72rem",
+  color: "var(--text-muted)",
+  lineHeight: 1.4,
+  wordBreak: "break-word",
+};
+
+const errorBannerActions: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "0.35rem",
+  flexShrink: 0,
+};
+
+const errorActionBtn: CSSProperties = {
+  padding: "0.25rem 0.55rem",
+  borderRadius: 6,
+  border: "1px solid rgba(239, 68, 68, 0.2)",
+  background: "rgba(239, 68, 68, 0.06)",
+  color: "var(--error)",
+  fontSize: "0.68rem",
+  fontWeight: 500,
+  cursor: "pointer",
+  transition: "all 0.15s",
+  whiteSpace: "nowrap",
+};
+
+const dismissBtn: CSSProperties = {
+  padding: "0.2rem",
+  borderRadius: 4,
+  border: "none",
+  background: "transparent",
+  color: "var(--text-muted)",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  transition: "color 0.15s",
 };
 
 const toolbarBtn: CSSProperties = {
@@ -195,15 +261,17 @@ interface Toast {
   id: string;
   agent: string;
   summary: string;
+  isError?: boolean;
 }
 
 function AgentToast({ toast, onDone, onClick }: { toast: Toast; onDone: () => void; onClick: () => void }) {
-  const color = AGENT_COLORS[toast.agent] ?? "#888";
+  const isErr = toast.isError;
+  const color = isErr ? "#ef4444" : (AGENT_COLORS[toast.agent] ?? "#888");
 
   useEffect(() => {
-    const timer = setTimeout(onDone, 3500);
+    const timer = setTimeout(onDone, isErr ? 5000 : 3500);
     return () => clearTimeout(timer);
-  }, [onDone]);
+  }, [onDone, isErr]);
 
   return (
     <div
@@ -229,13 +297,21 @@ function AgentToast({ toast, onDone, onClick }: { toast: Toast; onDone: () => vo
       onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.02)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
     >
-      <svg width={14} height={14} viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-        <circle cx="8" cy="8" r="7" fill={`${color}20`} />
-        <polyline points="5,8 7.2,10.5 11,5.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      </svg>
+      {isErr ? (
+        <svg width={14} height={14} viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+          <circle cx="8" cy="8" r="7" fill={`${color}20`} />
+          <line x1="5.5" y1="5.5" x2="10.5" y2="10.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+          <line x1="10.5" y1="5.5" x2="5.5" y2="10.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      ) : (
+        <svg width={14} height={14} viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+          <circle cx="8" cy="8" r="7" fill={`${color}20`} />
+          <polyline points="5,8 7.2,10.5 11,5.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </svg>
+      )}
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--text)" }}>
-          {formatAgentName(toast.agent)}
+        <div style={{ fontSize: "0.72rem", fontWeight: 600, color: isErr ? color : "var(--text)" }}>
+          {isErr ? `${formatAgentName(toast.agent)} failed` : formatAgentName(toast.agent)}
         </div>
         <div
           style={{
@@ -248,6 +324,73 @@ function AgentToast({ toast, onDone, onClick }: { toast: Toast; onDone: () => vo
         >
           {toast.summary}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Error helpers ────────────────────────────────────
+
+function classifyError(msg: string): { title: string; hint: string } {
+  const lower = msg.toLowerCase();
+  if (lower.includes("fetch") || lower.includes("network") || lower.includes("failed to fetch") || lower.includes("aborterror")) {
+    return { title: "Connection failed", hint: "Check your internet connection and try again." };
+  }
+  if (lower.includes("timeout") || lower.includes("timed out")) {
+    return { title: "Request timed out", hint: "The server took too long to respond. Try a simpler request." };
+  }
+  if (lower.includes("429") || lower.includes("rate limit")) {
+    return { title: "Rate limited", hint: "Too many requests. Please wait a moment and try again." };
+  }
+  if (lower.includes("401") || lower.includes("unauthorized") || lower.includes("api key")) {
+    return { title: "Authentication error", hint: "The server API key may be misconfigured." };
+  }
+  if (lower.includes("500") || lower.includes("internal server")) {
+    return { title: "Server error", hint: "Something went wrong on the server. Check the logs." };
+  }
+  return { title: "Something went wrong", hint: msg };
+}
+
+// ── Error banner component ───────────────────────────
+
+function ErrorBanner({ message, onRetry, onDismiss }: { message: string; onRetry?: () => void; onDismiss: () => void }) {
+  const { title, hint } = classifyError(message);
+
+  return (
+    <div style={errorBannerStyle}>
+      <div style={errorBannerIcon}>
+        <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="1.8" />
+          <line x1="12" y1="8" x2="12" y2="13" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="12" cy="16.5" r="1.2" fill="#ef4444" />
+        </svg>
+      </div>
+      <div style={errorBannerText}>
+        <div style={errorBannerTitle}>{title}</div>
+        <div style={errorBannerMsg}>{hint}</div>
+      </div>
+      <div style={errorBannerActions}>
+        {onRetry && (
+          <button
+            style={errorActionBtn}
+            onClick={onRetry}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239, 68, 68, 0.06)"; }}
+          >
+            Retry
+          </button>
+        )}
+        <button
+          style={dismissBtn}
+          onClick={onDismiss}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--error)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
+        >
+          <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
+            <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </button>
       </div>
     </div>
   );
@@ -282,6 +425,8 @@ export default function Home() {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [showKanban, setShowKanban] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [dismissedErrors, setDismissedErrors] = useState<Set<string>>(new Set());
+  const [lastMessage, setLastMessage] = useState<string | null>(null);
 
   const isLoading = history.some((h) => !h.done && !h.error);
   const latestEntry = [...history].reverse().find((h) => h.phases);
@@ -309,6 +454,9 @@ export default function Home() {
   async function handleSubmit(message: string) {
     const entryId = crypto.randomUUID();
     setSelectedAgent(null);
+    setShowKanban(false);
+    setLastMessage(message);
+    setDismissedErrors(new Set());
 
     setHistory((prev) => [
       ...prev,
@@ -371,6 +519,15 @@ export default function Home() {
               break;
             case "error":
               patch(entryId, () => ({ error: event.message }));
+              {
+                const errToast: Toast = {
+                  id: crypto.randomUUID(),
+                  agent: event.agent,
+                  summary: event.message.slice(0, 80),
+                  isError: true,
+                };
+                setToasts((prev) => [...prev, errToast]);
+              }
               break;
             case "done":
               patch(entryId, () => ({ done: true, workingAgents: [] }));
@@ -429,7 +586,12 @@ export default function Home() {
               color: showKanban ? "var(--accent)" : "var(--text-muted)",
               borderColor: showKanban ? "var(--accent)" : "var(--surface-border)",
             }}
-            onClick={() => setShowKanban((v) => !v)}
+            onClick={() => {
+              setShowKanban((v) => {
+                if (!v) setSelectedAgent(null); // close agent panel when opening tasks
+                return !v;
+              });
+            }}
           >
             <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
               <rect x="1" y="2" width="4" height="12" rx="1" stroke="currentColor" strokeWidth="1.2" />
@@ -568,7 +730,10 @@ export default function Home() {
             errorAgent={latestEntry.error ? latestEntry.workingAgents[0] : null}
             agentOutputs={agentOutputs}
             selectedAgent={selectedAgent}
-            onSelectAgent={setSelectedAgent}
+            onSelectAgent={(agent) => {
+              setSelectedAgent(agent);
+              if (agent) setShowKanban(false); // close tasks panel when opening agent
+            }}
           />
         )}
 
@@ -585,19 +750,8 @@ export default function Home() {
         )}
 
         {/* Kanban overlay */}
-        {showKanban && allTasks.length > 0 && (
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 40,
-              animation: "panel-slide-in 0.25s ease-out",
-            }}
-          >
-            <KanbanBoard tasks={allTasks} />
-          </div>
+        {showKanban && (
+          <KanbanBoard tasks={allTasks} onClose={() => setShowKanban(false)} />
         )}
 
         {/* Bottom bar — floating inside main area */}
@@ -621,7 +775,13 @@ export default function Home() {
       </div>
 
       {/* Error */}
-      {latestEntry?.error && <div style={errorBanner}>{latestEntry.error}</div>}
+      {latestEntry?.error && !dismissedErrors.has(latestEntry.id) && (
+        <ErrorBanner
+          message={latestEntry.error}
+          onRetry={lastMessage ? () => handleSubmit(lastMessage) : undefined}
+          onDismiss={() => setDismissedErrors((prev) => new Set(prev).add(latestEntry.id))}
+        />
+      )}
 
       {/* Toasts */}
       {toasts.length > 0 && (
@@ -642,7 +802,7 @@ export default function Home() {
               key={t.id}
               toast={t}
               onDone={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
-              onClick={() => setSelectedAgent(t.agent)}
+              onClick={() => { setSelectedAgent(t.agent); setShowKanban(false); }}
             />
           ))}
         </div>
