@@ -41,6 +41,13 @@ export function getFilesForCurrentRequest(): CodeFile[] {
   return filesByRequest.get(activeRequestId) ?? [];
 }
 
+export function getFilesForCurrentRequestByCreator(createdBy: string): CodeFile[] {
+  if (!activeRequestId) return [];
+  return (filesByRequest.get(activeRequestId) ?? []).filter(
+    (file) => file.createdBy === createdBy,
+  );
+}
+
 export interface WriteCodeParams {
   file_path: string;
   language: string;

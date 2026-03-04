@@ -50,6 +50,8 @@ export async function executeTool(
         body: args.body as string,
         head: args.head as string,
         base: args.base as string,
+        created_by: args.created_by as string | undefined,
+        file_paths: args.file_paths as string[] | undefined,
       });
 
     // ── Tasks ─────────────────────────────────────────

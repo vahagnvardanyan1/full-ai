@@ -11,7 +11,7 @@ export type AgentRole =
   | "devops";
 
 /** Task lifecycle statuses for the Kanban board */
-export type TaskStatus = "open" | "in_progress" | "review" | "testing" | "done";
+export type TaskStatus = "open" | "in_progress" | "review" | "testing" | "ready_to_merge" | "done";
 
 /** A single tool invocation recorded during an agent run */
 export interface ToolCall {
@@ -27,6 +27,8 @@ export interface AgentResponse {
   toolCalls: ToolCall[];
   /** Raw markdown / text the agent produced */
   detail: string;
+  /** URL of the created Pull Request / Merge Request (if any) */
+  prUrl?: string;
 }
 
 /** A task created by the PM agent and assigned to a team member / agent */
@@ -67,9 +69,60 @@ export interface OrchestratorResponse {
 
 // ── SSE streaming event types ────────────────────────────
 
+/** Progress stages emitted by the v3 frontend-developer pipeline */
+export type FEProgressStage =
+  | "onboarding"
+  | "planning"
+  | "cloning"
+  | "coding"
+  | "self_review"
+  | "validating"
+  | "pushing"
+  | "pr_created";
+
+/** Progress stages emitted by the PM pipeline (v4 — includes creative stages) */
+export type PMProgressStage =
+  | "gathering_context"
+  | "deep_analysis"
+  | "design_analysis"
+  | "creative_reasoning"
+  | "analyzing_requirements"
+  | "assessing_feasibility"
+  | "planning_tasks"
+  | "writing_stories"
+  | "assessing_risks"
+  | "creating_tasks"
+  | "complete";
+
+/** Progress stages emitted by the QA pipeline */
+export type QAProgressStage =
+  | "gathering_context"
+  | "planning_strategy"
+  | "running_validation"
+  | "executing_qa"
+  | "reporting"
+  | "complete";
+
+/** All possible progress stages across all agents */
+export type AgentProgressStage =
+  | FEProgressStage
+  | PMProgressStage
+  | QAProgressStage;
+
+/** Sub-step progress event for agents that run multi-stage pipelines */
+export interface AgentProgressEvent {
+  type: "agent_progress";
+  agent: AgentRole;
+  stage: AgentProgressStage;
+  message: string;
+  /** 0-100 */
+  progress: number;
+}
+
 export type StreamEvent =
   | { type: "plan"; plan: string; agents: AgentRole[]; phases: AgentRole[][] }
   | { type: "agent_start"; agent: AgentRole }
+  | AgentProgressEvent
   | {
       type: "agent_complete";
       response: AgentResponse;
