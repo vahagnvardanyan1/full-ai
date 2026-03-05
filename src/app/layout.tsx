@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Outfit, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { DebugPanel } from "@/components/debug-panel";
 import "@xyflow/react/dist/style.css";
 import "./globals.css";
+
+const showDebugUI = process.env.SHOW_DEBUG_UI === "true";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -46,7 +49,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body><ErrorBoundary>{children}</ErrorBoundary></body>
+      <body><ErrorBoundary>{children}</ErrorBoundary>{showDebugUI && <DebugPanel />}</body>
     </html>
   );
 }
