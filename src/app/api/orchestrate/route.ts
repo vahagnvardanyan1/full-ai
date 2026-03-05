@@ -13,6 +13,7 @@
 // ──────────────────────────────────────────────────────────
 
 import { NextRequest, NextResponse } from "next/server";
+import { hydrateFromDB } from "@/lib/clients/integration-store";
 import { orchestrateStream } from "@/lib/orchestrator";
 import { logger } from "@/lib/logger";
 import { runWithDeviceId, getDeviceIdFromCookies } from "@/lib/request-context";
@@ -71,6 +72,10 @@ export async function POST(request: NextRequest) {
       };
 
       try {
+        // Load runtime integration config (GitHub/Jira from Settings) from DB
+        // so agents use the user's repo/project instead of empty store (e.g. production cold start).
+        await hydrateFromDB(deviceId);
+
         // Bind device ID so all downstream store calls (agents → github/jira clients)
         // resolve the correct per-user integration config.
         await runWithDeviceId(deviceId, () =>
