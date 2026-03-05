@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { LogEntry } from "@/lib/logger";
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -26,11 +26,97 @@ export function DebugPanel() {
   );
   const [autoScroll, setAutoScroll] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [panelSize, setPanelSize] = useState({ width: 720, height: 500 });
+  const [position, setPosition] = useState({ bottom: 16, right: 16 });
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastTsRef = useRef<string | null>(null);
   const isOpenRef = useRef(isOpen);
   isOpenRef.current = isOpen;
+  const dragRef = useRef<{ dragging: boolean; didDrag: boolean; startX: number; startY: number; startBottom: number; startRight: number } | null>(null);
+  const resizingRef = useRef<"top" | "left" | "top-left" | null>(null);
+  const startPosRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
+
+  const onResizeMouseDown = useCallback(
+    (edge: "top" | "left" | "top-left") =>
+      (e: React.MouseEvent) => {
+        e.preventDefault();
+        resizingRef.current = edge;
+        startPosRef.current = {
+          x: e.clientX,
+          y: e.clientY,
+          width: panelSize.width,
+          height: panelSize.height,
+        };
+      },
+    [panelSize],
+  );
+
+  const onDragMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      dragRef.current = {
+        dragging: true,
+        didDrag: false,
+        startX: e.clientX,
+        startY: e.clientY,
+        startBottom: position.bottom,
+        startRight: position.right,
+      };
+    },
+    [position],
+  );
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      // Handle resize
+      if (resizingRef.current) {
+        const dx = startPosRef.current.x - e.clientX;
+        const dy = startPosRef.current.y - e.clientY;
+        const edge = resizingRef.current;
+
+        setPanelSize((prev) => {
+          const next = { ...prev };
+          if (edge === "left" || edge === "top-left") {
+            next.width = Math.max(400, Math.min(startPosRef.current.width + dx, window.innerWidth - 32));
+          }
+          if (edge === "top" || edge === "top-left") {
+            next.height = Math.max(200, Math.min(startPosRef.current.height + dy, window.innerHeight - 96));
+          }
+          return next;
+        });
+        return;
+      }
+
+      // Handle drag
+      if (dragRef.current?.dragging) {
+        const dx = dragRef.current.startX - e.clientX;
+        const dy = dragRef.current.startY - e.clientY;
+        if (!dragRef.current.didDrag && Math.abs(dx) + Math.abs(dy) > 4) {
+          dragRef.current.didDrag = true;
+        }
+        if (dragRef.current.didDrag) {
+          setPosition({
+            right: Math.max(8, Math.min(dragRef.current.startRight + dx, window.innerWidth - 80)),
+            bottom: Math.max(8, Math.min(dragRef.current.startBottom + dy, window.innerHeight - 48)),
+          });
+        }
+      }
+    };
+
+    const onMouseUp = () => {
+      resizingRef.current = null;
+      if (dragRef.current) {
+        dragRef.current.dragging = false;
+      }
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,11 +195,21 @@ export function DebugPanel() {
 
   return (
     <>
-      {/* Toggle button */}
+      {/* Toggle button — draggable */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-4 right-4 z-[9999] flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-mono font-semibold shadow-lg transition-all hover:scale-105"
+        onMouseDown={onDragMouseDown}
+        onClick={(e) => {
+          if (dragRef.current?.didDrag) {
+            e.preventDefault();
+            dragRef.current.didDrag = false;
+            return;
+          }
+          setIsOpen(!isOpen);
+        }}
+        className="fixed z-9999 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-mono font-semibold shadow-lg transition-colors hover:scale-105 select-none cursor-grab active:cursor-grabbing"
         style={{
+          bottom: position.bottom,
+          right: position.right,
           background: isOpen
             ? "var(--accent, #6366f1)"
             : "var(--surface-raised, #1e1e2e)",
@@ -133,15 +229,30 @@ export function DebugPanel() {
       {/* Panel */}
       {isOpen && (
         <div
-          className="fixed bottom-14 right-4 z-[9998] flex flex-col rounded-xl shadow-2xl overflow-hidden"
+          className="fixed z-9998 flex flex-col rounded-xl shadow-2xl overflow-hidden"
           style={{
-            width: "min(720px, calc(100vw - 2rem))",
-            height: "min(500px, calc(100vh - 6rem))",
+            bottom: position.bottom + 40,
+            right: position.right,
+            width: `min(${panelSize.width}px, calc(100vw - 2rem))`,
+            height: `min(${panelSize.height}px, calc(100vh - 6rem))`,
             background: "var(--panel-bg, #0d0d14)",
             border: "1px solid var(--panel-border, #1e1e2e)",
             backdropFilter: "blur(24px)",
           }}
         >
+          {/* Resize handles */}
+          <div
+            onMouseDown={onResizeMouseDown("top")}
+            className="absolute top-0 left-3 right-3 h-1.5 cursor-n-resize z-10 hover:bg-indigo-500/20 transition-colors"
+          />
+          <div
+            onMouseDown={onResizeMouseDown("left")}
+            className="absolute left-0 top-3 bottom-3 w-1.5 cursor-w-resize z-10 hover:bg-indigo-500/20 transition-colors"
+          />
+          <div
+            onMouseDown={onResizeMouseDown("top-left")}
+            className="absolute top-0 left-0 w-3 h-3 cursor-nw-resize z-20"
+          />
           {/* Header */}
           <div
             className="flex items-center gap-2 px-3 py-2 border-b"
