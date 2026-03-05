@@ -461,7 +461,7 @@ export default function WorkspaceTeamPage({
   }, [latestEntry]);
 
   const pipelineLinks = useMemo(() => {
-    if (!latestEntry) return { prUrl: null, vercelUrl: null, vercelInspectorUrl: null };
+    if (!latestEntry) return { prUrl: null, vercelUrl: null };
     return extractPipelineLinks(latestEntry.outputs);
   }, [latestEntry]);
 
@@ -1197,7 +1197,6 @@ export default function WorkspaceTeamPage({
         onOpenChange={handleSuccessModalClose}
         prUrl={pipelineLinks.prUrl}
         vercelUrl={pipelineLinks.vercelUrl}
-        vercelInspectorUrl={pipelineLinks.vercelInspectorUrl}
       />
 
       {/* Toasts */}

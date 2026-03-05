@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import type { AgentResponse, TaskItem, GeneratedFile } from "@/lib/agents/types";
 import { AgentAvatar } from "@/components/agent-avatar";
 import { OutfitDisplay } from "@/components/fashion/outfit-display";
-import { panelBase, sectionLabel, pillBase, closeBtnBase } from "@/lib/styles";
+import { panelBase, pillBase, closeBtnBase } from "@/lib/styles";
 
 interface DetailPanelProps {
   agent: string;
@@ -13,6 +13,8 @@ interface DetailPanelProps {
   files: GeneratedFile[];
   onClose: () => void;
 }
+
+type Tab = "summary" | "tasks" | "files" | "tools";
 
 const AGENT_COLORS: Record<string, string> = {
   product_manager: "#a78bfa",
@@ -35,6 +37,8 @@ function formatName(role: string): string {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 }
+
+// ── Sub-components ───────────────────────────────────────
 
 function SummaryBlock({ text }: { text: string }) {
   const segments = useMemo(() => {
@@ -135,7 +139,46 @@ function FileRow({ file }: { file: GeneratedFile }) {
   );
 }
 
+function ToolCallRow({ tc }: { tc: { tool: string; arguments: Record<string, unknown> } }) {
+  const [open, setOpen] = useState(false);
+  const hasArgs = Object.keys(tc.arguments).length > 0;
+
+  return (
+    <div className="rounded-lg bg-[var(--surface-hover)] border border-[var(--surface-border)] overflow-hidden">
+      <div
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 ${hasArgs ? "cursor-pointer" : ""} select-none`}
+        onClick={() => hasArgs && setOpen((v) => !v)}
+      >
+        {hasArgs && (
+          <span className="text-[0.65rem] text-[var(--text-muted)]">{open ? "\u25BE" : "\u25B8"}</span>
+        )}
+        <span className="font-mono text-[0.72rem] text-[var(--accent)] font-medium flex-1">
+          {tc.tool}
+        </span>
+      </div>
+      {open && hasArgs && (
+        <pre className="m-0 p-2.5 bg-[var(--code-bg)] border-t border-[var(--surface-border)] font-mono text-[0.65rem] leading-snug max-h-[160px] overflow-auto whitespace-pre text-[var(--text-muted)]">
+          <code>{JSON.stringify(tc.arguments, null, 2)}</code>
+        </pre>
+      )}
+    </div>
+  );
+}
+
+function EmptyTab({ label }: { label: string }) {
+  return (
+    <div className="flex items-center justify-center py-8 text-[0.75rem] text-[var(--text-muted)]">
+      {label}
+    </div>
+  );
+}
+
+// ── Main component ───────────────────────────────────────
+
 export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPanelProps) {
+  const [activeTab, setActiveTab] = useState<Tab>("summary");
+  const agentColor = AGENT_COLORS[agent] ?? "#888";
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -144,79 +187,124 @@ export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPa
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
+  const tabs: { id: Tab; label: string; count: number }[] = [
+    { id: "summary", label: "Summary", count: 0 },
+    { id: "tasks", label: "Tasks", count: tasks.length },
+    { id: "files", label: "Files", count: files.length },
+    { id: "tools", label: "Tools", count: response.toolCalls.length },
+  ];
+
   return (
-    <div className="fixed inset-0 z-[55] flex items-start justify-center sm:pt-2.5 pointer-events-none">
-    <div className={`${panelBase} w-full sm:w-[min(560px,calc(100%-2rem))] max-w-[560px] h-full sm:h-auto sm:max-h-[50vh] rounded-none sm:rounded-2xl flex flex-col overflow-y-auto shadow-[0_8px_32px_rgba(0,0,0,0.12)] pointer-events-auto`} style={{ animation: "panel-slide-down 0.25s ease-out forwards" }}>
-      {/* Header */}
-      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[var(--panel-border)] sticky top-0 bg-[var(--panel-bg)] backdrop-blur-[12px] rounded-t-2xl z-2">
-        <AgentAvatar role={agent} size={48} status="done" />
-        <div>
-          <div className="text-[0.9rem] font-semibold">{formatName(agent)}</div>
-          <div className="text-[0.65rem] text-[var(--success)] font-medium uppercase tracking-wide">
-            Complete
-          </div>
-        </div>
-        <button className={closeBtnBase} onClick={onClose} title="Close">
-          <svg width={12} height={12} viewBox="0 0 12 12" fill="none">
-            <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        </button>
-      </div>
+    <div className="fixed inset-0 z-[55]">
+      {/* Scrim */}
+      <div
+        className="absolute inset-0"
+        style={{ background: "rgba(0,0,0,0.2)", animation: "fade-in 150ms ease forwards" }}
+        onClick={onClose}
+      />
 
-      {/* Summary */}
-      <div className="px-5 py-3.5 border-b border-[var(--surface-border)]">
-        <div className={sectionLabel}>Summary</div>
-        <SummaryBlock text={response.summary} />
-      </div>
-
-      {/* Outfit Recommendation (Fashion Stylist) */}
-      {response.outfitRecommendation && response.outfitRecommendation.items.length > 0 && (
-        <div className="px-5 py-3.5 border-b border-[var(--surface-border)]">
-          <OutfitDisplay outfit={response.outfitRecommendation} />
-        </div>
-      )}
-
-      {/* Tasks */}
-      {tasks.length > 0 && (
-        <div className="px-5 py-3.5 border-b border-[var(--surface-border)]">
-          <div className={sectionLabel}>{tasks.length} {tasks.length === 1 ? "Task" : "Tasks"}</div>
-          <div className="flex flex-col gap-1.5">
-            {tasks.map((task) => (
-              <TaskRow key={task.id} task={task} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Files */}
-      {files.length > 0 && (
-        <div className="px-5 py-3.5 border-b border-[var(--surface-border)]">
-          <div className={sectionLabel}>{files.length} {files.length === 1 ? "File" : "Files"} Generated</div>
-          <div className="flex flex-col gap-1.5">
-            {files.map((file) => (
-              <FileRow key={file.id} file={file} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tool calls */}
-      {response.toolCalls.length > 0 && (
-        <div className="px-5 py-3.5">
-          <div className={sectionLabel}>{response.toolCalls.length} Tool Calls</div>
-          <div className="flex flex-col gap-1">
-            {response.toolCalls.map((tc, i) => (
-              <div
-                key={i}
-                className="text-[0.7rem] px-2 py-1 rounded-md bg-[var(--surface-raised)] border border-[var(--surface-border)] font-mono text-[var(--text-muted)]"
-              >
-                <span className="text-[var(--accent)]">{tc.tool}</span>
+      {/* Panel */}
+      <div className="absolute inset-0 flex items-start justify-center sm:pt-2.5 pointer-events-none">
+        <div
+          className={`${panelBase} w-full sm:w-[min(560px,calc(100%-2rem))] max-w-[560px] h-full sm:h-auto sm:max-h-[60vh] rounded-none sm:rounded-2xl flex flex-col overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.12)] pointer-events-auto`}
+          style={{ animation: "panel-slide-down 0.25s ease-out forwards" }}
+        >
+          {/* Header */}
+          <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[var(--panel-border)] shrink-0">
+            <AgentAvatar role={agent} size={48} status="done" />
+            <div className="flex-1">
+              <div className="text-[0.9rem] font-semibold">{formatName(agent)}</div>
+              <div className="text-[0.65rem] font-medium uppercase tracking-wide" style={{ color: agentColor }}>
+                Complete
               </div>
-            ))}
+            </div>
+            <button className={closeBtnBase} onClick={onClose} title="Close">
+              <svg width={12} height={12} viewBox="0 0 12 12" fill="none">
+                <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Tab bar */}
+          <nav className="flex border-b border-[var(--surface-border)] px-3 shrink-0">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className="relative px-3 py-2.5 text-[0.72rem] font-medium cursor-pointer transition-colors border-none bg-transparent"
+                  style={{ color: isActive ? "var(--text)" : "var(--text-muted)" }}
+                >
+                  {tab.label}
+                  {tab.count > 0 && (
+                    <span
+                      className="ml-1 text-[0.6rem] font-bold"
+                      style={{ color: isActive ? agentColor : "var(--text-muted)" }}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                  {isActive && (
+                    <span
+                      className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full"
+                      style={{ background: agentColor }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Tab content */}
+          <div className="flex-1 overflow-y-auto p-5">
+            {activeTab === "summary" && (
+              <div className="flex flex-col gap-3">
+                <SummaryBlock text={response.summary} />
+                {response.outfitRecommendation && response.outfitRecommendation.items.length > 0 && (
+                  <OutfitDisplay outfit={response.outfitRecommendation} />
+                )}
+              </div>
+            )}
+
+            {activeTab === "tasks" && (
+              tasks.length > 0 ? (
+                <div className="flex flex-col gap-1.5">
+                  {tasks.map((task) => (
+                    <TaskRow key={task.id} task={task} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyTab label="No tasks generated by this agent." />
+              )
+            )}
+
+            {activeTab === "files" && (
+              files.length > 0 ? (
+                <div className="flex flex-col gap-1.5">
+                  {files.map((file) => (
+                    <FileRow key={file.id} file={file} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyTab label="No files generated." />
+              )
+            )}
+
+            {activeTab === "tools" && (
+              response.toolCalls.length > 0 ? (
+                <div className="flex flex-col gap-1.5">
+                  {response.toolCalls.map((tc, i) => (
+                    <ToolCallRow key={i} tc={tc} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyTab label="No tool calls." />
+              )
+            )}
           </div>
         </div>
-      )}
-    </div>
+      </div>
     </div>
   );
 }
