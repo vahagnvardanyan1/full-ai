@@ -25,7 +25,7 @@ onGitHubDisconnect(() => {
 function getToken(): string {
   const runtime = getRuntimeGitHubConfig();
   if (runtime?.accessToken) return runtime.accessToken;
-  throw new Error("GitHub is not connected. Go to Settings > Integrations to connect your GitHub account.");
+  throw new Error("GitHub is not connected.");
 }
 
 function getOctokit(): Octokit {
@@ -456,7 +456,7 @@ export function checkGitHubReady(): {
     return { ready: true, owner: runtime.owner, repo: runtime.repo };
   }
   if (runtime?.accessToken && !runtime.repo) {
-    return { ready: false, error: "GitHub is connected but no repository selected. Go to Settings > Integrations to select a repository." };
+    return { ready: false, error: "GitHub is connected but no repository selected." };
   }
-  return { ready: false, error: "GitHub is not connected. Go to Settings > Integrations to connect your GitHub account." };
+  return { ready: false, error: "GitHub is not connected." };
 }

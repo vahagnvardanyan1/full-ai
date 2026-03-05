@@ -19,10 +19,12 @@ import { runQAAgent, type QAProgressCallback } from "@/lib/agents/qa";
 import { runDevOpsAgent } from "@/lib/agents/devops";
 import {
   setActiveRequestId,
+  getTasksForRequest,
   getTasksForRequestByCreator,
   getTasksForRequestAll,
   updateTasksByRequestStatus,
 } from "@/lib/clients/tasks";
+import { awaitTaskJiraSync } from "@/lib/clients/jira-sync";
 import {
   setActiveCodeRequestId,
   getFilesForRequest,
@@ -344,6 +346,9 @@ export const orchestrateStream = async (
     emit({ type: "agent_start", agent: role });
 
     if (role === "frontend_developer") {
+      // Ensure Jira sync is complete before transitioning so jiraKey is available
+      const tasks = getTasksForRequest(requestId);
+      await Promise.all(tasks.map((t) => awaitTaskJiraSync(t)));
       updateTasksByRequestStatus(requestId, "open", "in_progress");
       emitTasksSnapshot();
     } else if (role === "qa") {

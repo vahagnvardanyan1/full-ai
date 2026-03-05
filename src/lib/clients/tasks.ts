@@ -103,7 +103,7 @@ export function updateTaskStatus(taskId: string, newStatus: TaskStatus): Task | 
       task.status = newStatus;
       logger.info("Task status updated", { id: taskId, status: newStatus });
       // Fire-and-forget: sync status to Jira
-      syncTaskStatusToJira(taskId, newStatus).catch(() => {});
+      syncTaskStatusToJira(task, newStatus).catch(() => {});
       return task;
     }
   }
@@ -133,7 +133,7 @@ export function updateTasksByAssignee(
         to: toStatus,
       });
       // Fire-and-forget: sync status to Jira
-      syncTaskStatusToJira(task.id, toStatus).catch(() => {});
+      syncTaskStatusToJira(task, toStatus).catch(() => {});
     }
   }
   return updated;
@@ -157,7 +157,7 @@ export function updateTasksByRequestStatus(
         to: toStatus,
       });
       // Fire-and-forget: sync status to Jira
-      syncTaskStatusToJira(task.id, toStatus).catch(() => {});
+      syncTaskStatusToJira(task, toStatus).catch(() => {});
     }
   }
   return updated;

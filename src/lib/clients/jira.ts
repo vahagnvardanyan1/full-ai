@@ -147,28 +147,33 @@ const JIRA_STATUS_TO_LOCAL: Record<string, TaskStatus> = {
   "to do": "open",
   "open": "open",
   "backlog": "open",
+  "к выполнению": "open",
   "in progress": "in_progress",
+  "в работе": "in_progress",
   "code review": "review",
   "in review": "review",
   "review": "review",
+  "в процессе проверки": "review",
   "qa in progress": "testing",
   "qa": "testing",
   "testing": "testing",
+  "контроль качества": "testing",
   "ready to merge": "ready_to_merge",
   "ready for merge": "ready_to_merge",
   "done": "done",
   "closed": "done",
   "resolved": "done",
+  "готово": "done",
 };
 
 /** Map local TaskStatus → possible Jira target status names (checked in order) */
 const LOCAL_TO_JIRA_STATUS_NAMES: Record<TaskStatus, string[]> = {
-  open: ["To Do", "Open", "Backlog"],
-  in_progress: ["In Progress"],
-  review: ["Code Review", "In Review", "Review"],
-  testing: ["QA In Progress", "QA", "Testing"],
+  open: ["To Do", "Open", "Backlog", "К выполнению"],
+  in_progress: ["In Progress", "В работе"],
+  review: ["Code Review", "In Review", "Review", "В процессе проверки"],
+  testing: ["QA In Progress", "QA", "Testing", "Контроль качества"],
   ready_to_merge: ["Ready to Merge", "Ready for Merge"],
-  done: ["Done", "Closed", "Resolved"],
+  done: ["Done", "Closed", "Resolved", "Готово"],
 };
 
 export function mapJiraStatusToLocal(jiraStatusName: string): TaskStatus {
@@ -311,18 +316,22 @@ async function findTransition(
   const targetNames = LOCAL_TO_JIRA_STATUS_NAMES[targetLocalStatus] ?? [];
   const lowerTargets = targetNames.map((n) => n.toLowerCase());
 
-  // Try exact match on target status name first
+  // Try exact match on target status name or transition name
   for (const t of data.transitions) {
-    if (lowerTargets.includes(t.to.name.toLowerCase())) {
+    const toNameLower = t.to.name.toLowerCase();
+    const tNameLower = t.name.toLowerCase();
+    if (lowerTargets.includes(toNameLower) || lowerTargets.includes(tNameLower)) {
       return t;
     }
   }
 
-  // Fuzzy: check if transition target contains any of our keywords
+  // Fuzzy: check if transition/target name contains any of our keywords
   for (const t of data.transitions) {
-    const tLower = t.to.name.toLowerCase();
+    const toNameLower = t.to.name.toLowerCase();
+    const tNameLower = t.name.toLowerCase();
     for (const target of lowerTargets) {
-      if (tLower.includes(target) || target.includes(tLower)) {
+      if (toNameLower.includes(target) || target.includes(toNameLower) ||
+          tNameLower.includes(target) || target.includes(tNameLower)) {
         return t;
       }
     }

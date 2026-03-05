@@ -43,7 +43,7 @@ function isConfigured(): boolean {
 
 function getOctokit(): Octokit {
   const auth = resolveGitHubAuth();
-  if (!auth) throw new Error("GitHub is not connected. Go to Settings > Integrations to connect your GitHub account.");
+  if (!auth) throw new Error("GitHub is not connected.");
 
   if (!runtimeInstance || lastRuntimeToken !== auth.token) {
     runtimeInstance = new Octokit({ auth: auth.token });

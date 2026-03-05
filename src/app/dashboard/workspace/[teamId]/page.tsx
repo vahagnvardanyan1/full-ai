@@ -8,6 +8,7 @@ import { AgentPipeline } from "@/components/agent-pipeline";
 import { DetailPanel } from "@/components/detail-panel";
 import { KanbanBoard } from "@/components/kanban-board";
 import { AgentAvatar } from "@/components/agent-avatar";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useWorkspaceSession } from "@/hooks/use-workspace-session";
 import { useRunPolling } from "@/hooks/use-run-polling";
@@ -715,6 +716,73 @@ export default function WorkspaceTeamPage({
 
   return (
     <div className={cn("w-full h-[calc(100vh)] flex flex-col overflow-hidden")}>
+      {/* GitHub disconnected warning */}
+      {githubWarning && (
+        <div className="absolute top-0 left-0 right-0 z-[100] px-4 pt-3 animate-slide-down-in">
+          <div className="mx-auto max-w-[720px] px-3.5 py-[0.65rem] rounded-[10px] bg-[rgba(234,179,8,0.08)] border border-[rgba(234,179,8,0.18)] backdrop-blur-[12px] [-webkit-backdrop-filter:blur(12px)] flex items-center gap-[0.6rem]">
+            <div className="size-7 rounded-full bg-[rgba(234,179,8,0.12)] flex items-center justify-center shrink-0">
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 2L2 22h20L12 2z"
+                  stroke="#eab308"
+                  strokeWidth="1.8"
+                  fill="none"
+                />
+                <line
+                  x1="12"
+                  y1="10"
+                  x2="12"
+                  y2="15"
+                  stroke="#eab308"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <circle cx="12" cy="18" r="1.2" fill="#eab308" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[0.78rem] font-semibold text-[#eab308] mb-0.5">
+                GitHub disconnected
+              </div>
+              <div className="text-[0.72rem] text-[var(--text-muted)] leading-[1.4]">
+                {githubWarning}
+              </div>
+            </div>
+            <Link
+              href="/dashboard/settings/integrations"
+              className="text-[0.72rem] font-medium px-2.5 py-1 rounded-md border border-[rgba(234,179,8,0.25)] bg-[rgba(234,179,8,0.10)] text-[#eab308] no-underline whitespace-nowrap shrink-0 transition-colors duration-150 hover:bg-[rgba(234,179,8,0.18)]"
+            >
+              Go to Settings
+            </Link>
+            <button
+              className="p-[0.2rem] rounded border-none bg-transparent text-[var(--text-muted)] cursor-pointer flex items-center justify-center transition-colors duration-150 hover:text-[#eab308]"
+              onClick={() => setGithubWarning(null)}
+            >
+              <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
+                <line
+                  x1="4"
+                  y1="4"
+                  x2="12"
+                  y2="12"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="12"
+                  y1="4"
+                  x2="4"
+                  y2="12"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── New Session button — always visible ──────── */}
 
       {/* ── Top bar ──────────────────────────────────── */}
@@ -1100,64 +1168,6 @@ export default function WorkspaceTeamPage({
         )}
       </div>
 
-      {/* GitHub disconnected warning */}
-      {githubWarning && (
-        <div className="mx-5 mb-2 px-3.5 py-[0.65rem] rounded-[10px] bg-[rgba(234,179,8,0.08)] border border-[rgba(234,179,8,0.18)] flex items-start gap-[0.6rem] animate-slide-in">
-          <div className="size-7 rounded-full bg-[rgba(234,179,8,0.12)] flex items-center justify-center shrink-0 mt-px">
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 2L2 22h20L12 2z"
-                stroke="#eab308"
-                strokeWidth="1.8"
-                fill="none"
-              />
-              <line
-                x1="12"
-                y1="10"
-                x2="12"
-                y2="15"
-                stroke="#eab308"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-              <circle cx="12" cy="18" r="1.2" fill="#eab308" />
-            </svg>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[0.78rem] font-semibold text-[#eab308] mb-0.5">
-              GitHub disconnected
-            </div>
-            <div className="text-[0.72rem] text-[var(--text-muted)] leading-[1.4]">
-              {githubWarning}
-            </div>
-          </div>
-          <button
-            className="p-[0.2rem] rounded border-none bg-transparent text-[var(--text-muted)] cursor-pointer flex items-center justify-center transition-colors duration-150 hover:text-[#eab308]"
-            onClick={() => setGithubWarning(null)}
-          >
-            <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
-              <line
-                x1="4"
-                y1="4"
-                x2="12"
-                y2="12"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-              <line
-                x1="12"
-                y1="4"
-                x2="4"
-                y2="12"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
-        </div>
-      )}
 
       {/* Error */}
       {latestEntry?.error && !dismissedErrors.has(latestEntry.id) && (
