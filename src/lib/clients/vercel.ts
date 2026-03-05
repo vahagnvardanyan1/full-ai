@@ -11,12 +11,12 @@ import { logger } from "@/lib/logger";
 const VERCEL_API = "https://api.vercel.com";
 
 function isConfigured(): boolean {
-  return !!(process.env.VERCEL_TOKEN && process.env.VERCEL_PROJECT_ID);
+  return !!(process.env.VERCEL_TOKEN && process.env.FULL_AI_VERCEL_PROJECT_ID);
 }
 
 function getConfig() {
   const token = process.env.VERCEL_TOKEN!;
-  const projectId = process.env.VERCEL_PROJECT_ID!;
+  const projectId = process.env.FULL_AI_VERCEL_PROJECT_ID!;
   return { token, projectId, teamId: process.env.VERCEL_TEAM_ID };
 }
 
@@ -38,7 +38,7 @@ export async function getVercelPreviewUrl(
 
   logger.info(`Looking up Vercel preview deployment  ${JSON.stringify(getConfig())}`, { branch });
   if (!isConfigured()) {
-    logger.warn(`Vercel not configured (VERCEL_TOKEN / VERCEL_PROJECT_ID missing) ${JSON.stringify(getConfig())}`);
+    logger.warn(`Vercel not configured (VERCEL_TOKEN / FULL_AI_VERCEL_PROJECT_ID missing) ${JSON.stringify(getConfig())}`);
     return { branch, found: false, simulated: true };
   }
 

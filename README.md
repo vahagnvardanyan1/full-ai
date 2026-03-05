@@ -347,7 +347,7 @@ npm start
 | Variable | Description |
 |----------|-------------|
 | `VERCEL_TOKEN` | Vercel API token |
-| `VERCEL_PROJECT_ID` | Vercel project ID |
+| `FULL_AI_VERCEL_PROJECT_ID` | Vercel project ID |
 | `VERCEL_TEAM_ID` | Vercel team ID (optional, for team accounts) |
 
 ### Fashion Stylist (optional)
