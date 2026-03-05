@@ -395,14 +395,8 @@ export const orchestrateStream = async (
 
     emit({ type: "agent_complete", response: result, tasks: newTasks, files: newFiles });
 
-    // Persist agent result + current task/file snapshot
-    persistAgentResult({
-      requestId,
-      result,
-      tasks: getTasksForRequestAll(requestId),
-      files: getFilesForRequest(requestId),
-    }).catch(() => undefined);
-
+    // Apply post-agent status transitions BEFORE persisting so the DB
+    // snapshot always has the latest task statuses
     if (role === "frontend_developer") {
       updateTasksByRequestStatus(requestId, "open", "in_progress");
       if (newFiles.length > 0) {
@@ -417,6 +411,16 @@ export const orchestrateStream = async (
       updateTasksByRequestStatus(requestId, "open", "done");
     }
     emitTasksSnapshot();
+
+    // Persist agent result + current task/file snapshot (after status
+    // transitions so the DB has up-to-date task statuses).
+    // Await to ensure DB is consistent before next agent starts or user refreshes.
+    await persistAgentResult({
+      requestId,
+      result,
+      tasks: getTasksForRequestAll(requestId),
+      files: getFilesForRequest(requestId),
+    });
 
     return result;
   };

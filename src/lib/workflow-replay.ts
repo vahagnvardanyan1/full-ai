@@ -119,9 +119,19 @@ const replayEvents = (run: StoredWorkflowRun): ReplayedState => {
     }
   }
 
-  // Merge the run-level task snapshot (has the latest statuses written
-  // by the orchestrator after each phase transition)
-  for (const t of run.tasks) taskMap.set(t.id, t as TaskItem);
+  // For completed runs, the run-level task snapshot has the final correct
+  // statuses. For running runs, the events (especially tasks_updated) may
+  // have newer statuses than the run-level snapshot, so only use run.tasks
+  // to fill in tasks not yet seen in events.
+  if (run.status === "completed") {
+    // Completed: run-level snapshot is authoritative (written at end)
+    for (const t of run.tasks) taskMap.set(t.id, t as TaskItem);
+  } else {
+    // Running/failed: only add tasks from run.tasks that weren't in events
+    for (const t of run.tasks) {
+      if (!taskMap.has(t.id)) taskMap.set(t.id, t as TaskItem);
+    }
+  }
   state.allRunTasks = Array.from(taskMap.values());
 
   return state;

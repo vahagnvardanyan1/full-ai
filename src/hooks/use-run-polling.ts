@@ -22,7 +22,7 @@ import type { StoredWorkflowRun, HistoryEntry } from "@/lib/workflow-replay";
 import type { TaskItem } from "@/lib/agents/types";
 
 const POLL_INTERVAL_MS = 3_000;
-const MAX_STALE_POLLS = 6; // ~18 s of silence → give up
+const MAX_STALE_POLLS = 20; // ~60 s of silence → give up (agents can take 30s+ between events)
 
 interface UseRunPollingOptions {
   requestId: string | null;
@@ -75,6 +75,11 @@ export const useRunPolling = ({ requestId, onUpdate, onDone }: UseRunPollingOpti
       if (currentEventCount === lastEventCountRef.current) {
         staleCountRef.current += 1;
         if (staleCountRef.current >= MAX_STALE_POLLS) {
+          // Do a final update with whatever state we have before giving up
+          const { history: finalHistory, allTasks: finalTasks } = replayWorkflowRuns([run]);
+          if (finalHistory[0]) {
+            onUpdateRef.current({ entry: { ...finalHistory[0], done: true, workingAgents: [] }, tasks: finalTasks });
+          }
           stopPolling();
           onDoneRef.current();
           return;
