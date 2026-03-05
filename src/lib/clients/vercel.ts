@@ -3,7 +3,7 @@
 //
 // GitHub is connected to Vercel directly, so deployments
 // happen automatically on push. This client fetches the
-// preview URL for a given branch from the Vercel API.
+// latest deployment URL from the Vercel API.
 // ──────────────────────────────────────────────────────────
 
 import { logger } from "@/lib/logger";
@@ -27,9 +27,9 @@ export interface GetPreviewUrlParams {
 }
 
 /**
- * Query Vercel for the latest auto-deployed preview for a branch.
- * Retries a few times since the deployment may still be in progress
- * right after the git push.
+ * Query Vercel for the latest deployment.
+ * Uses the most recent deployment rather than matching by branch ref,
+ * since the branch name reported by Vercel may not always match.
  */
 export async function getVercelPreviewUrl(
   params: GetPreviewUrlParams,
@@ -44,83 +44,63 @@ export async function getVercelPreviewUrl(
 
   const { token, projectId, teamId } = getConfig();
 
-  const maxAttempts = 6;
-  const delayMs = 10_000; // 10s between retries (auto-deploys take time)
+  try {
+    const qs = new URLSearchParams({ limit: "5" });
+    if (teamId) qs.set("teamId", teamId);
+    if (projectId.startsWith("prj_")) {
+      qs.set("projectId", projectId);
+    }
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      // Try both with and without projectId filter — the env value
-      // might be a team scope rather than a Vercel project ID.
-      const qs = new URLSearchParams({ limit: "20" });
-      if (teamId) qs.set("teamId", teamId);
-      // Only add projectId if it looks like a Vercel project ID
-      if (projectId.startsWith("prj_")) {
-        qs.set("projectId", projectId);
-      }
+    const res = await fetch(
+      `${VERCEL_API}/v6/deployments?${qs.toString()}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
 
-      const res = await fetch(
-        `${VERCEL_API}/v6/deployments?${qs.toString()}`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+    if (!res.ok) {
+      const body = await res.text();
+      logger.warn("Vercel list deployments failed", { status: res.status, body });
+      return { branch, found: false };
+    }
 
-      if (!res.ok) {
-        const body = await res.text();
-        logger.warn("Vercel list deployments failed", { status: res.status, body, attempt });
-        break;
-      }
+    const data = await res.json();
+    const deployments = data.deployments ?? [];
 
-      const data = await res.json();
-      const deployments = data.deployments ?? [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const refs = deployments.map((d: any) => ({
+      ref: d.meta?.githubCommitRef ?? d.gitSource?.ref ?? "unknown",
+      url: d.url,
+      state: d.readyState ?? d.state,
+    }));
+    logger.debug("Vercel deployments fetched", { branch, count: deployments.length, refs });
 
-      // Log what we got back for debugging
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const refs = deployments.map((d: any) => ({
-        ref: d.meta?.githubCommitRef ?? d.gitSource?.ref ?? "unknown",
-        url: d.url,
-        state: d.readyState ?? d.state,
-      }));
-      logger.debug("Vercel deployments fetched", { attempt, branch, count: deployments.length, refs });
+    // Use the most recent deployment (Vercel API returns newest first)
+    const match = deployments[0];
 
-      // Find a deployment whose git ref matches our branch
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const match = deployments.find((d: any) => {
-        const ref = d.meta?.githubCommitRef ?? d.gitSource?.ref ?? "";
-        return ref === branch;
+    if (match) {
+      const url = `https://${match.url}`;
+      const inspectorUrl = match.inspectorUrl ?? null;
+      const state = match.readyState ?? match.state ?? "UNKNOWN";
+
+      logger.info("Vercel latest deployment found", {
+        deploymentId: match.uid,
+        url,
+        state,
       });
 
-      if (match) {
-        const url = `https://${match.url}`;
-        const inspectorUrl = match.inspectorUrl ?? null;
-        const state = match.readyState ?? match.state ?? "UNKNOWN";
-
-        logger.info("Vercel preview deployment found", {
-          deploymentId: match.uid,
-          url,
-          state,
-          attempt,
-        });
-
-        return {
-          branch,
-          found: true,
-          deploymentId: match.uid,
-          url,
-          state,
-          inspectorUrl,
-        };
-      }
-
-      if (attempt < maxAttempts) {
-        logger.info("Vercel preview not found yet, retrying...", { attempt, branch });
-        await new Promise((r) => setTimeout(r, delayMs));
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      logger.warn("Vercel API error while looking up preview", { error: msg, attempt });
-      break;
+      return {
+        branch,
+        found: true,
+        deploymentId: match.uid,
+        url,
+        state,
+        inspectorUrl,
+      };
     }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.warn("Vercel API error while looking up preview", { error: msg });
   }
 
-  logger.warn("Vercel preview deployment not found for branch", { branch });
+  logger.warn("Vercel preview deployment not found", { branch });
   return { branch, found: false };
 }
