@@ -73,6 +73,10 @@ const config: Config = {
           from: { opacity: "0", transform: "translateY(8px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        "slide-down-in": {
+          from: { opacity: "0", transform: "translateY(-100%)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
         "dot-bounce": {
           "0%, 80%, 100%": { transform: "translateY(0)" },
           "40%": { transform: "translateY(-6px)" },
@@ -152,6 +156,7 @@ const config: Config = {
         spin: "spin 0.8s linear infinite",
         "glow-pulse": "glow-pulse 2s ease-in-out infinite",
         "slide-in": "slide-in 0.3s ease-out",
+        "slide-down-in": "slide-down-in 0.35s ease-out",
         "dot-bounce": "dot-bounce 1.2s ease-in-out infinite",
         "panel-slide-in": "panel-slide-in 0.25s ease-out",
         "panel-slide-down": "panel-slide-down 0.25s ease-out",

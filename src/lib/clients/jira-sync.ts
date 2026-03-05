@@ -50,18 +50,21 @@ export async function syncTaskToJira(task: Task): Promise<void> {
 /**
  * Sync a task status change to Jira. Non-blocking.
  */
-export async function syncTaskStatusToJira(taskId: string, newStatus: TaskStatus): Promise<void> {
+export async function syncTaskStatusToJira(task: Task, newStatus: TaskStatus): Promise<void> {
   try {
-    const jiraKey = taskToJiraMap.get(taskId);
-    if (!jiraKey) return;
+    const jiraKey = taskToJiraMap.get(task.id) ?? task.jiraKey;
+    if (!jiraKey) {
+      logger.warn("No Jira key found for task, skipping status sync", { taskId: task.id });
+      return;
+    }
     if (!(await isJiraConfigured())) return;
 
     await transitionJiraIssue(jiraKey, newStatus);
 
-    logger.info("Task status synced to Jira", { taskId, jiraKey, newStatus });
+    logger.info("Task status synced to Jira", { taskId: task.id, jiraKey, newStatus });
   } catch (err) {
     logger.error("Failed to sync task status to Jira", {
-      taskId,
+      taskId: task.id,
       error: err instanceof Error ? err.message : String(err),
     });
   }
@@ -72,4 +75,24 @@ export async function syncTaskStatusToJira(taskId: string, newStatus: TaskStatus
  */
 export function getJiraKeyForTask(taskId: string): string | undefined {
   return taskToJiraMap.get(taskId);
+}
+
+/**
+ * Await Jira sync for a task, ensuring jiraKey is available before proceeding.
+ */
+export async function awaitTaskJiraSync(task: Task): Promise<void> {
+  if (task.jiraKey) return;
+  // Give the fire-and-forget sync a moment to complete
+  const maxWait = 5000;
+  const interval = 200;
+  let waited = 0;
+  while (waited < maxWait) {
+    await new Promise((r) => setTimeout(r, interval));
+    waited += interval;
+    if (task.jiraKey || taskToJiraMap.has(task.id)) {
+      if (!task.jiraKey) task.jiraKey = taskToJiraMap.get(task.id);
+      return;
+    }
+  }
+  logger.warn("Timed out waiting for Jira sync", { taskId: task.id });
 }
