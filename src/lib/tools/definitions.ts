@@ -91,7 +91,7 @@ export const TOOL_CREATE_GITHUB_PR: ChatCompletionTool = {
         created_by: {
           type: "string",
           description:
-            'Optional scope filter for code-store files by creator role (e.g. "qa", "frontend_developer").',
+            'Optional scope filter for code-store files by creator role (e.g. "coder", "tester", "reviewer").',
         },
         file_paths: {
           type: "array",
@@ -135,7 +135,7 @@ export const TOOL_CREATE_TASK: ChatCompletionTool = {
         assigned_to: {
           type: "string",
           description:
-            'Who should handle this task — use agent roles: "frontend_developer", "qa", "devops", or a team member name',
+            'Who should handle this task — use agent roles: "coder", "reviewer", "tester", "architect", or a team member name',
         },
         labels: {
           type: "array",
@@ -231,6 +231,144 @@ export const TOOL_TRIGGER_VERCEL_DEPLOYMENT: ChatCompletionTool = {
   },
 };
 
+/** Allowed command prefixes for run_local_command (DevOps local deployment). No shell metacharacters; single command only. */
+export const RUN_LOCAL_COMMAND_ALLOWED_PREFIXES = [
+  "docker ",
+  "docker-compose ",
+  "docker compose ",
+  "npm run ",
+  "pnpm run ",
+  "yarn ",
+  "npx ",
+] as const;
+
+export const TOOL_RUN_LOCAL_COMMAND: ChatCompletionTool = {
+  type: "function",
+  function: {
+    name: "run_local_command",
+    description:
+      "Run a single local command for deployment or dev setup. Allowed: docker, docker-compose, npm run, pnpm run, yarn, npx. Use for local Docker deployment (e.g. 'docker compose up -d') or starting dev servers. Runs in project root with a timeout. Only available to the devops agent.",
+    parameters: {
+      type: "object",
+      properties: {
+        command: {
+          type: "string",
+          description:
+            "Exact command to run (e.g. 'docker compose up -d', 'npm run build'). Must start with an allowed prefix.",
+        },
+        timeout_seconds: {
+          type: "number",
+          description: "Max execution time in seconds. Default 120.",
+        },
+      },
+      required: ["command"],
+    },
+  },
+};
+
+// ── Ruflo MCP proxy tools ────────────────────────────────
+
+export const TOOL_SWARM_INIT: ChatCompletionTool = {
+  type: "function",
+  function: {
+    name: "swarm_init",
+    description:
+      "Initialize a Ruflo swarm for multi-agent coordination. Sets up the topology and agent strategy.",
+    parameters: {
+      type: "object",
+      properties: {
+        topology: {
+          type: "string",
+          enum: ["hierarchical", "mesh", "hierarchical-mesh", "ring", "star", "adaptive"],
+          description: 'Swarm topology type. Default: "hierarchical"',
+        },
+        maxAgents: {
+          type: "number",
+          description: "Maximum number of agents in the swarm. Default: 8",
+        },
+        strategy: {
+          type: "string",
+          enum: ["balanced", "specialized", "adaptive"],
+          description: 'Agent strategy. Default: "specialized"',
+        },
+      },
+    },
+  },
+};
+
+export const TOOL_MEMORY_SEARCH: ChatCompletionTool = {
+  type: "function",
+  function: {
+    name: "memory_search",
+    description:
+      "Search Ruflo memory for past patterns and learnings. Use before starting complex tasks to leverage past experience.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Semantic search query describing what patterns to find",
+        },
+        namespace: {
+          type: "string",
+          description: 'Memory namespace to search in. Default: "patterns"',
+        },
+      },
+      required: ["query"],
+    },
+  },
+};
+
+export const TOOL_MEMORY_STORE: ChatCompletionTool = {
+  type: "function",
+  function: {
+    name: "memory_store",
+    description:
+      "Store a pattern or learning in Ruflo memory. Use after successful task completion to save what worked.",
+    parameters: {
+      type: "object",
+      properties: {
+        key: {
+          type: "string",
+          description: "Unique key for this memory entry (e.g. pattern-auth-validation)",
+        },
+        value: {
+          type: "string",
+          description: "The pattern or learning to store. Be detailed for better future retrieval.",
+        },
+        namespace: {
+          type: "string",
+          description: 'Memory namespace. Default: "patterns"',
+        },
+      },
+      required: ["key", "value"],
+    },
+  },
+};
+
+export const TOOL_AGENT_SPAWN: ChatCompletionTool = {
+  type: "function",
+  function: {
+    name: "agent_spawn",
+    description:
+      "Register a new agent in the Ruflo swarm for coordination tracking.",
+    parameters: {
+      type: "object",
+      properties: {
+        type: {
+          type: "string",
+          description: "Agent type (e.g. coder, tester, reviewer, architect)",
+        },
+        name: {
+          type: "string",
+          description: "Unique agent name for this swarm session",
+        },
+      },
+      required: ["type", "name"],
+    },
+  },
+};
+
 /** All tools available for function calling */
 export const ALL_TOOLS: ChatCompletionTool[] = [
   TOOL_CREATE_GITHUB_ISSUE,
@@ -240,11 +378,16 @@ export const ALL_TOOLS: ChatCompletionTool[] = [
   TOOL_UPDATE_TASK_STATUS,
   TOOL_WRITE_CODE,
   TOOL_TRIGGER_VERCEL_DEPLOYMENT,
+  TOOL_SWARM_INIT,
+  TOOL_MEMORY_SEARCH,
+  TOOL_MEMORY_STORE,
+  TOOL_AGENT_SPAWN,
 ];
 
 /** Subsets agents can use — keeps each agent's scope narrow */
 export const PM_TOOLS: ChatCompletionTool[] = [
   TOOL_CREATE_TASK,
+  TOOL_MEMORY_SEARCH,
 ];
 
 export const FRONTEND_DEV_TOOLS: ChatCompletionTool[] = [
@@ -252,6 +395,8 @@ export const FRONTEND_DEV_TOOLS: ChatCompletionTool[] = [
   TOOL_CREATE_GITHUB_ISSUE,
   TOOL_CREATE_GITHUB_PR,
   TOOL_UPDATE_TASK_STATUS,
+  TOOL_MEMORY_SEARCH,
+  TOOL_MEMORY_STORE,
 ];
 
 export const QA_TOOLS: ChatCompletionTool[] = [
@@ -259,10 +404,32 @@ export const QA_TOOLS: ChatCompletionTool[] = [
   TOOL_CREATE_GITHUB_ISSUE,
   TOOL_CREATE_GITHUB_PR,
   TOOL_UPDATE_TASK_STATUS,
+  TOOL_MEMORY_SEARCH,
+  TOOL_MEMORY_STORE,
 ];
 
 export const DEVOPS_TOOLS: ChatCompletionTool[] = [
   TOOL_WRITE_CODE,
+  TOOL_CREATE_GITHUB_PR,
   TOOL_TRIGGER_VERCEL_DEPLOYMENT,
+  TOOL_RUN_LOCAL_COMMAND,
   TOOL_UPDATE_TASK_STATUS,
+  TOOL_MEMORY_SEARCH,
+];
+
+export const CODER_TOOLS: ChatCompletionTool[] = [
+  TOOL_WRITE_CODE,
+  TOOL_CREATE_GITHUB_PR,
+  TOOL_CREATE_GITHUB_ISSUE,
+  TOOL_UPDATE_TASK_STATUS,
+  TOOL_MEMORY_SEARCH,
+  TOOL_MEMORY_STORE,
+];
+
+export const REVIEWER_TOOLS: ChatCompletionTool[] = [
+  TOOL_ADD_GITHUB_COMMENT,
+  TOOL_CREATE_GITHUB_ISSUE,
+  TOOL_UPDATE_TASK_STATUS,
+  TOOL_MEMORY_SEARCH,
+  TOOL_MEMORY_STORE,
 ];

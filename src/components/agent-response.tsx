@@ -2,26 +2,15 @@
 
 import { useState, useMemo } from "react";
 import type { AgentResponse } from "@/lib/agents/types";
+import { getRoleColor, formatRoleLabel } from "@/lib/agents/role-config";
 import { AgentAvatar } from "@/components/agent-avatar";
 import { glassCard } from "@/lib/styles";
 
-const AGENT_COLORS: Record<string, string> = {
-  product_manager: "#a78bfa",
-  frontend_developer: "#34d399",
-  qa: "#facc15",
-  devops: "#f97316",
-  orchestrator: "#60a5fa",
-};
+import { RunLocalCommandResult } from "@/components/run-local-command-result";
+import { PullRequestResult } from "@/components/pull-request-result";
 
 const HIDDEN_TOOLS = new Set(["create_task", "write_code"]);
 const SUMMARY_CLAMP = 3;
-
-function formatAgentName(role: string): string {
-  return role
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
 
 function SummaryContent({ text, expanded }: { text: string; expanded: boolean }) {
   const segments = useMemo(() => {
@@ -88,12 +77,17 @@ export function AgentResponseCard({
 }) {
   const [showTools, setShowTools] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const color = AGENT_COLORS[response.agent] ?? "#888";
+  const color = getRoleColor(response.agent);
 
   const visibleTools = response.toolCalls.filter(
     (tc) => !HIDDEN_TOOLS.has(tc.tool),
   );
   const hiddenCount = response.toolCalls.length - visibleTools.length;
+
+  const prToolCall = response.toolCalls.find(
+    (tc) => tc.tool === "create_github_pull_request" && tc.result && typeof tc.result === "object" && "url" in tc.result && (tc.result as { url?: string }).url,
+  );
+  const prUrl = prToolCall?.result && typeof prToolCall.result === "object" ? (prToolCall.result as { url?: string }).url : undefined;
 
   const hasCodeBlocks = /```/.test(response.summary);
   const lineCount = response.summary.trim().split("\n").length;
@@ -109,7 +103,7 @@ export function AgentResponseCard({
             className="inline-block px-2 py-0.5 rounded-full text-[0.7rem] font-semibold uppercase tracking-wide"
             style={{ color, background: `${color}12`, border: `1px solid ${color}25` }}
           >
-            {formatAgentName(response.agent)}
+            {formatRoleLabel(response.agent)}
           </span>
         </div>
         {hiddenCount > 0 && (
@@ -118,6 +112,14 @@ export function AgentResponseCard({
           </span>
         )}
       </div>
+
+      {/* PR link — always visible when agent opened a PR */}
+      {prUrl && (
+        <div className="rounded border border-[var(--border)] bg-[var(--bg-tertiary)] px-2.5 py-2">
+          <span className="text-[0.65rem] uppercase tracking-wide text-[var(--text-muted)]">Pull request</span>
+          <PullRequestResult result={prToolCall!.result} />
+        </div>
+      )}
 
       {/* Summary */}
       <SummaryContent text={response.summary} expanded={expanded} />
@@ -135,14 +137,22 @@ export function AgentResponseCard({
           </button>
           {showTools &&
             visibleTools.map((tc, i) => (
-              <div key={i} className="bg-[var(--bg-tertiary)] border border-[var(--border)] rounded px-3 py-2 mt-1.5 text-[0.8rem] font-mono overflow-auto max-h-[200px]">
+              <div key={i} className="bg-[var(--bg-tertiary)] border border-[var(--border)] rounded px-3 py-2 mt-1.5 text-[0.8rem] font-mono overflow-auto max-h-[400px]">
                 <strong className="text-[var(--accent)] text-[0.75rem]">{tc.tool}</strong>
-                <pre className="mt-1 text-[0.75rem]">
-                  {JSON.stringify(tc.arguments, null, 2)}
-                </pre>
-                <pre className="mt-1 text-[0.75rem] text-[var(--success)]">
-                  {JSON.stringify(tc.result, null, 2)}
-                </pre>
+                {tc.tool === "run_local_command" ? (
+                  <RunLocalCommandResult arguments={tc.arguments} result={tc.result} />
+                ) : tc.tool === "create_github_pull_request" ? (
+                  <PullRequestResult result={tc.result} />
+                ) : (
+                  <>
+                    <pre className="mt-1 text-[0.75rem]">
+                      {JSON.stringify(tc.arguments, null, 2)}
+                    </pre>
+                    <pre className="mt-1 text-[0.75rem] text-[var(--success)]">
+                      {JSON.stringify(tc.result, null, 2)}
+                    </pre>
+                  </>
+                )}
               </div>
             ))}
         </div>

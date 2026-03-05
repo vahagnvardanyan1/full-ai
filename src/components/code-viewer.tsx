@@ -2,27 +2,14 @@
 
 import { useState } from "react";
 import type { GeneratedFile } from "@/lib/agents/types";
+import { getRoleColor, formatRoleLabel } from "@/lib/agents/role-config";
 import { AgentAvatar } from "@/components/agent-avatar";
 import { glassCard } from "@/lib/styles";
-
-const AGENT_COLORS: Record<string, string> = {
-  frontend_developer: "#34d399",
-  qa: "#facc15",
-  devops: "#f97316",
-  product_manager: "#a78bfa",
-};
-
-function formatAgent(role: string): string {
-  return role
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
 
 function FileItem({ file }: { file: GeneratedFile }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const color = AGENT_COLORS[file.createdBy] ?? "#888";
+  const color = getRoleColor(file.createdBy);
   const lineCount = file.code.split("\n").length;
 
   function handleCopy() {
@@ -51,7 +38,7 @@ function FileItem({ file }: { file: GeneratedFile }) {
             className="inline-block px-1.5 py-0.5 rounded-full text-[0.6rem] font-semibold uppercase tracking-tight"
             style={{ color, background: `${color}12`, border: `1px solid ${color}25` }}
           >
-            {formatAgent(file.createdBy)}
+            {formatRoleLabel(file.createdBy)}
           </span>
           <span className="inline-block px-1.5 py-0.5 rounded-full text-[0.6rem] font-semibold uppercase tracking-tight text-[var(--text-muted)] bg-[var(--surface-raised)] border border-[var(--surface-border)]">
             {file.language}

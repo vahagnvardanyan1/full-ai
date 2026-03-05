@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import type { AgentRole } from "@/lib/agents/types";
+import { getRoleConfig } from "@/lib/agents/role-config";
 
 export type AvatarStatus = "idle" | "working" | "done" | "error";
 
@@ -11,14 +12,6 @@ interface AgentAvatarProps {
   size?: number;
   status?: AvatarStatus;
 }
-
-const AGENT_COLORS: Record<string, string> = {
-  product_manager: "#a78bfa",
-  frontend_developer: "#34d399",
-  qa: "#facc15",
-  devops: "#f97316",
-  orchestrator: "#60a5fa",
-};
 
 const PICSART_CDN = "https://cdn-cms-uploads.picsart.com/cms-uploads";
 
@@ -49,7 +42,7 @@ export function AgentAvatar({
   size = 54,
   status = "idle",
 }: AgentAvatarProps) {
-  const color = AGENT_COLORS[role] ?? "#888";
+  const { color, Icon } = getRoleConfig(role);
   const videoSrc = AGENT_ANIMATIONS[role];
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -64,6 +57,7 @@ export function AgentAvatar({
   const showRing = status !== "idle";
   const showBadge = status === "done" || status === "error";
   const badgeSize = Math.max(12, size * 0.35);
+  const iconSize = Math.round(size * 0.5);
 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
@@ -111,15 +105,13 @@ export function AgentAvatar({
             }}
           />
         ) : (
-          <span
-            className="font-bold uppercase"
-            style={{
-              fontSize: size * 0.45,
-              color: color,
-            }}
-          >
-            {(role[0] ?? "?").toUpperCase()}
-          </span>
+          <Icon
+            size={iconSize}
+            strokeWidth={2}
+            className="shrink-0"
+            style={{ color }}
+            aria-hidden
+          />
         )}
       </div>
 

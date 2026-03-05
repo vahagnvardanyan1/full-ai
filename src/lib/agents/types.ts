@@ -2,13 +2,42 @@
 // Shared type definitions for the multi-agent system
 // ──────────────────────────────────────────────────────────
 
-/** Enum of every agent role in the system */
-export type AgentRole =
-  | "orchestrator"
+/** Legacy pipeline agent roles (kept for backward-compat with old agent files) */
+type LegacyAgentRole =
   | "product_manager"
   | "frontend_developer"
   | "qa"
   | "devops";
+
+/** Ruflo agent roles — these are the active agents used by the planner */
+type RufloAgentRole =
+  | "researcher"
+  | "architect"
+  | "coder"
+  | "reviewer"
+  | "tester"
+  | "security_architect"
+  | "performance_engineer"
+  | "coordinator";
+
+/** Every agent role in the system */
+export type AgentRole =
+  | "orchestrator"
+  | RufloAgentRole
+  | LegacyAgentRole;
+
+/** Active Ruflo agent roles that the planner can dispatch */
+export const ALL_AGENT_ROLES: AgentRole[] = [
+  "researcher",
+  "architect",
+  "coder",
+  "reviewer",
+  "tester",
+  "security_architect",
+  "performance_engineer",
+  "coordinator",
+  "devops",
+];
 
 /** Task lifecycle statuses for the Kanban board */
 export type TaskStatus = "open" | "in_progress" | "review" | "testing" | "ready_to_merge" | "done";
@@ -107,11 +136,21 @@ export type QAProgressStage =
   | "reporting"
   | "complete";
 
+/** Progress stages emitted by Ruflo agents */
+export type RufloProgressStage =
+  | "initializing"
+  | "researching"
+  | "executing"
+  | "reviewing"
+  | "complete";
+
 /** All possible progress stages across all agents */
 export type AgentProgressStage =
   | FEProgressStage
   | PMProgressStage
-  | QAProgressStage;
+  | QAProgressStage
+  | RufloProgressStage
+  | string;
 
 /** Sub-step progress event for agents that run multi-stage pipelines */
 export interface AgentProgressEvent {
@@ -135,6 +174,8 @@ export type StreamEvent =
     }
   | { type: "error"; agent: AgentRole; message: string }
   | { type: "tasks_updated"; tasks: TaskItem[] }
+  | { type: "swarm_status"; active: boolean; topology: string; agentCount: number }
+  | { type: "memory_hit"; query: string; matchCount: number; topScore: number }
   | { type: "done"; requestId: string };
 
 /** Shape of the request body sent from the frontend */

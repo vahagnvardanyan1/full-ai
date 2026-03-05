@@ -14,6 +14,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import { AgentAvatar, type AvatarStatus } from "@/components/agent-avatar";
+import { getRoleColor, formatRoleLabel } from "@/lib/agents/role-config";
 import type { AgentRole, AgentResponse, TaskItem, GeneratedFile } from "@/lib/agents/types";
 
 // ── Types ──────────────────────────────────────────────
@@ -38,23 +39,6 @@ interface AgentPipelineProps {
   agentOutputs: Map<string, { response: AgentResponse; tasks: TaskItem[]; files: GeneratedFile[] }>;
   selectedAgent: string | null;
   onSelectAgent: (agentId: string | null) => void;
-}
-
-// ── Agent colors ───────────────────────────────────────
-
-const AGENT_COLORS: Record<string, string> = {
-  product_manager: "#a78bfa",
-  frontend_developer: "#34d399",
-  qa: "#facc15",
-  devops: "#f97316",
-  orchestrator: "#60a5fa",
-};
-
-function formatAgentName(role: string): string {
-  return role
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
 }
 
 function truncate(text: string, max: number): string {
@@ -246,7 +230,7 @@ function buildNodesAndEdges(
     id: "start",
     type: "startNode",
     position: { x: START_X, y: centerY - 28 },
-    data: { role: "orchestrator", label: "Start", status: "done" as AvatarStatus, color: AGENT_COLORS.orchestrator },
+    data: { role: "orchestrator", label: "Start", status: "done" as AvatarStatus, color: getRoleColor("orchestrator") },
     draggable: false,
     selectable: false,
     width: 56,
@@ -269,7 +253,7 @@ function buildNodesAndEdges(
       else if (completedAgents.includes(role)) status = "done";
       else if (workingAgents.includes(role)) status = "working";
 
-      const color = AGENT_COLORS[role] ?? "#888";
+      const color = getRoleColor(role);
       const output = agentOutputs.get(role);
 
       const toolCalls = output?.response.toolCalls ?? [];
@@ -284,7 +268,7 @@ function buildNodesAndEdges(
         position: { x: phaseX, y: phaseTopY + roleIdx * Y_SPACING },
         data: {
           role,
-          label: formatAgentName(role),
+          label: formatRoleLabel(role),
           status,
           color,
           summary: output?.response.summary,

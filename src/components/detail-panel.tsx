@@ -2,7 +2,10 @@
 
 import { useState, useMemo, useEffect } from "react";
 import type { AgentResponse, TaskItem, GeneratedFile } from "@/lib/agents/types";
+import { getRoleColor, formatRoleLabel } from "@/lib/agents/role-config";
 import { AgentAvatar } from "@/components/agent-avatar";
+import { RunLocalCommandResult } from "@/components/run-local-command-result";
+import { PullRequestResult } from "@/components/pull-request-result";
 import { panelBase, sectionLabel, pillBase, closeBtnBase } from "@/lib/styles";
 
 interface DetailPanelProps {
@@ -13,26 +16,11 @@ interface DetailPanelProps {
   onClose: () => void;
 }
 
-const AGENT_COLORS: Record<string, string> = {
-  product_manager: "#a78bfa",
-  frontend_developer: "#34d399",
-  qa: "#facc15",
-  devops: "#f97316",
-  orchestrator: "#60a5fa",
-};
-
 const PRIORITY_COLORS: Record<string, string> = {
   high: "#ef4444",
   medium: "#eab308",
   low: "#6b7280",
 };
-
-function formatName(role: string): string {
-  return role
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
 
 function SummaryBlock({ text }: { text: string }) {
   const segments = useMemo(() => {
@@ -74,7 +62,7 @@ function SummaryBlock({ text }: { text: string }) {
 }
 
 function TaskRow({ task }: { task: TaskItem }) {
-  const assigneeColor = AGENT_COLORS[task.assignedTo] ?? "#888";
+  const assigneeColor = getRoleColor(task.assignedTo);
   const priorityColor = PRIORITY_COLORS[task.priority] ?? "#888";
 
   return (
@@ -149,7 +137,7 @@ export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPa
       <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[var(--panel-border)] sticky top-0 bg-[var(--panel-bg)] backdrop-blur-[12px] rounded-t-2xl z-2">
         <AgentAvatar role={agent} size={48} status="done" />
         <div>
-          <div className="text-[0.9rem] font-semibold">{formatName(agent)}</div>
+          <div className="text-[0.9rem] font-semibold">{formatRoleLabel(agent)}</div>
           <div className="text-[0.65rem] text-[var(--success)] font-medium uppercase tracking-wide">
             Complete
           </div>
@@ -195,13 +183,30 @@ export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPa
       {response.toolCalls.length > 0 && (
         <div className="px-5 py-3.5">
           <div className={sectionLabel}>{response.toolCalls.length} Tool Calls</div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             {response.toolCalls.map((tc, i) => (
               <div
                 key={i}
-                className="text-[0.7rem] px-2 py-1 rounded-md bg-[var(--surface-raised)] border border-[var(--surface-border)] font-mono text-[var(--text-muted)]"
+                className="rounded-md bg-[var(--surface-raised)] border border-[var(--surface-border)] overflow-hidden"
               >
-                <span className="text-[var(--accent)]">{tc.tool}</span>
+                <span className="block text-[0.7rem] px-2 py-1.5 font-mono text-[var(--accent)] border-b border-[var(--surface-border)]">
+                  {tc.tool}
+                </span>
+                {tc.tool === "run_local_command" ? (
+                  <div className="px-2 py-2">
+                    <RunLocalCommandResult arguments={tc.arguments} result={tc.result} compact />
+                  </div>
+                ) : tc.tool === "create_github_pull_request" ? (
+                  <div className="px-2 py-2">
+                    <PullRequestResult result={tc.result} />
+                  </div>
+                ) : (
+                  <div className="px-2 py-1.5 text-[0.7rem] font-mono text-[var(--text-muted)]">
+                    <pre className="m-0 overflow-auto max-h-[120px]">
+                      {JSON.stringify(tc.result, null, 2)}
+                    </pre>
+                  </div>
+                )}
               </div>
             ))}
           </div>

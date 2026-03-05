@@ -20,18 +20,7 @@ import type {
   GeneratedFile,
   StreamEvent,
 } from "@/lib/agents/types";
-
-const AGENT_COLORS: Record<string, string> = {
-  product_manager: "#a78bfa",
-  frontend_developer: "#34d399",
-  qa: "#facc15",
-  devops: "#f97316",
-  orchestrator: "#60a5fa",
-};
-
-function formatAgentName(role: string): string {
-  return role.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-}
+import { getRoleColor, formatRoleLabel } from "@/lib/agents/role-config";
 
 // ── Toast ────────────────────────────────────────────────
 
@@ -44,7 +33,7 @@ interface Toast {
 
 function AgentToast({ toast, onDone, onClick }: { toast: Toast; onDone: () => void; onClick: () => void }) {
   const isErr = toast.isError;
-  const color = isErr ? "#ef4444" : (AGENT_COLORS[toast.agent] ?? "#888");
+  const color = isErr ? "#ef4444" : getRoleColor(toast.agent);
 
   useEffect(() => {
     const timer = setTimeout(onDone, isErr ? 5000 : 3500);
@@ -75,7 +64,7 @@ function AgentToast({ toast, onDone, onClick }: { toast: Toast; onDone: () => vo
       )}
       <div className="min-w-0">
         <div className="text-[0.72rem] font-semibold" style={{ color: isErr ? color : "var(--text)" }}>
-          {isErr ? `${formatAgentName(toast.agent)} failed` : formatAgentName(toast.agent)}
+          {isErr ? `${formatRoleLabel(toast.agent)} failed` : formatRoleLabel(toast.agent)}
         </div>
         <div className="text-[0.62rem] text-[var(--text-muted)] overflow-hidden text-ellipsis whitespace-nowrap">
           {toast.summary}
@@ -713,6 +702,24 @@ export default function WorkspaceTeamPage({
           message={latestEntry.error}
           onRetry={lastMessage ? () => handleSubmit(lastMessage) : undefined}
           onDismiss={() => setDismissedErrors((prev) => new Set(prev).add(latestEntry.id))}
+        />
+      )}
+      {selectedOutput && selectedAgent && (
+        <DetailPanel
+          agent={selectedAgent}
+          response={selectedOutput.response}
+          tasks={selectedOutput.tasks ?? []}
+          files={selectedOutput.files ?? []}
+          onClose={() => setSelectedAgent(null)}
+        />
+      )}
+      {selectedOutput && selectedAgent && (
+        <DetailPanel
+          agent={selectedAgent}
+          response={selectedOutput.response}
+          tasks={selectedOutput.tasks ?? []}
+          files={selectedOutput.files ?? []}
+          onClose={() => setSelectedAgent(null)}
         />
       )}
 

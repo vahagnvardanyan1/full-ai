@@ -1,0 +1,41 @@
+export { MCPClient, getMCPClient } from "./client";
+
+export {
+  swarmInit,
+  swarmStatus,
+  agentSpawn,
+  memorySearch,
+  memoryStore,
+  memoryRetrieve,
+  hookRoute,
+  hookPreTask,
+  hookPostTask,
+  neuralTrain,
+  hiveMindInit,
+  ping,
+  getAvailableTools,
+} from "./tools";
+
+export type {
+  SwarmInitParams,
+  SwarmStatusResult,
+  AgentSpawnParams,
+  AgentSpawnResult,
+  MemorySearchParams,
+  MemorySearchResult,
+  MemoryStoreParams,
+  MemoryStoreResult,
+  MemoryRetrieveParams,
+  MemoryRetrieveResult,
+  HookRouteParams,
+  HookRouteResult,
+  HookPreTaskParams,
+  HookPostTaskParams,
+  NeuralTrainParams,
+  NeuralTrainResult,
+  HiveMindInitParams,
+  MCPToolCallResult,
+  MCPInitializeResult,
+  MCPToolInfo,
+  MCPToolsListResult,
+} from "./types";

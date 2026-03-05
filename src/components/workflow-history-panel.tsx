@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/utils";
+import { getRoleColor, getRoleInitial, formatRoleLabel } from "@/lib/agents/role-config";
 import type { HistoryEntry } from "@/lib/workflow-replay";
 
 // ── Time helper ───────────────────────────────────────────
@@ -34,16 +35,6 @@ const STATUS_CONFIG: Record<RunStatus, { label: string; color: string; dot: stri
   failed:      { label: "Failed",      color: "#ef4444", dot: "bg-[#ef4444]" },
 };
 
-const AGENT_COLORS: Record<string, string> = {
-  product_manager:    "#a78bfa",
-  frontend_developer: "#34d399",
-  qa:                 "#facc15",
-  devops:             "#f97316",
-};
-
-const agentInitial = (role: string) =>
-  role.split("_").map((w) => w[0].toUpperCase()).join("");
-
 // ── Sub-components ────────────────────────────────────────
 
 const AgentPips = ({ entry }: { entry: HistoryEntry }) => {
@@ -55,13 +46,13 @@ const AgentPips = ({ entry }: { entry: HistoryEntry }) => {
   return (
     <div className="flex items-center gap-[3px]">
       {allAgents.map((role) => {
-        const color = AGENT_COLORS[role] ?? "#888";
+        const color = getRoleColor(role);
         const isDone = completedSet.has(role as never);
         const isWorking = workingSet.has(role);
         return (
           <div
             key={role}
-            title={role.replace(/_/g, " ")}
+            title={formatRoleLabel(role)}
             className={cn(
               "size-[18px] rounded-full flex items-center justify-center text-[0.48rem] font-bold transition-all",
               isDone    ? "opacity-100" : isWorking ? "opacity-80 animate-pulse" : "opacity-25",
@@ -72,7 +63,7 @@ const AgentPips = ({ entry }: { entry: HistoryEntry }) => {
               color: isDone || isWorking ? color : "rgba(255,255,255,0.3)",
             }}
           >
-            {agentInitial(role)}
+            {getRoleInitial(role)}
           </div>
         );
       })}

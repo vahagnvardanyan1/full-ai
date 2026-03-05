@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { SIDEBAR_NAV } from "@/lib/dashboard/constants";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { RufloStatus } from "@/components/dashboard/ruflo-status";
 
 const ICONS: Record<string, (props: { size?: number }) => React.ReactNode> = {
   home: ({ size = 20 }) => (
@@ -118,6 +119,13 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Ruflo MCP status */}
+      {!collapsed && (
+        <div className="px-3 mb-1">
+          <RufloStatus />
+        </div>
+      )}
 
       {/* Bottom controls */}
       <div className={cn("px-3 py-4 shrink-0 flex items-center gap-2", collapsed ? "px-0 justify-center flex-col" : "justify-between")}>

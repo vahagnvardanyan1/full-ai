@@ -6,7 +6,18 @@ import { logger } from "@/lib/logger";
 
 type SkillRole = Extract<
   AgentRole,
-  "product_manager" | "frontend_developer" | "qa" | "devops"
+  | "product_manager"
+  | "frontend_developer"
+  | "qa"
+  | "devops"
+  | "researcher"
+  | "architect"
+  | "coder"
+  | "reviewer"
+  | "tester"
+  | "security_architect"
+  | "performance_engineer"
+  | "coordinator"
 >;
 
 interface ParsedSkill {
@@ -16,14 +27,34 @@ interface ParsedSkill {
   filePath: string;
 }
 
-const ROLE_SKILL_DIRS: Record<SkillRole, string[]> = {
+const CODEX_SKILLS_ROOT = path.join(process.cwd(), ".codex", "skills");
+const RUFLO_SKILLS_ROOT = path.join(process.cwd(), ".agents", "skills");
+
+const CODEX_ROLE_DIRS: Partial<Record<SkillRole, string[]>> = {
   product_manager: ["pm"],
   frontend_developer: ["frontend", "pm"],
   qa: ["qa"],
   devops: ["devops"],
+  coder: ["frontend", "pm"],
+  tester: ["qa"],
+  coordinator: ["pm"],
 };
 
-const SKILLS_ROOT = path.join(process.cwd(), ".codex", "skills");
+const RUFLO_ROLE_DIRS: Partial<Record<SkillRole, string[]>> = {
+  product_manager: ["sparc-methodology", "agent-planner"],
+  frontend_developer: ["agent-coder", "agent-implementer-sparc-coder"],
+  qa: ["agent-tester", "agent-tdd-london-swarm", "verification-quality"],
+  devops: ["agent-ops-cicd-github", "workflow-automation"],
+  researcher: ["agent-researcher", "agent-analyze-code-quality", "performance-analysis"],
+  architect: ["agent-architecture", "agent-arch-system-design", "sparc-methodology"],
+  coder: ["agent-coder", "agent-implementer-sparc-coder", "pair-programming"],
+  reviewer: ["agent-reviewer", "agent-code-review-swarm", "agent-analyze-code-quality"],
+  tester: ["agent-tester", "agent-tdd-london-swarm", "agent-production-validator"],
+  security_architect: ["agent-v3-security-architect", "security-audit"],
+  performance_engineer: ["agent-v3-performance-engineer", "v3-performance-optimization", "agent-performance-optimizer"],
+  coordinator: ["agent-hierarchical-coordinator", "swarm-orchestration", "agent-coordination"],
+};
+
 const MAX_SKILL_BODY_CHARS = 3500;
 
 const parseFrontmatter = (markdown: string): { name: string; description: string; body: string } => {
@@ -68,46 +99,78 @@ const readSkillFile = async (filePath: string): Promise<ParsedSkill | null> => {
   }
 };
 
-const listSkillFiles = async (role: SkillRole): Promise<string[]> => {
-  const roleDirs = ROLE_SKILL_DIRS[role];
+const listSkillFilesFromRoot = async ({
+  root,
+  dirNames,
+}: {
+  root: string;
+  dirNames: string[];
+}): Promise<string[]> => {
   const skillFiles: string[] = [];
 
-  for (const dirName of roleDirs) {
-    const absoluteDir = path.join(SKILLS_ROOT, dirName);
+  for (const dirName of dirNames) {
+    const absoluteDir = path.join(root, dirName);
 
     try {
-      const entries = await fs.readdir(absoluteDir, { withFileTypes: true });
+      const stat = await fs.stat(absoluteDir);
 
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-        const skillFile = path.join(absoluteDir, entry.name, "SKILL.md");
-
+      if (stat.isDirectory()) {
+        const skillFile = path.join(absoluteDir, "SKILL.md");
         try {
           await fs.access(skillFile);
           skillFiles.push(skillFile);
         } catch {
-          // Ignore missing SKILL.md files.
+          const entries = await fs.readdir(absoluteDir, { withFileTypes: true });
+          for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
+            const nestedSkill = path.join(absoluteDir, entry.name, "SKILL.md");
+            try {
+              await fs.access(nestedSkill);
+              skillFiles.push(nestedSkill);
+            } catch {
+              // no SKILL.md here
+            }
+          }
         }
       }
     } catch {
-      // Ignore missing namespace directory.
+      // directory doesn't exist
     }
   }
 
   return skillFiles;
 };
 
+const listSkillFiles = async (role: SkillRole): Promise<string[]> => {
+  const codexDirs = CODEX_ROLE_DIRS[role] ?? [];
+  const rufloDirs = RUFLO_ROLE_DIRS[role] ?? [];
+
+  const [codexFiles, rufloFiles] = await Promise.all([
+    listSkillFilesFromRoot({ root: CODEX_SKILLS_ROOT, dirNames: codexDirs }),
+    listSkillFilesFromRoot({ root: RUFLO_SKILLS_ROOT, dirNames: rufloDirs }),
+  ]);
+
+  return [...codexFiles, ...rufloFiles];
+};
+
 export const buildRoleSkillContext = async (role: SkillRole): Promise<string> => {
   const skillFiles = await listSkillFiles(role);
   if (skillFiles.length === 0) return "";
 
-  const parsedSkills = (await Promise.all(skillFiles.map((skillFile) => readSkillFile(skillFile)))).filter(
-    (skill): skill is ParsedSkill => Boolean(skill),
-  );
+  const parsedSkills = (
+    await Promise.all(skillFiles.map((skillFile) => readSkillFile(skillFile)))
+  ).filter((skill): skill is ParsedSkill => Boolean(skill));
 
   if (parsedSkills.length === 0) return "";
 
-  const skillSections = parsedSkills.map((skill) => {
+  const seen = new Set<string>();
+  const deduped = parsedSkills.filter((skill) => {
+    if (seen.has(skill.name)) return false;
+    seen.add(skill.name);
+    return true;
+  });
+
+  const skillSections = deduped.map((skill) => {
     return [
       `### Skill: ${skill.name}`,
       `Description: ${skill.description}`,
@@ -119,8 +182,8 @@ export const buildRoleSkillContext = async (role: SkillRole): Promise<string> =>
 
   logger.info("Loaded role skills", {
     role,
-    count: parsedSkills.length,
-    skills: parsedSkills.map((skill) => skill.name),
+    count: deduped.length,
+    skills: deduped.map((skill) => skill.name),
   });
 
   return [

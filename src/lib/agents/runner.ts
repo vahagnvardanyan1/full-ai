@@ -14,7 +14,7 @@ import { logger } from "@/lib/logger";
 import type { AgentRole, AgentResponse, ToolCall } from "./types";
 
 const MODEL = "gpt-4o";
-const MAX_TOOL_ROUNDS = 5; // safety cap to prevent infinite loops
+const MAX_TOOL_ROUNDS = 10;
 
 export interface RunAgentOptions {
   role: AgentRole;
@@ -59,7 +59,6 @@ export async function runAgent(opts: RunAgentOptions): Promise<AgentResponse> {
     const assistantMessage = choice.message;
     messages.push(assistantMessage);
 
-    // If no tool calls, we're done — the model produced a final answer
     if (
       choice.finish_reason === "stop" ||
       !assistantMessage.tool_calls?.length
@@ -69,6 +68,7 @@ export async function runAgent(opts: RunAgentOptions): Promise<AgentResponse> {
         summary: assistantMessage.content ?? "",
         toolCalls: collectedToolCalls,
         detail: assistantMessage.content ?? "",
+        prUrl: extractPrUrl(collectedToolCalls),
       };
     }
 
@@ -121,5 +121,18 @@ export async function runAgent(opts: RunAgentOptions): Promise<AgentResponse> {
     summary: "Agent reached maximum tool call rounds.",
     toolCalls: collectedToolCalls,
     detail: "The agent was stopped after reaching the tool call limit.",
+    prUrl: extractPrUrl(collectedToolCalls),
   };
 }
+
+const extractPrUrl = (toolCalls: ToolCall[]): string | undefined => {
+  const prCall = toolCalls.find(
+    (tc) => tc.tool === "create_github_pull_request" && tc.result,
+  );
+  if (!prCall) return undefined;
+
+  const result = prCall.result as Record<string, unknown>;
+  if (typeof result.html_url === "string") return result.html_url;
+  if (typeof result.url === "string") return result.url;
+  return undefined;
+};
