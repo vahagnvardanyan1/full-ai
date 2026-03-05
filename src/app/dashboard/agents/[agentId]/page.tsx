@@ -38,13 +38,15 @@ export default async function AgentDetailPage({
       <div
         className="shrink-0 relative overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(168,85,247,0.06) 50%, transparent 100%)",
+          background:
+            "linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(168,85,247,0.06) 50%, transparent 100%)",
         }}
       >
         <div
           className="absolute inset-0 opacity-[0.03]"
           style={{
-            backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
+            backgroundImage:
+              "radial-gradient(circle, currentColor 1px, transparent 1px)",
             backgroundSize: "24px 24px",
           }}
         />
@@ -57,10 +59,16 @@ export default async function AgentDetailPage({
             <div className="relative shrink-0">
               <div
                 className="absolute -inset-1.5 rounded-full opacity-40 blur-md"
-                style={{ background: "linear-gradient(135deg, #22c55e, #a855f7)" }}
+                style={{
+                  background: "linear-gradient(135deg, #22c55e, #a855f7)",
+                }}
               />
-              <div className="hidden sm:block"><AgentAvatar role={agent.role} size={64} /></div>
-              <div className="sm:hidden"><AgentAvatar role={agent.role} size={44} /></div>
+              <div className="hidden sm:block">
+                <AgentAvatar role={agent.role} size={64} />
+              </div>
+              <div className="sm:hidden">
+                <AgentAvatar role={agent.role} size={44} />
+              </div>
             </div>
 
             <div className="flex-1 min-w-0">
@@ -69,7 +77,13 @@ export default async function AgentDetailPage({
                   {agent.name}
                 </h1>
                 <div className="flex items-center gap-1.5 text-[0.68rem] sm:text-[0.72rem] text-[var(--text-muted)]">
-                  <svg width={13} height={13} viewBox="0 0 24 24" fill="#facc15" stroke="none">
+                  <svg
+                    width={13}
+                    height={13}
+                    viewBox="0 0 24 24"
+                    fill="#facc15"
+                    stroke="none"
+                  >
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                   <span>{agent.rating}</span>
@@ -85,8 +99,12 @@ export default async function AgentDetailPage({
             {/* Price + Hire */}
             <div className="hidden sm:flex flex-col items-end gap-2 shrink-0 pt-1">
               <div className="flex items-baseline gap-1">
-                <span className="text-[1.4rem] font-bold text-[var(--text)]">${agent.price}</span>
-                <span className="text-[0.72rem] text-[var(--text-muted)]">/mo</span>
+                <span className="text-[1.4rem] font-bold text-[var(--text)]">
+                  ${agent.price}
+                </span>
+                <span className="text-[0.72rem] text-[var(--text-muted)]">
+                  /mo
+                </span>
               </div>
               <Button className="bg-gradient-to-br from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white rounded-lg shadow-[0_2px_12px_rgba(34,197,94,0.3)] text-[0.78rem] px-4 py-1.5">
                 Hire Agent
@@ -97,8 +115,12 @@ export default async function AgentDetailPage({
           {/* Mobile price row */}
           <div className="flex sm:hidden items-center justify-between mt-2 mb-1">
             <div className="flex items-baseline gap-1">
-              <span className="text-[1.1rem] font-bold text-[var(--text)]">${agent.price}</span>
-              <span className="text-[0.68rem] text-[var(--text-muted)]">/mo</span>
+              <span className="text-[1.1rem] font-bold text-[var(--text)]">
+                ${agent.price}
+              </span>
+              <span className="text-[0.68rem] text-[var(--text-muted)]">
+                /mo
+              </span>
             </div>
             <Button className="bg-gradient-to-br from-[#22c55e] to-[#16a34a] text-white rounded-lg text-[0.72rem] px-3 py-1">
               Hire Agent
@@ -108,13 +130,32 @@ export default async function AgentDetailPage({
           {/* Stats + Skills row */}
           <div className="flex items-center gap-3 sm:gap-6 mt-2 sm:mt-3 flex-wrap">
             {[
-              { label: "Tasks", value: agent.tasksCompleted.toString(), color: "#a78bfa" },
-              { label: "Rating", value: agent.rating.toString(), color: "#f59e0b" },
-              { label: "Reviews", value: agent.reviewCount.toString(), color: "#3b82f6" },
+              {
+                label: "Tasks",
+                value: agent.tasksCompleted.toString(),
+                color: "#a78bfa",
+              },
+              {
+                label: "Rating",
+                value: agent.rating.toString(),
+                color: "#f59e0b",
+              },
+              {
+                label: "Reviews",
+                value: agent.reviewCount.toString(),
+                color: "#3b82f6",
+              },
             ].map((stat) => (
               <div key={stat.label} className="flex items-baseline gap-1">
-                <span className="text-[0.82rem] sm:text-[0.88rem] font-bold" style={{ color: stat.color }}>{stat.value}</span>
-                <span className="text-[0.55rem] sm:text-[0.6rem] text-[var(--text-muted)] uppercase tracking-wide">{stat.label}</span>
+                <span
+                  className="text-[0.82rem] sm:text-[0.88rem] font-bold"
+                  style={{ color: stat.color }}
+                >
+                  {stat.value}
+                </span>
+                <span className="text-[0.55rem] sm:text-[0.6rem] text-[var(--text-muted)] uppercase tracking-wide">
+                  {stat.label}
+                </span>
               </div>
             ))}
             <div className="hidden sm:block w-px h-4 bg-[var(--surface-border)]" />
@@ -128,7 +169,11 @@ export default async function AgentDetailPage({
                   <span className="text-[var(--text)]">{skill.name}</span>
                   <span
                     className={cn(pillBase, "border text-[0.5rem] py-0")}
-                    style={{ color, borderColor: `${color}30`, background: `${color}10` }}
+                    style={{
+                      color,
+                      borderColor: `${color}30`,
+                      background: `${color}10`,
+                    }}
                   >
                     {skill.level}
                   </span>
@@ -170,14 +215,16 @@ function FashionAgentPage({ agent }: { agent: AgentData }) {
       <div
         className="relative overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(168,85,247,0.06) 50%, transparent 100%)",
+          background:
+            "linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(168,85,247,0.06) 50%, transparent 100%)",
         }}
       >
         {/* Subtle decorative dots */}
         <div
           className="absolute inset-0 opacity-[0.03]"
           style={{
-            backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
+            backgroundImage:
+              "radial-gradient(circle, currentColor 1px, transparent 1px)",
             backgroundSize: "24px 24px",
           }}
         />
@@ -191,10 +238,16 @@ function FashionAgentPage({ agent }: { agent: AgentData }) {
             <div className="relative shrink-0">
               <div
                 className="absolute -inset-1.5 rounded-full opacity-40 blur-md"
-                style={{ background: "linear-gradient(135deg, #22c55e, #a855f7)" }}
+                style={{
+                  background: "linear-gradient(135deg, #22c55e, #a855f7)",
+                }}
               />
-              <div className="hidden sm:block"><AgentAvatar role={agent.role} size={64} /></div>
-              <div className="sm:hidden"><AgentAvatar role={agent.role} size={44} /></div>
+              <div className="hidden sm:block">
+                <AgentAvatar role={agent.role} size={64} />
+              </div>
+              <div className="sm:hidden">
+                <AgentAvatar role={agent.role} size={44} />
+              </div>
             </div>
 
             <div className="flex-1 min-w-0">
@@ -203,7 +256,13 @@ function FashionAgentPage({ agent }: { agent: AgentData }) {
                   {agent.name}
                 </h1>
                 <div className="flex items-center gap-1.5 text-[0.68rem] sm:text-[0.72rem] text-[var(--text-muted)]">
-                  <svg width={13} height={13} viewBox="0 0 24 24" fill="#facc15" stroke="none">
+                  <svg
+                    width={13}
+                    height={13}
+                    viewBox="0 0 24 24"
+                    fill="#facc15"
+                    stroke="none"
+                  >
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                   <span>{agent.rating}</span>
@@ -219,8 +278,12 @@ function FashionAgentPage({ agent }: { agent: AgentData }) {
             {/* Price + Retailer badges */}
             <div className="hidden sm:flex flex-col items-end gap-2 shrink-0 pt-1">
               <div className="flex items-baseline gap-1">
-                <span className="text-[1.4rem] font-bold text-[var(--text)]">${agent.price}</span>
-                <span className="text-[0.72rem] text-[var(--text-muted)]">/mo</span>
+                <span className="text-[1.4rem] font-bold text-[var(--text)]">
+                  ${agent.price}
+                </span>
+                <span className="text-[0.72rem] text-[var(--text-muted)]">
+                  /mo
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
                 {["Zara", "Bershka", "M. Dutti"].map((brand) => (
@@ -238,8 +301,12 @@ function FashionAgentPage({ agent }: { agent: AgentData }) {
           {/* Mobile price + brands row */}
           <div className="flex sm:hidden items-center justify-between mt-2 mb-1">
             <div className="flex items-baseline gap-1">
-              <span className="text-[1.1rem] font-bold text-[var(--text)]">${agent.price}</span>
-              <span className="text-[0.68rem] text-[var(--text-muted)]">/mo</span>
+              <span className="text-[1.1rem] font-bold text-[var(--text)]">
+                ${agent.price}
+              </span>
+              <span className="text-[0.68rem] text-[var(--text-muted)]">
+                /mo
+              </span>
             </div>
             <div className="flex items-center gap-1">
               {["Zara", "Bershka", "M. Dutti"].map((brand) => (
@@ -256,13 +323,32 @@ function FashionAgentPage({ agent }: { agent: AgentData }) {
           {/* Stats + Skills row */}
           <div className="flex items-center gap-3 sm:gap-6 mt-2 sm:mt-3 flex-wrap">
             {[
-              { label: "Outfits", value: agent.tasksCompleted.toString(), color: "#a78bfa" },
-              { label: "Rating", value: agent.rating.toString(), color: "#f59e0b" },
-              { label: "Reviews", value: agent.reviewCount.toString(), color: "#3b82f6" },
+              {
+                label: "Outfits",
+                value: agent.tasksCompleted.toString(),
+                color: "#a78bfa",
+              },
+              {
+                label: "Rating",
+                value: agent.rating.toString(),
+                color: "#f59e0b",
+              },
+              {
+                label: "Reviews",
+                value: agent.reviewCount.toString(),
+                color: "#3b82f6",
+              },
             ].map((stat) => (
               <div key={stat.label} className="flex items-baseline gap-1">
-                <span className="text-[0.82rem] sm:text-[0.88rem] font-bold" style={{ color: stat.color }}>{stat.value}</span>
-                <span className="text-[0.55rem] sm:text-[0.6rem] text-[var(--text-muted)] uppercase tracking-wide">{stat.label}</span>
+                <span
+                  className="text-[0.82rem] sm:text-[0.88rem] font-bold"
+                  style={{ color: stat.color }}
+                >
+                  {stat.value}
+                </span>
+                <span className="text-[0.55rem] sm:text-[0.6rem] text-[var(--text-muted)] uppercase tracking-wide">
+                  {stat.label}
+                </span>
               </div>
             ))}
             <div className="hidden sm:block w-px h-4 bg-[var(--surface-border)]" />
@@ -276,7 +362,11 @@ function FashionAgentPage({ agent }: { agent: AgentData }) {
                   <span className="text-[var(--text)]">{skill.name}</span>
                   <span
                     className={cn(pillBase, "border text-[0.5rem] py-0")}
-                    style={{ color, borderColor: `${color}30`, background: `${color}10` }}
+                    style={{
+                      color,
+                      borderColor: `${color}30`,
+                      background: `${color}10`,
+                    }}
                   >
                     {skill.level}
                   </span>
@@ -285,7 +375,6 @@ function FashionAgentPage({ agent }: { agent: AgentData }) {
             })}
           </div>
         </div>
-
       </div>
 
       {/* Main content — fills remaining viewport */}
@@ -304,11 +393,19 @@ function BackLink() {
       href="/dashboard/agents"
       className="inline-flex items-center gap-1.5 text-[0.78rem] text-[var(--text-muted)] no-underline hover:text-[var(--text)] transition-colors"
     >
-      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width={14}
+        height={14}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <polyline points="15 18 9 12 15 6" />
       </svg>
       Back to Agents
     </Link>
   );
 }
-

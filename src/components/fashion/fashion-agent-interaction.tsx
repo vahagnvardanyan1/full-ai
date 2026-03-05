@@ -2,8 +2,18 @@
 
 import { useState, useCallback } from "react";
 import { FashionPreferencesForm } from "./fashion-preferences-form";
-import { FashionPipelineFlow, FashionFlowPreview, type FashionFlowProps } from "./fashion-pipeline-flow";
-import type { FashionContext, AgentResponse, FashionProgressStage, ScrapedProduct, OutfitItem } from "@/lib/agents/types";
+import {
+  FashionPipelineFlow,
+  FashionFlowPreview,
+  type FashionFlowProps,
+} from "./fashion-pipeline-flow";
+import type {
+  FashionContext,
+  AgentResponse,
+  FashionProgressStage,
+  ScrapedProduct,
+  OutfitItem,
+} from "@/lib/agents/types";
 
 type Stage = {
   stage: FashionProgressStage;
@@ -18,13 +28,23 @@ export function FashionAgentInteraction() {
   const [currentStage, setCurrentStage] = useState<Stage | null>(null);
   const [result, setResult] = useState<AgentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [submittedPhotoUrl, setSubmittedPhotoUrl] = useState<string | undefined>();
+  const [submittedPhotoUrl, setSubmittedPhotoUrl] = useState<
+    string | undefined
+  >();
 
   // Pipeline flow state
-  const [preferences, setPreferences] = useState<FashionFlowProps["preferences"] | undefined>();
-  const [retailers, setRetailers] = useState<FashionFlowProps["retailers"]>(new Map());
-  const [outfit, setOutfit] = useState<FashionFlowProps["outfit"] | undefined>();
-  const [generatedImage, setGeneratedImage] = useState<FashionFlowProps["image"] | undefined>();
+  const [preferences, setPreferences] = useState<
+    FashionFlowProps["preferences"] | undefined
+  >();
+  const [retailers, setRetailers] = useState<FashionFlowProps["retailers"]>(
+    new Map(),
+  );
+  const [outfit, setOutfit] = useState<
+    FashionFlowProps["outfit"] | undefined
+  >();
+  const [generatedImage, setGeneratedImage] = useState<
+    FashionFlowProps["image"] | undefined
+  >();
 
   const resetFlow = useCallback(() => {
     setPreferences(undefined);
@@ -37,103 +57,142 @@ export function FashionAgentInteraction() {
     setSubmittedPhotoUrl(undefined);
   }, []);
 
-  const handleSubmit = useCallback(async (context: FashionContext, message: string) => {
-    setView("running");
-    setError(null);
-    setResult(null);
-    setCurrentStage(null);
-    resetFlow();
-    setSubmittedPhotoUrl(context.photoUrl);
+  const handleSubmit = useCallback(
+    async (context: FashionContext, message: string) => {
+      setView("running");
+      setError(null);
+      setResult(null);
+      setCurrentStage(null);
+      resetFlow();
+      setSubmittedPhotoUrl(context.photoUrl);
 
-    try {
-      const res = await fetch("/api/fashion-stylist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fashionContext: context, message }),
-      });
+      try {
+        const res = await fetch("/api/fashion-stylist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fashionContext: context, message }),
+        });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(err.error ?? `HTTP ${res.status}`);
-      }
+        if (!res.ok) {
+          const err = await res
+            .json()
+            .catch(() => ({ error: "Unknown error" }));
+          throw new Error(err.error ?? `HTTP ${res.status}`);
+        }
 
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+        const reader = res.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
 
-        const lastDoubleNewline = buffer.lastIndexOf("\n\n");
-        if (lastDoubleNewline === -1) continue;
+          const lastDoubleNewline = buffer.lastIndexOf("\n\n");
+          if (lastDoubleNewline === -1) continue;
 
-        const complete = buffer.slice(0, lastDoubleNewline + 2);
-        buffer = buffer.slice(lastDoubleNewline + 2);
+          const complete = buffer.slice(0, lastDoubleNewline + 2);
+          buffer = buffer.slice(lastDoubleNewline + 2);
 
-        for (const block of complete.split("\n\n")) {
-          const eventLine = block.split("\n").find((l) => l.startsWith("event: "));
-          const dataLine = block.split("\n").find((l) => l.startsWith("data: "));
-          if (!eventLine || !dataLine) continue;
+          for (const block of complete.split("\n\n")) {
+            const eventLine = block
+              .split("\n")
+              .find((l) => l.startsWith("event: "));
+            const dataLine = block
+              .split("\n")
+              .find((l) => l.startsWith("data: "));
+            if (!eventLine || !dataLine) continue;
 
-          const eventType = eventLine.slice(7);
-          try {
-            const data = JSON.parse(dataLine.slice(6));
+            const eventType = eventLine.slice(7);
+            try {
+              const data = JSON.parse(dataLine.slice(6));
 
-            if (eventType === "progress") {
-              setCurrentStage(data as Stage);
-            } else if (eventType === "detail") {
-              const { type, data: detailData } = data;
-              if (type === "preferences") {
-                setPreferences(detailData);
-              } else if (type === "retailer") {
-                setRetailers((prev) => {
-                  const next = new Map(prev);
-                  next.set(detailData.brand, {
-                    brand: detailData.brand,
-                    products: detailData.products as Pick<ScrapedProduct, "name" | "brand" | "price" | "currency" | "imageUrl" | "url" | "category">[],
-                    totalCount: detailData.totalCount ?? detailData.products.length,
-                    status: "done" as const,
+              if (eventType === "progress") {
+                setCurrentStage(data as Stage);
+              } else if (eventType === "detail") {
+                const { type, data: detailData } = data;
+                if (type === "preferences") {
+                  setPreferences(detailData);
+                } else if (type === "retailer") {
+                  setRetailers((prev) => {
+                    const next = new Map(prev);
+                    next.set(detailData.brand, {
+                      brand: detailData.brand,
+                      products: detailData.products as Pick<
+                        ScrapedProduct,
+                        | "name"
+                        | "brand"
+                        | "price"
+                        | "currency"
+                        | "imageUrl"
+                        | "url"
+                        | "category"
+                      >[],
+                      totalCount:
+                        detailData.totalCount ?? detailData.products.length,
+                      status: "done" as const,
+                    });
+                    return next;
                   });
-                  return next;
-                });
-              } else if (type === "outfit") {
-                setOutfit(detailData as { items: OutfitItem[]; totalPrice: number; currency: string; explanation: string });
-              } else if (type === "image") {
-                setGeneratedImage(detailData as { url?: string; base64?: string });
+                } else if (type === "outfit") {
+                  setOutfit(
+                    detailData as {
+                      items: OutfitItem[];
+                      totalPrice: number;
+                      currency: string;
+                      explanation: string;
+                    },
+                  );
+                } else if (type === "image") {
+                  setGeneratedImage(
+                    detailData as { url?: string; base64?: string },
+                  );
+                }
+              } else if (eventType === "complete") {
+                setResult(data.response as AgentResponse);
+                setView("done");
+              } else if (eventType === "error") {
+                setError(data.message);
               }
-            } else if (eventType === "complete") {
-              setResult(data.response as AgentResponse);
-              setView("done");
-            } else if (eventType === "error") {
-              setError(data.message);
+            } catch {
+              /* skip invalid JSON */
             }
-          } catch { /* skip invalid JSON */ }
+          }
         }
-      }
 
-      // Flush remaining
-      buffer += decoder.decode();
-      if (buffer.trim()) {
-        for (const block of buffer.split("\n\n")) {
-          const dataLine = block.split("\n").find((l) => l.startsWith("data: "));
-          const eventLine = block.split("\n").find((l) => l.startsWith("event: "));
-          if (!eventLine || !dataLine) continue;
-          const eventType = eventLine.slice(7);
-          try {
-            const data = JSON.parse(dataLine.slice(6));
-            if (eventType === "complete") { setResult(data.response as AgentResponse); setView("done"); }
-            if (eventType === "error") setError(data.message);
-          } catch { /* skip */ }
+        // Flush remaining
+        buffer += decoder.decode();
+        if (buffer.trim()) {
+          for (const block of buffer.split("\n\n")) {
+            const dataLine = block
+              .split("\n")
+              .find((l) => l.startsWith("data: "));
+            const eventLine = block
+              .split("\n")
+              .find((l) => l.startsWith("event: "));
+            if (!eventLine || !dataLine) continue;
+            const eventType = eventLine.slice(7);
+            try {
+              const data = JSON.parse(dataLine.slice(6));
+              if (eventType === "complete") {
+                setResult(data.response as AgentResponse);
+                setView("done");
+              }
+              if (eventType === "error") setError(data.message);
+            } catch {
+              /* skip */
+            }
+          }
         }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        if (!result) setView("done");
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      if (!result) setView("done");
-    }
-  }, [resetFlow, result]);
+    },
+    [resetFlow, result],
+  );
 
   const showFlow = view === "running" || view === "done";
 
@@ -153,7 +212,8 @@ export function FashionAgentInteraction() {
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: "radial-gradient(ellipse 40% 45% at center, var(--flow-bg) 0%, rgba(0,0,0,0) 100%)",
+              background:
+                "radial-gradient(ellipse 40% 45% at center, var(--flow-bg) 0%, rgba(0,0,0,0) 100%)",
             }}
           />
           {/* CTA content */}
@@ -163,12 +223,15 @@ export function FashionAgentInteraction() {
               Ready to find your look?
             </h2>
             <p className="text-[0.78rem] sm:text-[0.85rem] text-[var(--text-muted)] mb-5 sm:mb-8 max-w-[420px] leading-relaxed">
-              Tell us your style, occasion, and budget — our AI will search real products from top retailers and curate a complete outfit for you.
+              Tell us your style, occasion, and budget — our AI will search real
+              products from top retailers and curate a complete outfit for you.
             </p>
             <button
               onClick={() => setView("form")}
               className="pointer-events-auto px-7 sm:px-10 py-3 sm:py-3.5 rounded-2xl border-none font-semibold text-white text-[0.85rem] sm:text-[0.9rem] cursor-pointer transition-all shadow-[0_4px_24px_rgba(34,197,94,0.3)] hover:shadow-[0_4px_32px_rgba(34,197,94,0.5)] hover:scale-[1.02] active:scale-[0.98]"
-              style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)" }}
+              style={{
+                background: "linear-gradient(135deg, #22c55e, #16a34a)",
+              }}
             >
               Start Styling
             </button>
@@ -186,12 +249,17 @@ export function FashionAgentInteraction() {
 
       {/* Running / Done: Pipeline flow */}
       {showFlow && (
-        <div className="flex-1 min-h-0 flex flex-col" style={{ animation: "slide-in 0.3s ease-out" }}>
+        <div
+          className="flex-1 min-h-0 flex flex-col"
+          style={{ animation: "slide-in 0.3s ease-out" }}
+        >
           {/* Loading spinner before first SSE event */}
           {view === "running" && !currentStage && !preferences && (
             <div className="flex items-center gap-3 mb-4 px-1">
               <div className="w-5 h-5 border-2 border-[#22c55e] border-t-transparent rounded-full animate-spin" />
-              <span className="text-[0.82rem] text-[var(--text-muted)]">Starting fashion stylist...</span>
+              <span className="text-[0.82rem] text-[var(--text-muted)]">
+                Starting fashion stylist...
+              </span>
             </div>
           )}
 
@@ -211,17 +279,38 @@ export function FashionAgentInteraction() {
       {/* Error */}
       {error && (
         <div className="flex items-center gap-3 p-4 rounded-xl bg-[rgba(239,68,68,0.06)] border border-[rgba(239,68,68,0.15)]">
-          <svg width={18} height={18} viewBox="0 0 24 24" fill="none" className="shrink-0">
+          <svg
+            width={18}
+            height={18}
+            viewBox="0 0 24 24"
+            fill="none"
+            className="shrink-0"
+          >
             <circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="1.8" />
-            <line x1="12" y1="8" x2="12" y2="13" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+            <line
+              x1="12"
+              y1="8"
+              x2="12"
+              y2="13"
+              stroke="#ef4444"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
             <circle cx="12" cy="16.5" r="1.2" fill="#ef4444" />
           </svg>
           <div className="flex-1 min-w-0">
-            <span className="text-[0.82rem] font-medium text-[var(--error)]">Something went wrong</span>
-            <p className="text-[0.72rem] text-[var(--text-muted)] mt-0.5">{error}</p>
+            <span className="text-[0.82rem] font-medium text-[var(--error)]">
+              Something went wrong
+            </span>
+            <p className="text-[0.72rem] text-[var(--text-muted)] mt-0.5">
+              {error}
+            </p>
           </div>
           <button
-            onClick={() => { resetFlow(); setView("form"); }}
+            onClick={() => {
+              resetFlow();
+              setView("form");
+            }}
             className="px-3 py-1.5 rounded-lg border border-[rgba(34,197,94,0.2)] bg-[rgba(34,197,94,0.06)] text-[#22c55e] text-[0.72rem] font-medium cursor-pointer transition-all hover:bg-[rgba(34,197,94,0.12)] shrink-0"
           >
             Try Again
@@ -232,7 +321,10 @@ export function FashionAgentInteraction() {
       {/* Style Me Again (after completion) */}
       {view === "done" && result && (
         <button
-          onClick={() => { resetFlow(); setView("form"); }}
+          onClick={() => {
+            resetFlow();
+            setView("form");
+          }}
           className="w-full py-3 rounded-2xl border border-[rgba(34,197,94,0.2)] bg-[rgba(34,197,94,0.04)] text-[#22c55e] text-[0.85rem] font-semibold cursor-pointer transition-all hover:bg-[rgba(34,197,94,0.1)] hover:border-[rgba(34,197,94,0.35)]"
         >
           Style Me Again

@@ -342,7 +342,7 @@ export default function WorkspaceTeamPage({
   const [githubWarning, setGithubWarning] = useState<string | null>(null);
   // Polling stops once the run completes or goes stale; set to null to stop
   const [pollingRequestId, setPollingRequestId] = useState<string | null>(null);
-  // History panel
+  // History panel (workflow runs for this team only)
   const [showHistory, setShowHistory] = useState(false);
   // When set, shows a specific past run instead of the latest
   const [viewingEntryId, setViewingEntryId] = useState<string | null>(null);
@@ -387,6 +387,8 @@ export default function WorkspaceTeamPage({
     setShowHistory(false);
     setViewingEntryId(null);
   }, [resetSession]);
+
+  const showHistoryInHeader = history.length > 0;
 
   useRunPolling({
     requestId: pollingRequestId,
@@ -718,39 +720,11 @@ export default function WorkspaceTeamPage({
                   strokeWidth="1.2"
                 />
               </svg>
-              <div className="absolute top-3.5 left-2 sm:left-4 z-20">
-                <button
-                  onClick={handleNewSession}
-                  className="inline-flex items-center gap-1.5 px-3 py-[0.4rem] rounded-full border text-[0.72rem] font-semibold cursor-pointer transition-all duration-150"
-                  style={{
-                    background: "rgba(34,197,94,0.08)",
-                    borderColor: "rgba(34,197,94,0.25)",
-                    color: "#22c55e",
-                    backdropFilter: "blur(16px)",
-                    WebkitBackdropFilter: "blur(16px)",
-                  }}
-                >
-                  <svg
-                    width={11}
-                    height={11}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.8"
-                    strokeLinecap="round"
-                  >
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                  <span className="hidden sm:inline">New Session 1</span>
-                  <span className="sm:hidden">New</span>
-                </button>
-              </div>
               <span className="hidden sm:inline">Tasks</span>
               {allTasks.length > 0 ? ` (${allTasks.length})` : ""}
             </button>
-            {/* History toggle — only shown when there are multiple runs */}
-            {history.length > 1 && (
+            {/* History toggle — workflow runs for this team only */}
+            {showHistoryInHeader && (
               <button
                 className={cn(
                   "px-[0.55rem] sm:px-[0.65rem] py-[0.3rem] rounded-full border text-[0.68rem] sm:text-[0.73rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.3rem] shrink-0",
@@ -782,9 +756,36 @@ export default function WorkspaceTeamPage({
                 </span>
               </button>
             )}
+            {/* New Session — right end */}
+            <button
+              onClick={handleNewSession}
+              className="inline-flex items-center gap-1.5 px-[0.55rem] sm:px-3 py-[0.3rem] sm:py-[0.4rem] rounded-full border text-[0.68rem] sm:text-[0.72rem] font-semibold cursor-pointer transition-all duration-150 shrink-0"
+              style={{
+                background: "rgba(34,197,94,0.08)",
+                borderColor: "rgba(34,197,94,0.25)",
+                color: "#22c55e",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+              }}
+            >
+              <svg
+                width={11}
+                height={11}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.8"
+                strokeLinecap="round"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span className="hidden sm:inline">New Session</span>
+              <span className="sm:hidden">New</span>
+            </button>
           </nav>
 
-          {/* History panel — anchored below the nav */}
+          {/* History panel — anchored below the nav (team workflow runs only) */}
           {showHistory && (
             <WorkflowHistoryPanel
               history={history}
@@ -796,39 +797,66 @@ export default function WorkspaceTeamPage({
         </div>
       )}
 
-      {/* History button when no pipeline is visible yet (past runs exist) */}
-      {!hasPipeline && history.length > 0 && (
-        <div className="absolute top-3.5 right-2 sm:right-4 z-20">
+      {/* History + New Session when no pipeline is visible yet (team workspace only) */}
+      {!hasPipeline && (
+        <div className="absolute top-3.5 right-2 sm:right-4 z-20 flex items-center gap-2">
+          {showHistoryInHeader && (
+            <button
+              className={cn(
+                "px-3 py-[0.4rem] rounded-full border text-[0.72rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.35rem]",
+                showHistory
+                  ? "bg-[rgba(167,139,250,0.12)] text-[#a78bfa] border-[#a78bfa60]"
+                  : "bg-[rgba(255,255,255,0.04)] text-[var(--text-muted)] border-[rgba(255,255,255,0.1)]",
+              )}
+              style={{
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+              }}
+              onClick={() => setShowHistory((v) => !v)}
+            >
+              <svg width={13} height={13} viewBox="0 0 16 16" fill="none">
+                <circle
+                  cx="8"
+                  cy="8"
+                  r="6.2"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                />
+                <polyline
+                  points="8,4.5 8,8 10.2,9.4"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              History ({history.length})
+            </button>
+          )}
           <button
-            className={cn(
-              "px-3 py-[0.4rem] rounded-full border text-[0.72rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.35rem]",
-              showHistory
-                ? "bg-[rgba(167,139,250,0.12)] text-[#a78bfa] border-[#a78bfa60]"
-                : "bg-[rgba(255,255,255,0.04)] text-[var(--text-muted)] border-[rgba(255,255,255,0.1)]",
-            )}
+            onClick={handleNewSession}
+            className="inline-flex items-center gap-1.5 px-3 py-[0.4rem] rounded-full border text-[0.72rem] font-semibold cursor-pointer transition-all duration-150 shrink-0"
             style={{
+              background: "rgba(34,197,94,0.08)",
+              borderColor: "rgba(34,197,94,0.25)",
+              color: "#22c55e",
               backdropFilter: "blur(16px)",
               WebkitBackdropFilter: "blur(16px)",
             }}
-            onClick={() => setShowHistory((v) => !v)}
           >
-            <svg width={13} height={13} viewBox="0 0 16 16" fill="none">
-              <circle
-                cx="8"
-                cy="8"
-                r="6.2"
-                stroke="currentColor"
-                strokeWidth="1.3"
-              />
-              <polyline
-                points="8,4.5 8,8 10.2,9.4"
-                stroke="currentColor"
-                strokeWidth="1.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+            <svg
+              width={11}
+              height={11}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.8"
+              strokeLinecap="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            History ({history.length})
+            New Session
           </button>
 
           {showHistory && (
@@ -911,7 +939,7 @@ export default function WorkspaceTeamPage({
                   />
                 </div>
                 <span className="text-[0.72rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60 hidden sm:inline">
-                  {"\u2318"} Enter
+                  Enter
                 </span>
               </div>
             </div>
@@ -969,7 +997,7 @@ export default function WorkspaceTeamPage({
                 />
               </div>
               <span className="text-[0.72rem] text-[var(--text-muted)] whitespace-nowrap shrink-0 opacity-60 hidden sm:inline">
-                {"\u2318"} Enter
+                Enter
               </span>
             </div>
           </div>

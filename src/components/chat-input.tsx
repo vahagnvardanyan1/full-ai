@@ -48,7 +48,7 @@ export function ChatInput({ onSubmit, disabled, loading, compact, textareaRef, o
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleSubmit();
     }
@@ -98,7 +98,7 @@ function HeroInput({ inputRef, disabled, loading, onKeyDown, onSubmit }: InputVa
       />
       <div className="flex items-center justify-end px-2.5 pb-2.5 gap-2">
         <span className="text-[0.62rem] text-[var(--text-muted)] opacity-70 mr-auto px-2 py-0.5 rounded-md bg-[var(--surface-hover)] tracking-tight">
-          {"\u2318"} Enter
+          Enter
         </span>
         <button
           className={cn(
