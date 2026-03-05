@@ -7,11 +7,30 @@ import type {
 
 export const MOCK_AGENTS: IAgent[] = [
   {
+    id: "agent-fashion",
+    name: "Fashion Stylist",
+    role: "fashion_stylist",
+    category: "Lifestyle",
+    description:
+      "Personal fashion stylist that scrapes real products from Zara, Bershka, and Massimo Dutti. Curates complete outfits matching your style, occasion, and budget with AI-generated visualizations.",
+    skills: [
+      { name: "Style Curation", level: "expert" },
+      { name: "Color Theory", level: "advanced" },
+      { name: "Trend Analysis", level: "expert" },
+      { name: "Body Type Styling", level: "advanced" },
+    ],
+    price: 20,
+    period: "month",
+    rating: 4.8,
+    reviewCount: 64,
+    tasksCompleted: 183,
+    status: "available",
+  },
+  {
     id: "agent-pm",
     name: "Product Manager",
     role: "product_manager",
     category: "Management",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=PM-Alpha",
     description:
       "Defines product vision, writes specs, and prioritizes the backlog. Plans sprints and keeps the team aligned on goals.",
     skills: [
@@ -32,7 +51,6 @@ export const MOCK_AGENTS: IAgent[] = [
     name: "UI/UX Designer",
     role: "frontend_developer",
     category: "Design",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=Design-Pixel",
     description:
       "Creates wireframes, prototypes, and polished UI designs. Builds consistent design systems with accessible, beautiful interfaces.",
     skills: [
@@ -53,7 +71,6 @@ export const MOCK_AGENTS: IAgent[] = [
     name: "Frontend Engineer",
     role: "frontend_developer",
     category: "Engineering",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=FE-React",
     description:
       "Builds web interfaces with React, handles state and API integration. Ships pixel-perfect, performant UIs with clean code.",
     skills: [
@@ -74,7 +91,6 @@ export const MOCK_AGENTS: IAgent[] = [
     name: "Mobile Engineer",
     role: "frontend_developer",
     category: "Engineering",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=Mobile-Swift",
     description:
       "Writes native iOS/Android code and delivers mobile apps. Experienced with Swift, Kotlin, and cross-platform frameworks.",
     skills: [
@@ -95,7 +111,6 @@ export const MOCK_AGENTS: IAgent[] = [
     name: "Backend Engineer",
     role: "frontend_developer",
     category: "Engineering",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=BE-Node",
     description:
       "Designs APIs, builds microservices, and manages databases. Experienced with Node.js, PostgreSQL, and distributed systems.",
     skills: [
@@ -116,7 +131,6 @@ export const MOCK_AGENTS: IAgent[] = [
     name: "QA Engineer",
     role: "qa",
     category: "Quality",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=QA-Bug",
     description:
       "Tests features, writes automated tests, and reports bugs. Ensures production-ready output with comprehensive testing pipelines.",
     skills: [
@@ -137,7 +151,6 @@ export const MOCK_AGENTS: IAgent[] = [
     name: "DevOps Engineer",
     role: "devops",
     category: "Operations",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=DevOps-Cloud",
     description:
       "Manages CI/CD pipelines, infrastructure, and deployments. Ensures zero-downtime releases with monitoring and alerting.",
     skills: [
@@ -158,7 +171,6 @@ export const MOCK_AGENTS: IAgent[] = [
     name: "Data Analyst",
     role: "product_manager",
     category: "Analytics",
-    avatar: "https://api.dicebear.com/9.x/bottts/svg?seed=Data-Chart",
     description:
       "Analyzes metrics, builds dashboards, and provides insights. Turns raw data into actionable business intelligence.",
     skills: [
@@ -184,14 +196,14 @@ export const MOCK_TEAMS: ITeam[] = [
     description:
       "Full-service AI development team specializing in end-to-end software delivery. From architecture to deployment, CortexDev Labs handles the entire development lifecycle with precision and speed.",
     agents: [
-      MOCK_AGENTS[0], // PM
-      MOCK_AGENTS[1], // Designer
-      MOCK_AGENTS[2], // Frontend
-      MOCK_AGENTS[3], // Mobile
-      MOCK_AGENTS[4], // Backend
-      MOCK_AGENTS[5], // QA
-      MOCK_AGENTS[6], // DevOps
-      MOCK_AGENTS[7], // Data Analyst
+      MOCK_AGENTS[1], // PM
+      MOCK_AGENTS[2], // Designer
+      MOCK_AGENTS[3], // Frontend
+      MOCK_AGENTS[4], // Mobile
+      MOCK_AGENTS[5], // Backend
+      MOCK_AGENTS[6], // QA
+      MOCK_AGENTS[7], // DevOps
+      MOCK_AGENTS[8], // Data Analyst
     ],
     rating: 4.7,
     reviewCount: 342,
@@ -249,10 +261,10 @@ export const MOCK_TEAMS: ITeam[] = [
     description:
       "AI-powered marketing team that creates compelling content, manages campaigns, and optimizes conversion funnels. Amplify brings data-driven marketing strategies to life.",
     agents: [
-      MOCK_AGENTS[0], // PM
-      MOCK_AGENTS[1], // Designer
-      MOCK_AGENTS[2], // Frontend
-      MOCK_AGENTS[5], // QA
+      MOCK_AGENTS[1], // PM
+      MOCK_AGENTS[2], // Designer
+      MOCK_AGENTS[3], // Frontend
+      MOCK_AGENTS[6], // QA
     ],
     rating: 4.5,
     reviewCount: 198,
@@ -309,9 +321,9 @@ export const MOCK_TEAMS: ITeam[] = [
     description:
       "Design-first AI team that delivers stunning interfaces, brand identities, and design systems. From wireframes to production-ready assets, PixelCraft handles it all.",
     agents: [
-      MOCK_AGENTS[0], // PM
-      MOCK_AGENTS[1], // Designer
-      MOCK_AGENTS[2], // Frontend
+      MOCK_AGENTS[1], // PM
+      MOCK_AGENTS[2], // Designer
+      MOCK_AGENTS[3], // Frontend
     ],
     rating: 4.8,
     reviewCount: 267,
@@ -368,9 +380,9 @@ export const MOCK_TEAMS: ITeam[] = [
     description:
       "Data-driven AI consulting team that builds dashboards, automates reporting, and delivers actionable insights. Transform raw data into strategic decisions.",
     agents: [
-      MOCK_AGENTS[0], // PM
-      MOCK_AGENTS[4], // Backend
-      MOCK_AGENTS[7], // Data Analyst
+      MOCK_AGENTS[1], // PM
+      MOCK_AGENTS[5], // Backend
+      MOCK_AGENTS[8], // Data Analyst
     ],
     rating: 4.6,
     reviewCount: 154,
@@ -427,9 +439,9 @@ export const MOCK_TEAMS: ITeam[] = [
     description:
       "Security-focused DevOps team that hardens infrastructure, automates compliance, and runs penetration tests. Keep your systems secure and your deployments bulletproof.",
     agents: [
-      MOCK_AGENTS[4], // Backend
-      MOCK_AGENTS[5], // QA
-      MOCK_AGENTS[6], // DevOps
+      MOCK_AGENTS[5], // Backend
+      MOCK_AGENTS[6], // QA
+      MOCK_AGENTS[7], // DevOps
     ],
     rating: 4.9,
     reviewCount: 89,

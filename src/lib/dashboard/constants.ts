@@ -14,6 +14,7 @@ export const AGENT_CATEGORIES = [
   "Quality",
   "Operations",
   "Analytics",
+  "Lifestyle",
 ] as const;
 
 export const TEAM_CATEGORIES = [

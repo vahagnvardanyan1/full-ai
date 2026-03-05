@@ -8,7 +8,8 @@ export type AgentRole =
   | "product_manager"
   | "frontend_developer"
   | "qa"
-  | "devops";
+  | "devops"
+  | "fashion_stylist";
 
 /** Task lifecycle statuses for the Kanban board */
 export type TaskStatus = "open" | "in_progress" | "review" | "testing" | "ready_to_merge" | "done";
@@ -29,6 +30,38 @@ export interface AgentResponse {
   detail: string;
   /** URL of the created Pull Request / Merge Request (if any) */
   prUrl?: string;
+  /** Outfit recommendation produced by the fashion_stylist agent */
+  outfitRecommendation?: OutfitRecommendation;
+}
+
+/** A scraped product from an online retailer */
+export interface ScrapedProduct {
+  name: string;
+  brand: string;
+  price: number;
+  currency: string;
+  url: string;
+  imageUrl: string;
+  category: "top" | "bottom" | "shoes" | "accessory" | "outerwear" | "dress";
+  color: string;
+  description: string;
+}
+
+/** A single item in the outfit recommendation */
+export interface OutfitItem {
+  product: ScrapedProduct;
+  category: string;
+  explanation: string;
+}
+
+/** Complete outfit recommendation from the fashion stylist */
+export interface OutfitRecommendation {
+  items: OutfitItem[];
+  totalPrice: number;
+  currency: string;
+  explanation: string;
+  generatedImageUrl?: string;
+  generatedImageBase64?: string;
 }
 
 /** A task created by the PM agent and assigned to a team member / agent */
@@ -107,11 +140,20 @@ export type QAProgressStage =
   | "reporting"
   | "complete";
 
+/** Progress stages emitted by the Fashion Stylist pipeline */
+export type FashionProgressStage =
+  | "parsing_preferences"
+  | "scraping_products"
+  | "assembling_outfit"
+  | "generating_image"
+  | "complete";
+
 /** All possible progress stages across all agents */
 export type AgentProgressStage =
   | FEProgressStage
   | PMProgressStage
-  | QAProgressStage;
+  | QAProgressStage
+  | FashionProgressStage;
 
 /** Sub-step progress event for agents that run multi-stage pipelines */
 export interface AgentProgressEvent {
@@ -136,6 +178,17 @@ export type StreamEvent =
   | { type: "error"; agent: AgentRole; message: string }
   | { type: "tasks_updated"; tasks: TaskItem[] }
   | { type: "done"; requestId: string };
+
+/** Fashion stylist context collected from the preferences form */
+export interface FashionContext {
+  photoUrl?: string;
+  budget: { min: number; max: number; currency: string };
+  style: string;
+  occasion: string;
+  gender?: string;
+  bodyType?: string;
+  colorPreferences?: string;
+}
 
 /** Shape of the request body sent from the frontend */
 export interface OrchestrateRequestBody {

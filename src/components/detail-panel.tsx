@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import type { AgentResponse, TaskItem, GeneratedFile } from "@/lib/agents/types";
 import { AgentAvatar } from "@/components/agent-avatar";
+import { OutfitDisplay } from "@/components/fashion/outfit-display";
 import { panelBase, sectionLabel, pillBase, closeBtnBase } from "@/lib/styles";
 
 interface DetailPanelProps {
@@ -19,6 +20,7 @@ const AGENT_COLORS: Record<string, string> = {
   qa: "#facc15",
   devops: "#f97316",
   orchestrator: "#60a5fa",
+  fashion_stylist: "#ec4899",
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -166,6 +168,13 @@ export function DetailPanel({ agent, response, tasks, files, onClose }: DetailPa
         <div className={sectionLabel}>Summary</div>
         <SummaryBlock text={response.summary} />
       </div>
+
+      {/* Outfit Recommendation (Fashion Stylist) */}
+      {response.outfitRecommendation && response.outfitRecommendation.items.length > 0 && (
+        <div className="px-5 py-3.5 border-b border-[var(--surface-border)]">
+          <OutfitDisplay outfit={response.outfitRecommendation} />
+        </div>
+      )}
 
       {/* Tasks */}
       {tasks.length > 0 && (

@@ -18,6 +18,7 @@ const AGENT_COLORS: Record<string, string> = {
   qa: "#facc15",
   devops: "#f97316",
   orchestrator: "#60a5fa",
+  fashion_stylist: "#ec4899",
 };
 
 const PICSART_CDN = "https://cdn-cms-uploads.picsart.com/cms-uploads";
@@ -28,6 +29,7 @@ const AGENT_ANIMATIONS: Record<string, string> = {
   qa: `${PICSART_CDN}/71fd37ab-de45-474e-89ce-edc39a060935.mp4`,
   devops: `${PICSART_CDN}/254781f4-6575-4cea-b2ac-18ad2e2fc7ca.mp4`,
   orchestrator: `${PICSART_CDN}/70483c73-3cd7-428f-ab17-95a56f4343d4.mp4`,
+  fashion_stylist: `${PICSART_CDN}/5ea34d1d-04be-42f7-93c2-010745c03f0a.mp4`,
 };
 
 const STATUS_RING_COLORS: Record<AvatarStatus, string> = {
@@ -111,15 +113,27 @@ export function AgentAvatar({
             }}
           />
         ) : (
-          <span
-            className="font-bold uppercase"
-            style={{
-              fontSize: size * 0.45,
-              color: color,
-            }}
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            style={{ width: size * 0.55, height: size * 0.55 }}
           >
-            {(role[0] ?? "?").toUpperCase()}
-          </span>
+            {/* Antenna */}
+            <line x1="12" y1="2" x2="12" y2="5" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+            <circle cx="12" cy="1.5" r="1" fill={color} />
+            {/* Head */}
+            <rect x="5" y="5" width="14" height="10" rx="3" stroke={color} strokeWidth="1.5" fill={`${color}20`} />
+            {/* Eyes */}
+            <circle cx="9" cy="10" r="1.8" fill={color} />
+            <circle cx="15" cy="10" r="1.8" fill={color} />
+            {/* Mouth */}
+            <line x1="9.5" y1="13" x2="14.5" y2="13" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
+            {/* Body */}
+            <rect x="7" y="16" width="10" height="5" rx="2" stroke={color} strokeWidth="1.5" fill={`${color}15`} />
+            {/* Arms */}
+            <line x1="5" y1="17" x2="3" y2="19" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="19" y1="17" x2="21" y2="19" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
         )}
       </div>
 

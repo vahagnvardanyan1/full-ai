@@ -48,6 +48,7 @@ const AGENT_COLORS: Record<string, string> = {
   qa: "#facc15",
   devops: "#f97316",
   orchestrator: "#60a5fa",
+  fashion_stylist: "#ec4899",
 };
 
 function formatAgentName(role: string): string {

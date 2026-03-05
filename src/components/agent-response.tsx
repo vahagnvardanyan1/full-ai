@@ -11,6 +11,7 @@ const AGENT_COLORS: Record<string, string> = {
   qa: "#facc15",
   devops: "#f97316",
   orchestrator: "#60a5fa",
+  fashion_stylist: "#ec4899",
 };
 
 const HIDDEN_TOOLS = new Set(["create_task", "write_code"]);

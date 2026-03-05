@@ -39,6 +39,7 @@ const AGENT_COLORS: Record<string, string> = {
   frontend_developer: "#34d399",
   qa:                 "#facc15",
   devops:             "#f97316",
+  fashion_stylist:    "#ec4899",
 };
 
 const agentInitial = (role: string) =>
