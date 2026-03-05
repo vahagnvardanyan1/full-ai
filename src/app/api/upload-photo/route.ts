@@ -3,7 +3,8 @@
 //
 // Accepts multipart/form-data with a single image file.
 // Validates type (JPEG/PNG/WebP), resizes to max 1024x1024,
-// saves to public/uploads/photos/ with a UUID filename.
+// returns a base64 data URL (works on serverless/read-only fs).
+// Also saves to /tmp for potential server-side use.
 // ──────────────────────────────────────────────────────────
 
 import { NextRequest, NextResponse } from "next/server";
@@ -15,7 +16,7 @@ import { join } from "path";
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_DIMENSION = 1024;
-const UPLOAD_DIR = join(process.cwd(), "public", "uploads", "photos");
+const TMP_DIR = join("/tmp", "uploads", "photos");
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,15 +52,16 @@ export async function POST(request: NextRequest) {
     const photoId = uuidv4();
     const filename = `${photoId}.jpg`;
 
-    // Ensure upload directory exists
-    await mkdir(UPLOAD_DIR, { recursive: true });
-
-    const filePath = join(UPLOAD_DIR, filename);
+    // Save to /tmp for server-side access (e.g. OpenAI image generation)
+    await mkdir(TMP_DIR, { recursive: true });
+    const filePath = join(TMP_DIR, filename);
     await writeFile(filePath, resized);
 
-    const url = `/uploads/photos/${filename}`;
+    // Return base64 data URL for client display
+    const base64 = resized.toString("base64");
+    const url = `data:image/jpeg;base64,${base64}`;
 
-    return NextResponse.json({ url, photoId });
+    return NextResponse.json({ url, photoId, tmpPath: filePath });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: `Upload failed: ${message}` }, { status: 500 });

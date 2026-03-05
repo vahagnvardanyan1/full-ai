@@ -146,10 +146,26 @@ Select a complete outfit from the products above. Stay within budget.`;
     itemDescriptions: string,
     photoUrl: string,
   ): Promise<{ base64?: string; url?: string }> {
-    // Read the uploaded photo from disk and detect aspect ratio
-    const photoPath = join(process.cwd(), "public", photoUrl);
-    logger.info(`Try-on: reading user photo from ${photoPath}`);
-    const photoBuffer = await readFile(photoPath);
+    // Read the uploaded photo — supports data URLs and /tmp paths
+    let photoBuffer: Buffer;
+    if (photoUrl.startsWith("data:")) {
+      const base64Data = photoUrl.split(",")[1];
+      photoBuffer = Buffer.from(base64Data, "base64");
+      logger.info("Try-on: decoded user photo from base64 data URL");
+    } else {
+      // Try /tmp first (serverless), then public/ (local dev)
+      const tmpPath = join("/tmp", "uploads", "photos", photoUrl.split("/").pop() ?? "");
+      const publicPath = join(process.cwd(), "public", photoUrl);
+      let resolvedPath = publicPath;
+      try {
+        await readFile(tmpPath);
+        resolvedPath = tmpPath;
+      } catch {
+        // fall back to public path
+      }
+      logger.info(`Try-on: reading user photo from ${resolvedPath}`);
+      photoBuffer = await readFile(resolvedPath);
+    }
 
     // Detect image dimensions to pick the best output size
     const metadata = await sharp(photoBuffer).metadata();
