@@ -1,12 +1,16 @@
 "use client";
 
 import { useState, useCallback } from "react";
+
 import { FashionPreferencesForm } from "./fashion-preferences-form";
 import {
   FashionPipelineFlow,
   FashionFlowPreview,
   type FashionFlowProps,
 } from "./fashion-pipeline-flow";
+import { FashionHistoryPanel } from "./fashion-history-panel";
+import { useAgentHistory } from "@/hooks/use-agent-history";
+import type { IAgentRunDocument } from "@/lib/db/models/agent-run";
 import type {
   FashionContext,
   AgentResponse,
@@ -14,6 +18,8 @@ import type {
   ScrapedProduct,
   OutfitItem,
 } from "@/lib/agents/types";
+
+// ── Types ─────────────────────────────────────────────────
 
 type Stage = {
   stage: FashionProgressStage;
@@ -23,8 +29,11 @@ type Stage = {
 
 type ViewState = "idle" | "form" | "running" | "done";
 
+// ── Component ─────────────────────────────────────────────
+
 export function FashionAgentInteraction() {
   const [view, setView] = useState<ViewState>("idle");
+  const [showHistory, setShowHistory] = useState(false);
   const [currentStage, setCurrentStage] = useState<Stage | null>(null);
   const [result, setResult] = useState<AgentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +55,9 @@ export function FashionAgentInteraction() {
     FashionFlowProps["image"] | undefined
   >();
 
+  const { runs, isLoading: isHistoryLoading, refresh: refreshHistory } =
+    useAgentHistory({ agentType: "fashion_stylist" });
+
   const resetFlow = useCallback(() => {
     setPreferences(undefined);
     setRetailers(new Map());
@@ -57,9 +69,19 @@ export function FashionAgentInteraction() {
     setSubmittedPhotoUrl(undefined);
   }, []);
 
+  // Pre-fills the form with a past run's input so the user can re-run the same style
+  const handleRerunFromHistory = useCallback(
+    (_run: IAgentRunDocument) => {
+      setShowHistory(false);
+      setView("form");
+    },
+    [],
+  );
+
   const handleSubmit = useCallback(
     async (context: FashionContext, message: string) => {
       setView("running");
+      setShowHistory(false);
       setError(null);
       setResult(null);
       setCurrentStage(null);
@@ -152,6 +174,7 @@ export function FashionAgentInteraction() {
               } else if (eventType === "complete") {
                 setResult(data.response as AgentResponse);
                 setView("done");
+                refreshHistory();
               } else if (eventType === "error") {
                 setError(data.message);
               }
@@ -178,6 +201,7 @@ export function FashionAgentInteraction() {
               if (eventType === "complete") {
                 setResult(data.response as AgentResponse);
                 setView("done");
+                refreshHistory();
               }
               if (eventType === "error") setError(data.message);
             } catch {
@@ -191,10 +215,41 @@ export function FashionAgentInteraction() {
         if (!result) setView("done");
       }
     },
-    [resetFlow, result],
+    [resetFlow, result, refreshHistory],
   );
 
   const showFlow = view === "running" || view === "done";
+
+  const HistoryToggleButton = (
+    <button
+      onClick={() => setShowHistory((v) => !v)}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.7rem] font-medium cursor-pointer transition-all"
+      style={{
+        background: showHistory
+          ? "rgba(236,72,153,0.12)"
+          : "rgba(255,255,255,0.04)",
+        border: `1px solid ${showHistory ? "rgba(236,72,153,0.35)" : "rgba(255,255,255,0.1)"}`,
+        color: showHistory ? "#ec4899" : "var(--text-muted)",
+      }}
+    >
+      <svg width={12} height={12} viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.3" />
+        <polyline points="8,4.5 8,8 10.2,9.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      History
+      {runs.length > 0 && (
+        <span
+          className="text-[0.58rem] font-bold px-1 py-px rounded-full min-w-[16px] text-center"
+          style={{
+            background: showHistory ? "rgba(236,72,153,0.2)" : "rgba(255,255,255,0.08)",
+            color: showHistory ? "#ec4899" : "var(--text-muted)",
+          }}
+        >
+          {runs.length}
+        </span>
+      )}
+    </button>
+  );
 
   return (
     <div className="flex flex-col gap-3 h-full">
@@ -208,7 +263,7 @@ export function FashionAgentInteraction() {
           <div className="absolute inset-0">
             <FashionFlowPreview />
           </div>
-          {/* Compact center vignette — just enough to make text readable */}
+          {/* Compact center vignette */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -216,6 +271,10 @@ export function FashionAgentInteraction() {
                 "radial-gradient(ellipse 40% 45% at center, var(--flow-bg) 0%, rgba(0,0,0,0) 100%)",
             }}
           />
+          {/* History toggle — top-right corner */}
+          <div className="absolute top-3 right-3 z-10">
+            {HistoryToggleButton}
+          </div>
           {/* CTA content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 pointer-events-none">
             <div className="text-[2rem] sm:text-[2.5rem] mb-2 sm:mb-3">✦</div>
@@ -236,6 +295,16 @@ export function FashionAgentInteraction() {
               Start Styling
             </button>
           </div>
+
+          {/* History panel overlay */}
+          {showHistory && (
+            <FashionHistoryPanel
+              runs={runs}
+              isLoading={isHistoryLoading}
+              onSelectRun={handleRerunFromHistory}
+              onClose={() => setShowHistory(false)}
+            />
+          )}
         </div>
       )}
 
@@ -250,7 +319,7 @@ export function FashionAgentInteraction() {
       {/* Running / Done: Pipeline flow */}
       {showFlow && (
         <div
-          className="flex-1 min-h-0 flex flex-col"
+          className="relative flex-1 min-h-0 flex flex-col"
           style={{ animation: "slide-in 0.3s ease-out" }}
         >
           {/* Loading spinner before first SSE event */}
@@ -273,6 +342,16 @@ export function FashionAgentInteraction() {
               currentStage={currentStage?.stage ?? "parsing_preferences"}
             />
           </div>
+
+          {/* History panel overlay on done view */}
+          {showHistory && view === "done" && (
+            <FashionHistoryPanel
+              runs={runs}
+              isLoading={isHistoryLoading}
+              onSelectRun={handleRerunFromHistory}
+              onClose={() => setShowHistory(false)}
+            />
+          )}
         </div>
       )}
 
@@ -318,17 +397,20 @@ export function FashionAgentInteraction() {
         </div>
       )}
 
-      {/* Style Me Again (after completion) */}
+      {/* Style Me Again + History (after completion) */}
       {view === "done" && result && (
-        <button
-          onClick={() => {
-            resetFlow();
-            setView("form");
-          }}
-          className="w-full py-3 rounded-2xl border border-[rgba(34,197,94,0.2)] bg-[rgba(34,197,94,0.04)] text-[#22c55e] text-[0.85rem] font-semibold cursor-pointer transition-all hover:bg-[rgba(34,197,94,0.1)] hover:border-[rgba(34,197,94,0.35)]"
-        >
-          Style Me Again
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              resetFlow();
+              setView("form");
+            }}
+            className="flex-1 py-3 rounded-2xl border border-[rgba(34,197,94,0.2)] bg-[rgba(34,197,94,0.04)] text-[#22c55e] text-[0.85rem] font-semibold cursor-pointer transition-all hover:bg-[rgba(34,197,94,0.1)] hover:border-[rgba(34,197,94,0.35)]"
+          >
+            Style Me Again
+          </button>
+          {HistoryToggleButton}
+        </div>
       )}
     </div>
   );

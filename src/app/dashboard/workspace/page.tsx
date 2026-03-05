@@ -15,6 +15,8 @@ import {
   useSessionsList,
   writeCurrentSessionId,
 } from "@/lib/dashboard/use-sessions-list";
+import { useAgentHistory } from "@/hooks/use-agent-history";
+import { AgentRunRow, AgentRunsSkeleton } from "@/components/agent-run-row";
 import type { IWorkspaceMember } from "@/lib/dashboard/types";
 import type { PipelineRunItem } from "@/lib/dashboard/use-workspace-summary";
 import type { SessionItem } from "@/lib/dashboard/use-sessions-list";
@@ -419,6 +421,8 @@ export default function WorkspacePage() {
     router.push(`/dashboard/workspace/${team.teamId}`);
   };
 
+  const { runs: agentRuns, isLoading: agentRunsLoading } = useAgentHistory({});
+
   const totalTasks = data?.stats.totalTasks ?? 0;
   const totalRuns = data?.stats.totalRuns ?? 0;
   const uptimePercent = data?.stats.uptimePercent ?? null;
@@ -809,6 +813,40 @@ export default function WorkspacePage() {
               <div className="flex flex-col gap-2">
                 {data.pipelineRuns.map((run) => (
                   <PipelineRunRow key={run.requestId} run={run} />
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Agent Runs */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[1rem] font-semibold text-[var(--text)]">
+                Agent Runs
+              </h2>
+              <Link
+                href="/dashboard/agents/agent-fashion"
+                className="text-[0.8rem] no-underline hover:opacity-80 transition-opacity"
+                style={{ color: "#ec4899" }}
+              >
+                Open &rarr;
+              </Link>
+            </div>
+
+            {agentRunsLoading ? (
+              <AgentRunsSkeleton />
+            ) : agentRuns.length === 0 ? (
+              <div
+                className={cn(
+                  glassCard,
+                  "px-4 py-8 text-center text-[0.85rem] text-[var(--text-muted)]",
+                )}
+              >
+                No agent runs yet.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {agentRuns.slice(0, 5).map((run) => (
+                  <AgentRunRow key={String(run.runId)} run={run} />
                 ))}
               </div>
             )}

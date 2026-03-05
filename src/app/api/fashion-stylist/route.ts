@@ -11,7 +11,9 @@
 // ──────────────────────────────────────────────────────────
 
 import { NextRequest, NextResponse } from "next/server";
+
 import { runFashionStylist } from "@/lib/agents/fashion-stylist";
+import { saveAgentRun } from "@/lib/agents/agent-history";
 import { logger } from "@/lib/logger";
 import type { FashionContext } from "@/lib/agents/types";
 
@@ -67,10 +69,32 @@ export async function POST(request: NextRequest) {
           },
         );
 
+        // Exclude photoUrl — photos are stored as files, not in the DB
+        const { photoUrl: _photoUrl, ...inputForStorage } = body.fashionContext;
+        await saveAgentRun({
+          agentType: "fashion_stylist",
+          status: "completed",
+          input: inputForStorage as unknown as Record<string, unknown>,
+        }).catch((err) =>
+          logger.error("Failed to persist fashion run", { error: String(err) }),
+        );
+
         send("complete", { response: result });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         logger.error("Fashion stylist stream error", { error: message });
+
+        const errorCode = err instanceof Error && "status" in err
+          ? Number((err as { status: number }).status)
+          : 500;
+        const { photoUrl: _photoUrl, ...inputForStorage } = body.fashionContext;
+        await saveAgentRun({
+          agentType: "fashion_stylist",
+          status: "failed",
+          input: inputForStorage as unknown as Record<string, unknown>,
+          errorCode,
+        }).catch(() => undefined);
+
         send("error", { message: "Fashion stylist failed. Check server logs." });
       } finally {
         if (controllerOpen) {

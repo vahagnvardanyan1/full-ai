@@ -94,9 +94,8 @@ Select a complete outfit from the products above. Stay within budget.`;
 
   /**
    * Generate an outfit visualization image.
-   * If a user photo is provided, uses gpt-image-1 to edit the image
-   * showing the person wearing the recommended outfit.
-   * Otherwise falls back to dall-e-3 for a generic visualization.
+   * If a user photo is provided, attempts gpt-image-1 virtual try-on first.
+   * Falls back to dall-e-3 (standalone visualization) on any failure or timeout.
    */
   async generateOutfitImage(
     outfit: OutfitRecommendation,
@@ -108,15 +107,21 @@ Select a complete outfit from the products above. Stay within budget.`;
       .map((item) => `${item.category}: ${item.product.name} by ${item.product.brand} (${item.product.color || "neutral"})`)
       .join(", ");
 
-    try {
-      // If user uploaded a photo, use gpt-image-1 to edit it with the outfit
-      if (userPhotoUrl) {
-        return await this.generateWithUserPhoto(openai, outfit, itemDescriptions, userPhotoUrl);
+    // Attempt virtual try-on when the user supplied a photo
+    if (userPhotoUrl) {
+      try {
+        const result = await this.generateWithUserPhoto(openai, outfit, itemDescriptions, userPhotoUrl);
+        if (result.url || result.base64) return result;
+        logger.warn("gpt-image-1 returned no image — falling back to dall-e-3");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.warn(`Virtual try-on failed (falling back to dall-e-3): ${msg}`);
       }
+    }
 
-      // No photo — generate a standalone outfit image with dall-e-3
+    // Standalone visualization with dall-e-3 (also used as fallback)
+    try {
       const prompt = `${OUTFIT_IMAGE_PROMPT_PREFIX} ${itemDescriptions}. The outfit should look cohesive and stylish. ${outfit.explanation}`;
-
       const response = await openai.images.generate({
         model: "dall-e-3",
         prompt: prompt.slice(0, 4000),
@@ -124,13 +129,10 @@ Select a complete outfit from the products above. Stay within budget.`;
         size: "1024x1024",
         quality: "standard",
       });
-
-      const imageUrl = response.data?.[0]?.url;
-      return { url: imageUrl };
+      return { url: response.data?.[0]?.url };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      const stack = err instanceof Error ? err.stack : "";
-      logger.error(`Outfit image generation failed: ${msg}`, { stack });
+      logger.error(`Outfit image generation failed: ${msg}`);
       return {};
     }
   }
@@ -206,15 +208,27 @@ Select a complete outfit from the products above. Stay within budget.`;
     ].join("\n");
 
     // Call images.edit with gpt-image-1 (supports multiple images)
+    // Enforce a 30s timeout so safety rejections don't stall the pipeline.
     const images = [userFile, ...productFiles];
     logger.info(`Try-on: calling gpt-image-1 images.edit with ${images.length} images`);
 
-    const response = await openai.images.edit({
-      model: "gpt-image-1",
-      image: images,
-      prompt: prompt.slice(0, 4000),
-      size: imageSize,
-    });
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      abortController.abort();
+      logger.warn("Try-on: gpt-image-1 timed out after 30s");
+    }, 30_000);
+
+    let response: Awaited<ReturnType<typeof openai.images.edit>>;
+    try {
+      response = await openai.images.edit({
+        model: "gpt-image-1",
+        image: images,
+        prompt: prompt.slice(0, 4000),
+        size: imageSize,
+      }, { signal: abortController.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     const resultUrl = response.data?.[0]?.url;
     const resultB64 = response.data?.[0]?.b64_json;
@@ -228,16 +242,8 @@ Select a complete outfit from the products above. Stay within budget.`;
       return { url: resultUrl };
     }
 
-    logger.warn("gpt-image-1 images.edit did not return an image, falling back to dall-e-3");
-    const fallbackPrompt = `${OUTFIT_IMAGE_PROMPT_PREFIX} ${itemDescriptions}. The outfit should look cohesive and stylish.`;
-    const fallbackResponse = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: fallbackPrompt.slice(0, 4000),
-      n: 1,
-      size: "1024x1024",
-      quality: "standard",
-    });
-    return { url: fallbackResponse.data?.[0]?.url };
+    // No image returned — signal the caller to fall back
+    return {};
   }
 
   /**
