@@ -17,7 +17,7 @@ const deterministicRandom = (seed: string): number => {
   return (h >>> 0) / 4294967295;
 };
 
-type Skin = "blob" | "boxy" | "rover" | "drone" | "spider" | "slim" | "orb";
+type Skin = "blob" | "boxy" | "rover" | "drone" | "spider" | "slim" | "orb" | "mech" | "cube" | "nano";
 
 type CharDef = {
   id: string;
@@ -172,6 +172,63 @@ const CHARS: CharDef[] = [
     waviness: 42,
     waveFreq: 0.7,
     wavePhase: 2.5,
+  },
+  {
+    id: "mech",
+    skin: "mech",
+    label: "Mech",
+    thinking: "TARGETING...",
+    meetText: "HALT!",
+    thinkingDelay: "0.4s",
+    eyeColor: "#ef4444",
+    bodyColor: "#2a0505",
+    darkColor: "#150202",
+    speed: 11,
+    topPos: "44%",
+    scale: 0.7,
+    opacity: 0.93,
+    dir: "ltr",
+    waviness: 12,
+    waveFreq: 1.8,
+    wavePhase: 0.5,
+  },
+  {
+    id: "cube",
+    skin: "cube",
+    label: "Cube",
+    thinking: "COMPUTING...",
+    meetText: "QUERY?",
+    thinkingDelay: "2.1s",
+    eyeColor: "#818cf8",
+    bodyColor: "#12103a",
+    darkColor: "#08071e",
+    speed: 17,
+    topPos: "6%",
+    scale: 0.63,
+    opacity: 0.86,
+    dir: "rtl",
+    waviness: 20,
+    waveFreq: 1.6,
+    wavePhase: 3.8,
+  },
+  {
+    id: "nano",
+    skin: "nano",
+    label: "Nano",
+    thinking: "SWARMING...",
+    meetText: "PING!",
+    thinkingDelay: "1.5s",
+    eyeColor: "#84cc16",
+    bodyColor: "#0f2005",
+    darkColor: "#071002",
+    speed: 29,
+    topPos: "90%",
+    scale: 0.55,
+    opacity: 0.8,
+    dir: "ltr",
+    waviness: 48,
+    waveFreq: 0.6,
+    wavePhase: 1.6,
   },
 ];
 
@@ -2051,6 +2108,410 @@ const OrbBot = ({ id, eyeColor, bodyColor, darkColor }: BotProps) => {
   );
 };
 
+// ── Bot 8: MECH — heavy bipedal warrior with T-visor and shoulder cannon ───────
+
+const MechBot = ({ id, eyeColor, bodyColor, darkColor, dir }: BotProps) => {
+  const W = 18 * U;
+  const H = 22 * U;
+  const CX = 9 * U;
+  const glow = `url(#pw-glow-${id})`;
+  const sGlow = `url(#pw-sglow-${id})`;
+  const grad = `url(#pw-grad-body-${id})`;
+
+  return (
+    <svg
+      width={W}
+      height={H}
+      viewBox={`0 0 ${W} ${H}`}
+      style={{
+        overflow: "visible",
+        ...(dir === "rtl" ? { transform: "scaleX(-1)" } : {}),
+      }}
+    >
+      <defs>
+        {makeGlowFilter(id)}
+        {makeSoftGlow(id)}
+        {makeTopGrad(id, "body")}
+        <linearGradient id={`pw-mech-visor-${id}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={eyeColor} stopOpacity="0.15" />
+          <stop offset="50%" stopColor={eyeColor} stopOpacity="1" />
+          <stop offset="100%" stopColor={eyeColor} stopOpacity="0.15" />
+        </linearGradient>
+        <linearGradient id={`pw-mech-plate-${id}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+        </linearGradient>
+      </defs>
+
+      {/* HELMET — wide flat-top shell */}
+      <path
+        d={`M ${U * 3} ${U * 1.5} L ${U * 15} ${U * 1.5}
+            L ${U * 16} ${U * 2.5} L ${U * 16} ${U * 9}
+            L ${U * 14.5} ${U * 10} L ${U * 3.5} ${U * 10}
+            L ${U * 2} ${U * 9} L ${U * 2} ${U * 2.5} Z`}
+        fill={bodyColor}
+      />
+      <path
+        d={`M ${U * 3} ${U * 1.5} L ${U * 15} ${U * 1.5}
+            L ${U * 16} ${U * 2.5} L ${U * 16} ${U * 9}
+            L ${U * 14.5} ${U * 10} L ${U * 3.5} ${U * 10}
+            L ${U * 2} ${U * 9} L ${U * 2} ${U * 2.5} Z`}
+        fill={`url(#pw-mech-plate-${id})`}
+      />
+      {/* helmet top highlight line */}
+      <line x1={U * 3} y1={U * 1.5} x2={U * 15} y2={U * 1.5} stroke={eyeColor} strokeWidth={1.2} opacity={0.45} />
+      {/* Crest spike on top */}
+      <rect x={CX - U} y={U * 0.5} width={U * 2} height={U * 1.2} rx={U * 0.2} fill={bodyColor} />
+      <line x1={CX - U} y1={U * 0.5} x2={CX + U} y2={U * 0.5} stroke={eyeColor} strokeWidth={1} opacity={0.5} />
+
+      {/* Ear side plates */}
+      <rect x={0} y={U * 3.2} width={U * 2} height={U * 5} rx={U * 0.2} fill={bodyColor} />
+      <line x1={0} y1={U * 3.2} x2={U * 2} y2={U * 3.2} stroke={eyeColor} strokeWidth={0.7} opacity={0.35} />
+      <rect x={U * 16} y={U * 3.2} width={U * 2} height={U * 5} rx={U * 0.2} fill={bodyColor} />
+      <line x1={U * 16} y1={U * 3.2} x2={U * 18} y2={U * 3.2} stroke={eyeColor} strokeWidth={0.7} opacity={0.35} />
+
+      {/* T-VISOR — horizontal glowing bar */}
+      <rect x={U * 2} y={U * 4.6} width={U * 14} height={U * 2.4} rx={U * 0.2} fill={darkColor} opacity={0.95} />
+      <rect
+        x={U * 2}
+        y={U * 4.6}
+        width={U * 14}
+        height={U * 2.4}
+        rx={U * 0.2}
+        fill={`url(#pw-mech-visor-${id})`}
+        filter={glow}
+        className="pixel-eye-glow"
+        opacity={0.9}
+      />
+      {/* visor shine */}
+      <rect x={U * 2} y={U * 4.8} width={U * 14} height={U * 0.4} rx={U * 0.1} fill="rgba(255,255,255,0.14)" />
+      {/* T-VISOR — vertical center notch (dark cut) */}
+      <rect x={CX - U * 1} y={U * 1.5} width={U * 2} height={U * 5.5} rx={U * 0.2} fill={darkColor} opacity={0.9} />
+
+      {/* Jaw plate */}
+      <path
+        d={`M ${U * 3.5} ${U * 7} L ${U * 14.5} ${U * 7}
+            L ${U * 14.5} ${U * 10} L ${U * 3.5} ${U * 10} Z`}
+        fill={darkColor}
+        opacity={0.55}
+      />
+      <line x1={U * 4} y1={U * 8.2} x2={U * 14} y2={U * 8.2} stroke={eyeColor} strokeWidth={0.5} opacity={0.18} />
+      <line x1={U * 4} y1={U * 9.2} x2={U * 14} y2={U * 9.2} stroke={eyeColor} strokeWidth={0.5} opacity={0.18} />
+
+      {/* SHOULDER PAULDRONS — massive */}
+      {/* Left pauldron */}
+      <path
+        d={`M 0 ${U * 10.5} L ${U * 4} ${U * 10}
+            L ${U * 4} ${U * 14} L 0 ${U * 15} Z`}
+        fill={bodyColor}
+      />
+      <line x1={0} y1={U * 10.5} x2={U * 4} y2={U * 10} stroke={eyeColor} strokeWidth={0.8} opacity={0.3} />
+      {/* Left shoulder CANNON */}
+      <rect x={-U * 2.5} y={U * 10.8} width={U * 3.5} height={U * 1.6} rx={U * 0.3} fill={darkColor} opacity={0.95} />
+      <rect x={-U * 3} y={U * 11.1} width={U * 1.2} height={U * 1} rx={U * 0.2} fill={bodyColor} />
+      <circle cx={-U * 2.5} cy={U * 11.6} r={U * 0.45} fill={eyeColor} filter={sGlow} opacity={0.8} className="pixel-status-pulse" />
+
+      {/* Right pauldron */}
+      <path
+        d={`M ${U * 14} ${U * 10} L ${U * 18} ${U * 10.5}
+            L ${U * 18} ${U * 15} L ${U * 14} ${U * 14} Z`}
+        fill={bodyColor}
+      />
+      <line x1={U * 14} y1={U * 10} x2={U * 18} y2={U * 10.5} stroke={eyeColor} strokeWidth={0.8} opacity={0.3} />
+
+      {/* TORSO — heavy chest plate */}
+      <path
+        d={`M ${U * 4} ${U * 10} L ${U * 14} ${U * 10}
+            L ${U * 14.5} ${U * 10.5} L ${U * 14.5} ${U * 16.5}
+            L ${U * 13} ${U * 17} L ${U * 5} ${U * 17}
+            L ${U * 3.5} ${U * 16.5} L ${U * 3.5} ${U * 10.5} Z`}
+        fill={bodyColor}
+      />
+      <path
+        d={`M ${U * 4} ${U * 10} L ${U * 14} ${U * 10}
+            L ${U * 14.5} ${U * 10.5} L ${U * 14.5} ${U * 16.5}
+            L ${U * 13} ${U * 17} L ${U * 5} ${U * 17}
+            L ${U * 3.5} ${U * 16.5} L ${U * 3.5} ${U * 10.5} Z`}
+        fill={grad}
+      />
+      {/* Armor seam lines */}
+      <line x1={U * 3.5} y1={U * 12.8} x2={U * 14.5} y2={U * 12.8} stroke={eyeColor} strokeWidth={0.6} opacity={0.18} />
+      <line x1={U * 3.5} y1={U * 14.8} x2={U * 14.5} y2={U * 14.8} stroke={eyeColor} strokeWidth={0.6} opacity={0.18} />
+      <line x1={CX} y1={U * 10} x2={CX} y2={U * 17} stroke={eyeColor} strokeWidth={0.5} opacity={0.12} />
+      {/* Chest badge */}
+      <rect x={U * 6.5} y={U * 10.8} width={U * 5} height={U * 1.8} rx={U * 0.3} fill={darkColor} opacity={0.85} />
+      <rect x={U * 6.5} y={U * 10.8} width={U * 5} height={U * 0.55} rx={U * 0.2} fill={eyeColor} opacity={0.2} />
+      <circle cx={CX} cy={U * 11.7} r={U * 0.55} fill={eyeColor} filter={sGlow} className="pixel-status-pulse" />
+
+      {/* ARMS — thick armored */}
+      <g className="pixel-char-larm" style={{ transformOrigin: `${U * 4}px ${U * 10.5}px` }}>
+        <rect x={U * 1.5} y={U * 10.5} width={U * 2.5} height={U * 5} rx={U * 0.4} fill={bodyColor} />
+        <line x1={U * 2.75} y1={U * 10.5} x2={U * 2.75} y2={U * 15.5} stroke={eyeColor} strokeWidth={0.5} opacity={0.2} />
+        <rect x={U * 1.2} y={U * 15} width={U * 3.2} height={U * 1.6} rx={U * 0.4} fill={darkColor} />
+      </g>
+      <g className="pixel-char-rarm" style={{ transformOrigin: `${U * 14}px ${U * 10.5}px` }}>
+        <rect x={U * 14} y={U * 10.5} width={U * 2.5} height={U * 5} rx={U * 0.4} fill={bodyColor} />
+        <line x1={U * 15.25} y1={U * 10.5} x2={U * 15.25} y2={U * 15.5} stroke={eyeColor} strokeWidth={0.5} opacity={0.2} />
+        <rect x={U * 13.6} y={U * 15} width={U * 3.2} height={U * 1.6} rx={U * 0.4} fill={darkColor} />
+      </g>
+
+      {/* LEGS — wide heavy */}
+      <g className="pixel-char-lleg" style={{ transformOrigin: `${U * 6.5}px ${U * 17}px` }}>
+        <rect x={U * 4.5} y={U * 17} width={U * 4} height={U * 2.5} rx={U * 0.4} fill={bodyColor} />
+        <rect x={U * 4} y={U * 18.8} width={U * 5} height={U * 0.9} rx={U * 0.3} fill={darkColor} opacity={0.9} />
+        <rect x={U * 3.8} y={U * 19.6} width={U * 5.5} height={U * 1.7} rx={U * 0.4} fill={darkColor} />
+        <line x1={U * 3.8} y1={U * 19.6} x2={U * 9.3} y2={U * 19.6} stroke={eyeColor} strokeWidth={0.5} opacity={0.3} />
+      </g>
+      <g className="pixel-char-rleg" style={{ transformOrigin: `${U * 11.5}px ${U * 17}px` }}>
+        <rect x={U * 9.5} y={U * 17} width={U * 4} height={U * 2.5} rx={U * 0.4} fill={bodyColor} />
+        <rect x={U * 9} y={U * 18.8} width={U * 5} height={U * 0.9} rx={U * 0.3} fill={darkColor} opacity={0.9} />
+        <rect x={U * 8.7} y={U * 19.6} width={U * 5.5} height={U * 1.7} rx={U * 0.4} fill={darkColor} />
+        <line x1={U * 8.7} y1={U * 19.6} x2={U * 14.2} y2={U * 19.6} stroke={eyeColor} strokeWidth={0.5} opacity={0.3} />
+      </g>
+
+      <ellipse cx={CX} cy={H - 1} rx={U * 5} ry={4} fill="rgba(0,0,0,0.22)" />
+    </svg>
+  );
+};
+
+// ── Bot 9: CUBE — geometric square-head with grid face and diamond eye ─────────
+
+const CubeBot = ({ id, eyeColor, bodyColor, darkColor, dir }: BotProps) => {
+  const W = 14 * U;
+  const H = 22 * U;
+  const CX = 7 * U;
+  const glow = `url(#pw-glow-${id})`;
+  const sGlow = `url(#pw-sglow-${id})`;
+
+  return (
+    <svg
+      width={W}
+      height={H}
+      viewBox={`0 0 ${W} ${H}`}
+      style={{
+        overflow: "visible",
+        ...(dir === "rtl" ? { transform: "scaleX(-1)" } : {}),
+      }}
+    >
+      <defs>
+        {makeGlowFilter(id)}
+        {makeSoftGlow(id)}
+        <linearGradient id={`pw-cube-plate-${id}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.1)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+        </linearGradient>
+      </defs>
+
+      {/* Corner nub antennas */}
+      <rect x={U * 2.3} y={U * 0.3} width={U * 0.5} height={U * 1.4} fill={eyeColor} opacity={0.55} />
+      <rect x={U * 2} y={U * 0.3} width={U * 1.1} height={U * 0.4} fill={eyeColor} opacity={0.55} />
+      <circle cx={U * 2.55} cy={U * 0.3} r={U * 0.4} fill={eyeColor} filter={glow} className="pixel-antenna-pulse" />
+      <rect x={U * 11.2} y={U * 0.3} width={U * 0.5} height={U * 1.4} fill={eyeColor} opacity={0.55} />
+      <rect x={U * 10.9} y={U * 0.3} width={U * 1.1} height={U * 0.4} fill={eyeColor} opacity={0.55} />
+      <circle cx={U * 11.45} cy={U * 0.3} r={U * 0.4} fill={eyeColor} filter={glow} className="pixel-antenna-pulse" />
+
+      {/* HEAD — perfect square, chamfered corners */}
+      <path
+        d={`M ${U * 2.5} ${U * 1.7} L ${U * 11.5} ${U * 1.7}
+            L ${U * 12.5} ${U * 2.7} L ${U * 12.5} ${U * 11}
+            L ${U * 11.5} ${U * 12} L ${U * 2.5} ${U * 12}
+            L ${U * 1.5} ${U * 11} L ${U * 1.5} ${U * 2.7} Z`}
+        fill={bodyColor}
+      />
+      <path
+        d={`M ${U * 2.5} ${U * 1.7} L ${U * 11.5} ${U * 1.7}
+            L ${U * 12.5} ${U * 2.7} L ${U * 12.5} ${U * 11}
+            L ${U * 11.5} ${U * 12} L ${U * 2.5} ${U * 12}
+            L ${U * 1.5} ${U * 11} L ${U * 1.5} ${U * 2.7} Z`}
+        fill={`url(#pw-cube-plate-${id})`}
+      />
+      {/* corner accent lines */}
+      <path d={`M ${U * 2.5} ${U * 1.7} L ${U * 11.5} ${U * 1.7} L ${U * 12.5} ${U * 2.7}`} fill="none" stroke={eyeColor} strokeWidth={0.9} opacity={0.45} />
+      <rect x={U * 1.5} y={U * 1.7} width={U * 1.5} height={U * 0.4} fill={eyeColor} opacity={0.4} />
+      <rect x={U * 11} y={U * 1.7} width={U * 1.5} height={U * 0.4} fill={eyeColor} opacity={0.4} />
+      <rect x={U * 1.5} y={U * 11.6} width={U * 1.5} height={U * 0.4} fill={eyeColor} opacity={0.4} />
+      <rect x={U * 11} y={U * 11.6} width={U * 1.5} height={U * 0.4} fill={eyeColor} opacity={0.4} />
+
+      {/* Grid lines — circuit board face */}
+      <line x1={U * 1.5} y1={U * 4.5} x2={U * 12.5} y2={U * 4.5} stroke={eyeColor} strokeWidth={0.5} opacity={0.18} />
+      <line x1={U * 1.5} y1={U * 7} x2={U * 12.5} y2={U * 7} stroke={eyeColor} strokeWidth={0.5} opacity={0.18} />
+      <line x1={U * 1.5} y1={U * 9.5} x2={U * 12.5} y2={U * 9.5} stroke={eyeColor} strokeWidth={0.5} opacity={0.18} />
+      <line x1={U * 4} y1={U * 1.7} x2={U * 4} y2={U * 12} stroke={eyeColor} strokeWidth={0.5} opacity={0.18} />
+      <line x1={CX} y1={U * 1.7} x2={CX} y2={U * 12} stroke={eyeColor} strokeWidth={0.5} opacity={0.18} />
+      <line x1={U * 10} y1={U * 1.7} x2={U * 10} y2={U * 12} stroke={eyeColor} strokeWidth={0.5} opacity={0.18} />
+
+      {/* Center eye — glowing diamond */}
+      <polygon
+        points={`${CX},${U * 5} ${CX + U * 2},${U * 6.8} ${CX},${U * 8.6} ${CX - U * 2},${U * 6.8}`}
+        fill={darkColor}
+        opacity={0.9}
+      />
+      <polygon
+        points={`${CX},${U * 5.5} ${CX + U * 1.5},${U * 6.8} ${CX},${U * 8.1} ${CX - U * 1.5},${U * 6.8}`}
+        fill={eyeColor}
+        filter={glow}
+        className="pixel-eye-glow"
+        opacity={0.95}
+      />
+      {/* diamond specular */}
+      <polygon
+        points={`${CX - U * 0.3},${U * 5.5} ${CX + U * 0.5},${U * 6.1} ${CX - U * 0.2},${U * 6.3}`}
+        fill="rgba(255,255,255,0.45)"
+      />
+
+      {/* NECK */}
+      <rect x={U * 5.5} y={U * 12} width={U * 3} height={U * 1} rx={U * 0.3} fill={darkColor} opacity={0.9} />
+
+      {/* BODY — angular trapezoid */}
+      <path
+        d={`M ${U * 3} ${U * 13} L ${U * 11} ${U * 13}
+            L ${U * 10} ${U * 16.8} L ${U * 4} ${U * 16.8} Z`}
+        fill={bodyColor}
+      />
+      <path
+        d={`M ${U * 3} ${U * 13} L ${U * 11} ${U * 13}
+            L ${U * 10} ${U * 16.8} L ${U * 4} ${U * 16.8} Z`}
+        fill={`url(#pw-cube-plate-${id})`}
+      />
+      <line x1={U * 3} y1={U * 13} x2={U * 11} y2={U * 13} stroke={eyeColor} strokeWidth={0.7} opacity={0.3} />
+      <line x1={U * 3.4} y1={U * 15} x2={U * 10.6} y2={U * 15} stroke={eyeColor} strokeWidth={0.5} opacity={0.15} />
+      <line x1={CX} y1={U * 13} x2={CX} y2={U * 16.8} stroke={eyeColor} strokeWidth={0.5} opacity={0.12} />
+      {/* chest badge */}
+      <rect x={U * 5.2} y={U * 13.4} width={U * 3.6} height={U * 1.2} rx={U * 0.25} fill={darkColor} opacity={0.85} />
+      <circle cx={CX} cy={U * 14} r={U * 0.48} fill={eyeColor} filter={sGlow} className="pixel-status-pulse" />
+
+      {/* ARMS — blocky angular */}
+      <g className="pixel-char-larm" style={{ transformOrigin: `${U * 3}px ${U * 13}px` }}>
+        <rect x={U * 0.5} y={U * 13} width={U * 2.5} height={U * 3.5} rx={U * 0.3} fill={bodyColor} />
+        <line x1={U * 1.75} y1={U * 13} x2={U * 1.75} y2={U * 16.5} stroke={eyeColor} strokeWidth={0.5} opacity={0.2} />
+        <rect x={U * 0.2} y={U * 16} width={U * 3} height={U * 1.3} rx={U * 0.3} fill={darkColor} />
+      </g>
+      <g className="pixel-char-rarm" style={{ transformOrigin: `${U * 11}px ${U * 13}px` }}>
+        <rect x={U * 11} y={U * 13} width={U * 2.5} height={U * 3.5} rx={U * 0.3} fill={bodyColor} />
+        <line x1={U * 12.25} y1={U * 13} x2={U * 12.25} y2={U * 16.5} stroke={eyeColor} strokeWidth={0.5} opacity={0.2} />
+        <rect x={U * 10.8} y={U * 16} width={U * 3} height={U * 1.3} rx={U * 0.3} fill={darkColor} />
+      </g>
+
+      {/* LEGS — squared blocky */}
+      <g className="pixel-char-lleg" style={{ transformOrigin: `${U * 5.5}px ${U * 16.8}px` }}>
+        <rect x={U * 3.5} y={U * 16.8} width={U * 3.5} height={U * 3} rx={U * 0.3} fill={bodyColor} />
+        <rect x={U * 3} y={U * 19.3} width={U * 4.5} height={U * 1.8} rx={U * 0.3} fill={darkColor} />
+        <line x1={U * 3} y1={U * 19.3} x2={U * 7.5} y2={U * 19.3} stroke={eyeColor} strokeWidth={0.5} opacity={0.28} />
+      </g>
+      <g className="pixel-char-rleg" style={{ transformOrigin: `${U * 8.5}px ${U * 16.8}px` }}>
+        <rect x={U * 7} y={U * 16.8} width={U * 3.5} height={U * 3} rx={U * 0.3} fill={bodyColor} />
+        <rect x={U * 6.5} y={U * 19.3} width={U * 4.5} height={U * 1.8} rx={U * 0.3} fill={darkColor} />
+        <line x1={U * 6.5} y1={U * 19.3} x2={U * 11} y2={U * 19.3} stroke={eyeColor} strokeWidth={0.5} opacity={0.28} />
+      </g>
+
+      <ellipse cx={CX} cy={H - 1} rx={U * 3.5} ry={3.5} fill="rgba(0,0,0,0.2)" />
+    </svg>
+  );
+};
+
+// ── Bot 10: NANO — floating swarm cluster with core orb and satellite mini-bots ─
+
+const NanoBot = ({ id, eyeColor, bodyColor, darkColor }: BotProps) => {
+  const W = 14 * U;
+  const H = 22 * U;
+  const CX = 7 * U;
+  const CORE_X = CX;
+  const CORE_Y = U * 9;
+  const SAT_A = { x: CX - U * 4.5, y: U * 5.5 };
+  const SAT_B = { x: CX + U * 4.5, y: U * 7 };
+  const SAT_C = { x: CX - U * 2.5, y: U * 13.5 };
+  const glow = `url(#pw-glow-${id})`;
+  const sGlow = `url(#pw-sglow-${id})`;
+
+  return (
+    <svg
+      width={W}
+      height={H}
+      viewBox={`0 0 ${W} ${H}`}
+      style={{ overflow: "visible" }}
+    >
+      <defs>
+        {makeGlowFilter(id)}
+        {makeSoftGlow(id)}
+        <radialGradient id={`pw-nano-core-${id}`} cx="35%" cy="30%" r="65%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.2)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0.1)" />
+        </radialGradient>
+        <radialGradient id={`pw-nano-ambient-${id}`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={eyeColor} stopOpacity="0.22" />
+          <stop offset="100%" stopColor={eyeColor} stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id={`pw-nano-hover-${id}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={eyeColor} stopOpacity="0.35" />
+          <stop offset="100%" stopColor={eyeColor} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+
+      {makeRadarRing({ id, eyeColor })}
+
+      {/* Antenna from core */}
+      <rect x={CORE_X - 0.5} y={U * 2} width={1} height={CORE_Y - U * 2} fill={eyeColor} opacity={0.3} />
+      <circle cx={CORE_X} cy={U * 2} r={U * 0.55} fill={eyeColor} filter={glow} className="pixel-antenna-pulse" />
+
+      {/* Connection lines core → satellites (dashed) */}
+      <line x1={CORE_X} y1={CORE_Y} x2={SAT_A.x} y2={SAT_A.y} stroke={eyeColor} strokeWidth={0.8} opacity={0.3} strokeDasharray="3,3" />
+      <line x1={CORE_X} y1={CORE_Y} x2={SAT_B.x} y2={SAT_B.y} stroke={eyeColor} strokeWidth={0.8} opacity={0.3} strokeDasharray="3,3" />
+      <line x1={CORE_X} y1={CORE_Y} x2={SAT_C.x} y2={SAT_C.y} stroke={eyeColor} strokeWidth={0.8} opacity={0.3} strokeDasharray="3,3" />
+
+      {/* Satellite A — top-left, medium */}
+      <circle cx={SAT_A.x} cy={SAT_A.y} r={U * 1.9} fill={bodyColor} opacity={0.95} />
+      <circle cx={SAT_A.x} cy={SAT_A.y} r={U * 1.2} fill={eyeColor} filter={glow} className="pixel-eye-glow" opacity={0.75} />
+      <circle cx={SAT_A.x - U * 0.4} cy={SAT_A.y - U * 0.45} r={U * 0.3} fill="rgba(255,255,255,0.55)" />
+
+      {/* Satellite B — right, smaller */}
+      <circle cx={SAT_B.x} cy={SAT_B.y} r={U * 1.5} fill={bodyColor} opacity={0.95} />
+      <circle cx={SAT_B.x} cy={SAT_B.y} r={U * 0.95} fill={eyeColor} filter={glow} className="pixel-eye-glow" opacity={0.65} />
+      <circle cx={SAT_B.x - U * 0.3} cy={SAT_B.y - U * 0.35} r={U * 0.26} fill="rgba(255,255,255,0.55)" />
+
+      {/* Satellite C — bottom-left, medium-small */}
+      <circle cx={SAT_C.x} cy={SAT_C.y} r={U * 1.7} fill={bodyColor} opacity={0.95} />
+      <circle cx={SAT_C.x} cy={SAT_C.y} r={U * 1.05} fill={eyeColor} filter={glow} className="pixel-eye-glow" opacity={0.7} />
+      <circle cx={SAT_C.x - U * 0.35} cy={SAT_C.y - U * 0.4} r={U * 0.28} fill="rgba(255,255,255,0.55)" />
+
+      {/* CENTRAL CORE — ambient glow halo */}
+      <circle cx={CORE_X} cy={CORE_Y} r={U * 3.8} fill={`url(#pw-nano-ambient-${id})`} />
+      {/* core shell */}
+      <circle cx={CORE_X} cy={CORE_Y} r={U * 2.8} fill={bodyColor} />
+      <circle cx={CORE_X} cy={CORE_Y} r={U * 2.8} fill={`url(#pw-nano-core-${id})`} />
+      {/* core inner eye */}
+      <circle cx={CORE_X} cy={CORE_Y} r={U * 1.8} fill={eyeColor} filter={glow} className="pixel-eye-glow" opacity={0.85} />
+      {/* core pupil */}
+      <circle cx={CORE_X + U * 0.4} cy={CORE_Y - U * 0.3} r={U * 0.7} fill={darkColor} opacity={0.9} />
+      {/* core specular */}
+      <circle cx={CORE_X - U * 0.6} cy={CORE_Y - U * 0.85} r={U * 0.35} fill="rgba(255,255,255,0.9)" />
+      {/* core pulsing ring */}
+      <circle cx={CORE_X} cy={CORE_Y} r={U * 2.8} fill="none" stroke={eyeColor} strokeWidth={1} opacity={0.35} filter={sGlow} className="pixel-status-pulse" />
+
+      {/* Hover column */}
+      <rect
+        x={CORE_X - U * 1.8}
+        y={CORE_Y + U * 2.8}
+        width={U * 3.6}
+        height={U * 3.2}
+        rx={U * 1.8}
+        fill={`url(#pw-nano-hover-${id})`}
+      />
+      <ellipse
+        cx={CORE_X}
+        cy={CORE_Y + U * 3}
+        rx={U * 1.6}
+        ry={U * 0.6}
+        fill={eyeColor}
+        opacity={0.25}
+        filter={sGlow}
+        className="pixel-status-pulse"
+      />
+
+      <ellipse cx={CX} cy={H - 1} rx={U * 3} ry={3} fill="rgba(0,0,0,0.18)" />
+    </svg>
+  );
+};
+
 // ── Bot selector ──────────────────────────────────────────────────────────────
 
 const BOT_MAP: Record<Skin, (props: BotProps) => React.JSX.Element> = {
@@ -2061,6 +2522,9 @@ const BOT_MAP: Record<Skin, (props: BotProps) => React.JSX.Element> = {
   spider: SpiderBot,
   slim: SlimBot,
   orb: OrbBot,
+  mech: MechBot,
+  cube: CubeBot,
+  nano: NanoBot,
 };
 
 // ── Character wrapper ─────────────────────────────────────────────────────────
