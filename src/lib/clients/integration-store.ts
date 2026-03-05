@@ -67,8 +67,12 @@ export interface IntegrationStatus {
 
 const globalStore = globalThis as unknown as {
   __integrationStore?: Map<string, IntegrationConfig>;
+  __integrationHydrationTimestamps?: Map<string, number>;
 };
 const store = (globalStore.__integrationStore ??= new Map<string, IntegrationConfig>());
+const hydrationTimestamps = (globalStore.__integrationHydrationTimestamps ??= new Map<string, number>());
+
+const HYDRATION_TTL_MS = 30_000; // 30 seconds
 
 const getConfig = (): IntegrationConfig => {
   const key = getCurrentDeviceId();
@@ -85,13 +89,15 @@ const setConfig = (config: IntegrationConfig): void => {
 // Skipped if the device already has data in memory.
 
 export const hydrateFromDB = async (deviceId: string): Promise<void> => {
-  if (store.has(deviceId)) return;
+  const lastHydration = hydrationTimestamps.get(deviceId);
+  if (lastHydration && Date.now() - lastHydration < HYDRATION_TTL_MS) return;
 
   const dbConfig = await loadIntegrationsFromDB(deviceId);
   if (dbConfig) {
     store.set(deviceId, dbConfig as IntegrationConfig);
     logger.info("Integrations hydrated from DB", { deviceId });
   }
+  hydrationTimestamps.set(deviceId, Date.now());
 };
 
 // ── GitHub disconnect callbacks ──────────────────────────

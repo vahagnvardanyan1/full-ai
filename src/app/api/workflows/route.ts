@@ -16,7 +16,7 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
   if (!isDBEnabled()) {
     return NextResponse.json(
       { error: "Persistence is disabled — MONGODB_URI is not configured." },
-      { status: 503 },
+      { status: 503, headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } },
     );
   }
 
@@ -31,13 +31,16 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
     if (!run) {
       return NextResponse.json({ error: "Workflow run not found." }, { status: 404 });
     }
-    return NextResponse.json({
-      run: {
-        ...run,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        events: (run.events as any[]).filter((e) => !SKIP_EVENT_TYPES.has(e?.type)),
+    return NextResponse.json(
+      {
+        run: {
+          ...run,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          events: (run.events as any[]).filter((e) => !SKIP_EVENT_TYPES.has(e?.type)),
+        },
       },
-    });
+      { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } },
+    );
   }
 
   // ── List recent runs ──────────────────────────────────────
@@ -59,5 +62,8 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
     events: (run.events as any[]).filter((e) => !SKIP_EVENT_TYPES.has(e?.type)),
   }));
 
-  return NextResponse.json({ runs });
+  return NextResponse.json(
+    { runs },
+    { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } },
+  );
 };

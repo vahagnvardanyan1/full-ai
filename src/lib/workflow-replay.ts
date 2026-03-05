@@ -48,7 +48,7 @@ export interface StoredWorkflowRun {
 }
 
 // ── How long before a "running" run is considered orphaned ─
-const ORPHAN_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+const ORPHAN_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
 
 const isOrphaned = (run: StoredWorkflowRun): boolean =>
   run.status === "running" &&

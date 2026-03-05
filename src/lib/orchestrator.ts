@@ -149,6 +149,8 @@ const createPlan = async (userMessage: string, context: string): Promise<Plan> =
 
 // ── Agent dispatcher ─────────────────────────────────────
 
+const AGENT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes per agent
+
 const SIMPLE_RUNNERS: Record<
   string,
   (msg: string) => Promise<AgentResponse>
@@ -156,6 +158,14 @@ const SIMPLE_RUNNERS: Record<
   qa: runQAAgent,
   devops: runDevOpsAgent,
 };
+
+const withTimeout = <T>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms),
+    ),
+  ]);
 
 const dispatchAgent = async ({
   role,
@@ -170,44 +180,21 @@ const dispatchAgent = async ({
   onPMProgress?: PMProgressCallback;
   onQAProgress?: QAProgressCallback;
 }): Promise<AgentResponse> => {
-  if (role === "frontend_developer") {
-    try {
-      return await runFrontendDeveloper(instructions, onProgress);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      logger.error("Frontend developer failed", { error: msg });
-      return { agent: role, summary: `Agent ${role} encountered an error: ${msg}`, toolCalls: [], detail: msg };
-    }
-  }
+  const run = (): Promise<AgentResponse> => {
+    if (role === "frontend_developer") return runFrontendDeveloper(instructions, onProgress);
+    if (role === "product_manager") return runProductManager(instructions, onPMProgress);
+    if (role === "qa") return runQAAgent(instructions, onQAProgress);
 
-  if (role === "product_manager") {
-    try {
-      return await runProductManager(instructions, onPMProgress);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      logger.error("Product manager failed", { error: msg });
-      return { agent: role, summary: `Agent ${role} encountered an error: ${msg}`, toolCalls: [], detail: msg };
+    const runner = SIMPLE_RUNNERS[role];
+    if (!runner) {
+      logger.warn(`No runner for agent role: ${role}`);
+      return Promise.resolve({ agent: role, summary: `Agent ${role} is not implemented.`, toolCalls: [], detail: "" });
     }
-  }
-
-  if (role === "qa") {
-    try {
-      return await runQAAgent(instructions, onQAProgress);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      logger.error("QA agent failed", { error: msg });
-      return { agent: role, summary: `Agent ${role} encountered an error: ${msg}`, toolCalls: [], detail: msg };
-    }
-  }
-
-  const runner = SIMPLE_RUNNERS[role];
-  if (!runner) {
-    logger.warn(`No runner for agent role: ${role}`);
-    return { agent: role, summary: `Agent ${role} is not implemented.`, toolCalls: [], detail: "" };
-  }
+    return runner(instructions);
+  };
 
   try {
-    return await runner(instructions);
+    return await withTimeout(run(), AGENT_TIMEOUT_MS, `Agent ${role}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     logger.error(`Agent ${role} failed`, { error: msg });
@@ -320,41 +307,48 @@ export const orchestrateStream = async (
     }
   }
 
+  // Structural events that must be persisted before continuing
+  const STRUCTURAL_EVENTS = new Set(["plan", "agent_start", "agent_complete", "tasks_updated", "done", "error"]);
+
   // Wrap onEvent to also persist every event to MongoDB
-  const emit = (event: StreamEvent) => {
+  // Structural events are awaited; agent_progress is fire-and-forget
+  const emit = async (event: StreamEvent): Promise<void> => {
     onEvent(event);
-    // Fire-and-forget — don't block the stream
-    persistEvent({ requestId, event }).catch(() => undefined);
+    if (STRUCTURAL_EVENTS.has(event.type)) {
+      await persistEvent({ requestId, event });
+    } else {
+      persistEvent({ requestId, event }).catch(() => undefined);
+    }
   };
 
   const allAgents = plan.phases.flat();
-  emit({ type: "plan", plan: plan.summary, agents: allAgents, phases: plan.phases });
+  await emit({ type: "plan", plan: plan.summary, agents: allAgents, phases: plan.phases });
 
   // Step 2: Execute phases sequentially
   const agentResults: AgentResponse[] = [];
   let frontendBranchForQA: string | null = null;
   let frontendPrUrlForQA: string | null = null;
 
-  const emitTasksSnapshot = () => {
+  const emitTasksSnapshot = async () => {
     const allTasks = getTasksForRequestAll(requestId);
     if (allTasks.length > 0) {
-      emit({ type: "tasks_updated", tasks: [...allTasks.map((t) => ({ ...t }))] });
+      await emit({ type: "tasks_updated", tasks: [...allTasks.map((t) => ({ ...t }))] });
     }
   };
 
   const runAgentAndEmit = async (role: AgentRole, instructions: string) => {
-    emit({ type: "agent_start", agent: role });
+    await emit({ type: "agent_start", agent: role });
 
     if (role === "frontend_developer") {
       // Ensure Jira sync is complete before transitioning so jiraKey is available
       const tasks = getTasksForRequest(requestId);
       await Promise.all(tasks.map((t) => awaitTaskJiraSync(t)));
       updateTasksByRequestStatus(requestId, "open", "in_progress");
-      emitTasksSnapshot();
+      await emitTasksSnapshot();
     } else if (role === "qa") {
       updateTasksByRequestStatus(requestId, "review", "testing");
       updateTasksByRequestStatus(requestId, "in_progress", "testing");
-      emitTasksSnapshot();
+      await emitTasksSnapshot();
     }
 
     const progressCb: ProgressCallback = (stage, message, progress) => {
@@ -393,7 +387,7 @@ export const orchestrateStream = async (
 
     agentResults.push(result);
 
-    emit({ type: "agent_complete", response: result, tasks: newTasks, files: newFiles });
+    await emit({ type: "agent_complete", response: result, tasks: newTasks, files: newFiles });
 
     // Apply post-agent status transitions BEFORE persisting so the DB
     // snapshot always has the latest task statuses
@@ -410,7 +404,7 @@ export const orchestrateStream = async (
       updateTasksByRequestStatus(requestId, "in_progress", "done");
       updateTasksByRequestStatus(requestId, "open", "done");
     }
-    emitTasksSnapshot();
+    await emitTasksSnapshot();
 
     // Persist agent result + current task/file snapshot (after status
     // transitions so the DB has up-to-date task statuses).
@@ -425,77 +419,105 @@ export const orchestrateStream = async (
     return result;
   };
 
-  for (let i = 0; i < plan.phases.length; i++) {
-    const phase = plan.phases[i];
-    logger.info(`Executing phase ${i + 1}`, { agents: phase });
+  try {
+    for (let i = 0; i < plan.phases.length; i++) {
+      const phase = plan.phases[i];
+      logger.info(`Executing phase ${i + 1}`, { agents: phase });
 
-    let codeContext = "";
-    if (i > 0) {
-      const generatedFiles = getFilesForRequest(requestId);
-      if (generatedFiles.length > 0) {
-        codeContext = `\n\nThe following code files were generated by previous agents. Write your output based on this actual code:\n${generatedFiles
-          .map(
-            (f) =>
-              `- ${f.filePath} (${f.language}): ${f.description}\n\`\`\`${f.language}\n${f.code}\n\`\`\``,
-          )
-          .join("\n\n")}`;
+      let codeContext = "";
+      if (i > 0) {
+        const generatedFiles = getFilesForRequest(requestId);
+        if (generatedFiles.length > 0) {
+          codeContext = `\n\nThe following code files were generated by previous agents. Write your output based on this actual code:\n${generatedFiles
+            .map(
+              (f) =>
+                `- ${f.filePath} (${f.language}): ${f.description}\n\`\`\`${f.language}\n${f.code}\n\`\`\``,
+            )
+            .join("\n\n")}`;
+        }
+      }
+
+      await Promise.all(
+        phase.map((role) => {
+          const baseInstructions = plan.agentInstructions[role] ?? userMessage;
+          const qaBranchContext =
+            role === "qa" && frontendBranchForQA
+              ? `\n\nQA BRANCH TARGETING CONTEXT:\n- Frontend feature branch: ${frontendBranchForQA}\n- Frontend PR URL: ${frontendPrUrlForQA ?? "not available"}\n- Create QA branch as qa/<frontend-branch>-tests and open PR against the frontend feature branch.`
+              : "";
+          const devopsBranchContext =
+            role === "devops" && frontendBranchForQA
+              ? `\n\nDEPLOYMENT CONTEXT:\n- The frontend feature branch is: ${frontendBranchForQA}\n- Use this exact branch name as the ref when triggering Vercel deployments. Do NOT guess or invent a branch name.`
+              : "";
+          return runAgentAndEmit(role, baseInstructions + codeContext + qaBranchContext + devopsBranchContext);
+        }),
+      );
+    }
+
+    // Step 3: Save to session
+    await appendMessage(sid, { role: "user", content: userMessage, timestamp: Date.now() });
+    await appendMessage(sid, {
+      role: "assistant",
+      content: JSON.stringify({
+        plan: plan.summary,
+        results: agentResults.map((r) => ({ agent: r.agent, summary: r.summary })),
+      }),
+      timestamp: Date.now(),
+    });
+
+    // Mark WorkflowRun as completed with final snapshot
+    if (isDBEnabled()) {
+      try {
+        await connectDB();
+        await WorkflowRunModel.updateOne(
+          { requestId },
+          {
+            $set: {
+              status: "completed",
+              tasks: getTasksForRequestAll(requestId),
+              files: getFilesForRequest(requestId),
+            },
+          },
+        );
+      } catch (err) {
+        logger.warn("Failed to finalize WorkflowRun", { error: String(err) });
+      }
+
+      // Save lightweight entry to generic agent_runs for dashboard history
+      saveAgentRun({
+        agentType: "orchestrator",
+        status: "completed",
+        input: { userMessage, requestId, sessionId: sid },
+      }).catch(() => undefined);
+    }
+
+    logger.info("Orchestration complete", { requestId, agentCount: agentResults.length });
+
+    await emit({ type: "done", requestId });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    logger.error("Orchestration failed", { requestId, error: errorMsg });
+
+    await emit({ type: "error", agent: "product_manager", message: errorMsg });
+
+    // Mark WorkflowRun as failed in MongoDB
+    if (isDBEnabled()) {
+      try {
+        await connectDB();
+        await WorkflowRunModel.updateOne(
+          { requestId },
+          {
+            $set: {
+              status: "failed",
+              tasks: getTasksForRequestAll(requestId),
+              files: getFilesForRequest(requestId),
+            },
+          },
+        );
+      } catch (dbErr) {
+        logger.warn("Failed to mark WorkflowRun as failed", { error: String(dbErr) });
       }
     }
 
-    await Promise.all(
-      phase.map((role) => {
-        const baseInstructions = plan.agentInstructions[role] ?? userMessage;
-        const qaBranchContext =
-          role === "qa" && frontendBranchForQA
-            ? `\n\nQA BRANCH TARGETING CONTEXT:\n- Frontend feature branch: ${frontendBranchForQA}\n- Frontend PR URL: ${frontendPrUrlForQA ?? "not available"}\n- Create QA branch as qa/<frontend-branch>-tests and open PR against the frontend feature branch.`
-            : "";
-        const devopsBranchContext =
-          role === "devops" && frontendBranchForQA
-            ? `\n\nDEPLOYMENT CONTEXT:\n- The frontend feature branch is: ${frontendBranchForQA}\n- Use this exact branch name as the ref when triggering Vercel deployments. Do NOT guess or invent a branch name.`
-            : "";
-        return runAgentAndEmit(role, baseInstructions + codeContext + qaBranchContext + devopsBranchContext);
-      }),
-    );
+    await emit({ type: "done", requestId });
   }
-
-  // Step 3: Save to session
-  await appendMessage(sid, { role: "user", content: userMessage, timestamp: Date.now() });
-  await appendMessage(sid, {
-    role: "assistant",
-    content: JSON.stringify({
-      plan: plan.summary,
-      results: agentResults.map((r) => ({ agent: r.agent, summary: r.summary })),
-    }),
-    timestamp: Date.now(),
-  });
-
-  // Mark WorkflowRun as completed with final snapshot
-  if (isDBEnabled()) {
-    try {
-      await connectDB();
-      await WorkflowRunModel.updateOne(
-        { requestId },
-        {
-          $set: {
-            status: "completed",
-            tasks: getTasksForRequestAll(requestId),
-            files: getFilesForRequest(requestId),
-          },
-        },
-      );
-    } catch (err) {
-      logger.warn("Failed to finalize WorkflowRun", { error: String(err) });
-    }
-
-    // Save lightweight entry to generic agent_runs for dashboard history
-    saveAgentRun({
-      agentType: "orchestrator",
-      status: "completed",
-      input: { userMessage, requestId, sessionId: sid },
-    }).catch(() => undefined);
-  }
-
-  logger.info("Orchestration complete", { requestId, agentCount: agentResults.length });
-
-  emit({ type: "done", requestId });
 };

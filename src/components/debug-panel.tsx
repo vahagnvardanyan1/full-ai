@@ -25,6 +25,7 @@ export function DebugPanel() {
     new Set(["debug", "info", "warn", "error"]),
   );
   const [autoScroll, setAutoScroll] = useState(true);
+  const [copyLabel, setCopyLabel] = useState("Copy");
   const [unreadCount, setUnreadCount] = useState(0);
   const [panelSize, setPanelSize] = useState({ width: 720, height: 500 });
   const [position, setPosition] = useState({ bottom: 16, right: 16 });
@@ -319,6 +320,31 @@ export function DebugPanel() {
               }}
             >
               Auto-scroll
+            </button>
+
+            {/* Copy */}
+            <button
+              onClick={() => {
+                const text = filteredLogs
+                  .map((e) => {
+                    const { ts, level, msg, ...meta } = e;
+                    const metaStr = Object.keys(meta).length ? " " + JSON.stringify(meta) : "";
+                    return `${ts} [${level.toUpperCase()}] ${msg}${metaStr}`;
+                  })
+                  .join("\n");
+                navigator.clipboard.writeText(text).then(() => {
+                  setCopyLabel("Copied!");
+                  setTimeout(() => setCopyLabel("Copy"), 1500);
+                });
+              }}
+              className="px-1.5 py-0.5 rounded text-[10px] font-mono"
+              style={{
+                background: "var(--surface-raised, #1a1a2e)",
+                color: "var(--text-muted, #888)",
+                border: "1px solid var(--surface-border, #2a2a3e)",
+              }}
+            >
+              {copyLabel}
             </button>
 
             {/* Clear */}
