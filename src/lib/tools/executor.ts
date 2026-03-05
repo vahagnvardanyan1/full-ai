@@ -10,7 +10,7 @@ import {
 } from "@/lib/clients/github";
 import { createTask, updateTaskStatus } from "@/lib/clients/tasks";
 import { writeCode } from "@/lib/clients/code-store";
-import { triggerVercelDeployment } from "@/lib/clients/vercel";
+import { getVercelPreviewUrl } from "@/lib/clients/vercel";
 import { logger } from "@/lib/logger";
 
 /**
@@ -87,10 +87,9 @@ export async function executeTool(
       );
 
     // ── Vercel ────────────────────────────────────────
-    case "trigger_vercel_deployment":
-      return triggerVercelDeployment({
-        ref: args.ref as string | undefined,
-        target: args.target as "production" | "preview" | undefined,
+    case "get_vercel_preview_url":
+      return getVercelPreviewUrl({
+        branch: args.branch as string,
       });
 
     default:

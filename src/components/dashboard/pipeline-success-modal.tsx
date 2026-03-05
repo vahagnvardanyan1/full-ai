@@ -22,8 +22,9 @@ export function extractPipelineLinks(outputs: AgentOutput[]): PipelineLinks {
     }
 
     for (const call of output.response.toolCalls) {
-      if (call.tool === "trigger_vercel_deployment" && call.result) {
-        const r = call.result as { url?: string; inspectorUrl?: string };
+      if (call.tool === "get_vercel_preview_url" && call.result) {
+        const r = call.result as { url?: string; inspectorUrl?: string; found?: boolean };
+        if (!r.found) continue;
         if (r.url && !vercelUrl) vercelUrl = r.url;
         if (r.inspectorUrl && !vercelInspectorUrl) vercelInspectorUrl = r.inspectorUrl;
       }
@@ -175,7 +176,7 @@ export function PipelineSuccessModal({
 
               {vercelUrl && (
                 <a
-                  href={vercelInspectorUrl || vercelUrl}
+                  href={vercelUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-150 no-underline group"
@@ -197,7 +198,7 @@ export function PipelineSuccessModal({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[0.82rem] font-medium text-[#f97316]">
-                      View Deployment
+                      Preview Deployment
                     </div>
                     <div className="text-[0.68rem] text-[var(--text-muted)] truncate">
                       {vercelUrl}

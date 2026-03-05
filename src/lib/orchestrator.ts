@@ -440,7 +440,11 @@ export const orchestrateStream = async (
           role === "qa" && frontendBranchForQA
             ? `\n\nQA BRANCH TARGETING CONTEXT:\n- Frontend feature branch: ${frontendBranchForQA}\n- Frontend PR URL: ${frontendPrUrlForQA ?? "not available"}\n- Create QA branch as qa/<frontend-branch>-tests and open PR against the frontend feature branch.`
             : "";
-        return runAgentAndEmit(role, baseInstructions + codeContext + qaBranchContext);
+        const devopsBranchContext =
+          role === "devops" && frontendBranchForQA
+            ? `\n\nDEPLOYMENT CONTEXT:\n- The frontend feature branch is: ${frontendBranchForQA}\n- Use this exact branch name as the ref when triggering Vercel deployments. Do NOT guess or invent a branch name.`
+            : "";
+        return runAgentAndEmit(role, baseInstructions + codeContext + qaBranchContext + devopsBranchContext);
       }),
     );
   }

@@ -207,26 +207,21 @@ export const TOOL_UPDATE_TASK_STATUS: ChatCompletionTool = {
   },
 };
 
-export const TOOL_TRIGGER_VERCEL_DEPLOYMENT: ChatCompletionTool = {
+export const TOOL_GET_VERCEL_PREVIEW_URL: ChatCompletionTool = {
   type: "function",
   function: {
-    name: "trigger_vercel_deployment",
+    name: "get_vercel_preview_url",
     description:
-      "Trigger a new Vercel deployment for the configured project.",
+      "Look up the Vercel preview deployment URL for a branch. Vercel auto-deploys from GitHub, so this fetches the existing deployment rather than triggering a new one.",
     parameters: {
       type: "object",
       properties: {
-        ref: {
+        branch: {
           type: "string",
-          description:
-            'Git ref to deploy (branch, tag, or SHA). Defaults to "main".',
-        },
-        target: {
-          type: "string",
-          enum: ["production", "preview"],
-          description: "Deploy target environment",
+          description: "The exact Git branch name to look up the preview deployment for.",
         },
       },
+      required: ["branch"],
     },
   },
 };
@@ -239,7 +234,7 @@ export const ALL_TOOLS: ChatCompletionTool[] = [
   TOOL_CREATE_TASK,
   TOOL_UPDATE_TASK_STATUS,
   TOOL_WRITE_CODE,
-  TOOL_TRIGGER_VERCEL_DEPLOYMENT,
+  TOOL_GET_VERCEL_PREVIEW_URL,
 ];
 
 /** Subsets agents can use — keeps each agent's scope narrow */
@@ -263,6 +258,6 @@ export const QA_TOOLS: ChatCompletionTool[] = [
 
 export const DEVOPS_TOOLS: ChatCompletionTool[] = [
   TOOL_WRITE_CODE,
-  TOOL_TRIGGER_VERCEL_DEPLOYMENT,
+  TOOL_GET_VERCEL_PREVIEW_URL,
   TOOL_UPDATE_TASK_STATUS,
 ];
