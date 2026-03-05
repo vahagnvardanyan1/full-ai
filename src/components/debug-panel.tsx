@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { LogEntry } from "@/lib/logger";
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -28,45 +28,45 @@ export function DebugPanel() {
   const [unreadCount, setUnreadCount] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const lastTsRef = useRef<string | null>(null);
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
 
-  const connectSSE = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
+  useEffect(() => {
+    let cancelled = false;
 
-    const es = new EventSource("/api/debug/logs");
-    eventSourceRef.current = es;
-
-    es.onmessage = (event) => {
+    const poll = async () => {
       try {
-        const entry = JSON.parse(event.data) as LogEntry;
-        setLogs((prev) => {
-          const next = [...prev, entry];
-          if (next.length > 1000) return next.slice(-1000);
-          return next;
-        });
-        if (!isOpen) {
-          setUnreadCount((c) => c + 1);
+        const url = lastTsRef.current
+          ? `/api/debug/logs?since=${encodeURIComponent(lastTsRef.current)}`
+          : "/api/debug/logs";
+        const res = await fetch(url);
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const entries = data.logs as LogEntry[];
+        if (entries.length > 0) {
+          setLogs((prev) => {
+            const next = [...prev, ...entries];
+            if (next.length > 1000) return next.slice(-1000);
+            return next;
+          });
+          lastTsRef.current = entries[entries.length - 1].ts;
+          if (!isOpenRef.current) {
+            setUnreadCount((c) => c + entries.length);
+          }
         }
       } catch {
-        // ignore parse errors
+        // ignore fetch errors
       }
     };
 
-    es.onerror = () => {
-      es.close();
-      // Reconnect after 3 seconds
-      setTimeout(connectSSE, 3000);
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    connectSSE();
+    poll();
+    const id = setInterval(poll, 1500);
     return () => {
-      eventSourceRef.current?.close();
+      cancelled = true;
+      clearInterval(id);
     };
-  }, [connectSSE]);
+  }, []);
 
   useEffect(() => {
     if (autoScroll && isOpen) {

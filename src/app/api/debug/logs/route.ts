@@ -1,58 +1,57 @@
 // ──────────────────────────────────────────────────────────
 // GET /api/debug/logs
 //
-// SSE endpoint that streams backend log entries in real time.
-// Only available when SHOW_DEBUG_UI=true.
+// JSON polling endpoint — returns logs newer than `?since=`.
+// Primary: reads from MongoDB. Fallback: in-memory buffer.
 // ──────────────────────────────────────────────────────────
 
-import { NextResponse } from "next/server";
-import { getLogBuffer, subscribeToLogs } from "@/lib/logger";
+import { NextRequest, NextResponse } from "next/server";
+import { getLogBuffer } from "@/lib/logger";
+import { connectDB, isDBEnabled } from "@/lib/db/connection";
+import { DebugLogModel } from "@/lib/db/models/debug-log";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   if (process.env.SHOW_DEBUG_UI !== "true") {
     return NextResponse.json({ error: "Debug UI is disabled" }, { status: 403 });
   }
 
-  const encoder = new TextEncoder();
-  let unsubscribe: (() => void) | null = null;
+  const sinceParam = req.nextUrl.searchParams.get("since");
 
-  const stream = new ReadableStream({
-    start(controller) {
-      // Send buffered logs first
-      const buffer = getLogBuffer();
-      for (const entry of buffer) {
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify(entry)}\n\n`),
-        );
+  // Try MongoDB first
+  if (isDBEnabled()) {
+    try {
+      const conn = await connectDB();
+      if (conn) {
+        const query = sinceParam
+          ? { ts: { $gt: new Date(sinceParam) } }
+          : {};
+        const docs = await DebugLogModel.find(query)
+          .sort({ ts: 1 })
+          .limit(200)
+          .lean();
+
+        const logs = docs.map((d) => ({
+          ts: (d.ts as Date).toISOString(),
+          level: d.level,
+          msg: d.msg,
+          ...(d.meta as Record<string, unknown>),
+        }));
+
+        return NextResponse.json({ logs });
       }
+    } catch {
+      // fall through to in-memory buffer
+    }
+  }
 
-      // Stream new logs
-      unsubscribe = subscribeToLogs((entry) => {
-        try {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(entry)}\n\n`),
-          );
-        } catch {
-          unsubscribe?.();
-        }
-      });
+  // Fallback: in-memory buffer
+  let logs = getLogBuffer();
+  if (sinceParam) {
+    const since = new Date(sinceParam).getTime();
+    logs = logs.filter((e) => new Date(e.ts).getTime() > since);
+  }
 
-      controller.enqueue(encoder.encode(": connected\n\n"));
-    },
-    cancel() {
-      unsubscribe?.();
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-      "X-Accel-Buffering": "no",
-      "Content-Encoding": "none",
-    },
-  });
+  return NextResponse.json({ logs: logs.slice(-200) });
 }

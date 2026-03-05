@@ -1,9 +1,12 @@
 // ──────────────────────────────────────────────────────────
 // Structured logger — thin wrapper so we can swap to pino/winston later
 //
-// When SHOW_DEBUG_UI=true, logs are also buffered in memory
-// and broadcast to SSE listeners via the debug panel.
+// When SHOW_DEBUG_UI=true, logs are persisted to MongoDB
+// (fire-and-forget) and buffered in memory as fallback.
 // ──────────────────────────────────────────────────────────
+
+import { connectDB, isDBEnabled } from "@/lib/db/connection";
+import { DebugLogModel } from "@/lib/db/models/debug-log";
 
 type Level = "debug" | "info" | "warn" | "error";
 
@@ -14,11 +17,8 @@ export interface LogEntry {
   [key: string]: unknown;
 }
 
-type LogListener = (entry: LogEntry) => void;
-
 const MAX_BUFFER = 500;
 const logBuffer: LogEntry[] = [];
-const listeners = new Set<LogListener>();
 
 function log(level: Level, msg: string, meta?: Record<string, unknown>) {
   const entry: LogEntry = {
@@ -36,18 +36,29 @@ function log(level: Level, msg: string, meta?: Record<string, unknown>) {
     console.log(JSON.stringify(entry));
   }
 
-  // Buffer for debug UI
+  // Buffer + persist for debug UI
   if (process.env.SHOW_DEBUG_UI === "true") {
     logBuffer.push(entry);
     if (logBuffer.length > MAX_BUFFER) {
       logBuffer.splice(0, logBuffer.length - MAX_BUFFER);
     }
-    for (const listener of listeners) {
-      try {
-        listener(entry);
-      } catch {
-        listeners.delete(listener);
-      }
+
+    // Fire-and-forget MongoDB write
+    if (isDBEnabled()) {
+      const { ts: _ts, level: _lvl, msg: _msg, ...rest } = entry;
+      connectDB().then((conn) => {
+        if (!conn) return;
+        DebugLogModel.create({
+          ts: new Date(entry.ts),
+          level: entry.level,
+          msg: entry.msg,
+          meta: rest,
+        }).catch(() => {
+          // silently ignore write failures
+        });
+      }).catch(() => {
+        // silently ignore connection failures
+      });
     }
   }
 }
@@ -63,13 +74,7 @@ export const logger = {
     log("error", msg, meta),
 };
 
-/** Get buffered log entries */
+/** Get buffered log entries (fallback for local dev without MongoDB) */
 export function getLogBuffer(): LogEntry[] {
   return [...logBuffer];
-}
-
-/** Subscribe to new log entries (for SSE streaming) */
-export function subscribeToLogs(listener: LogListener): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
 }
