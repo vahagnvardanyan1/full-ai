@@ -8,5 +8,4 @@ out/
 next-env.d.ts
 
 .playwright-mcp
-.env
 .idea

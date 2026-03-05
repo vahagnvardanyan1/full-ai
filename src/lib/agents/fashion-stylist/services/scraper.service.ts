@@ -34,7 +34,29 @@ function setCache(key: string, products: ScrapedProduct[]): void {
   cache.set(key, { products, timestamp: Date.now() });
 }
 
+// ── Proxy (for Vercel / serverless) ───────────────────────
+// Retailers often block datacenter IPs (403). Set SCRAPPER_API_KEY to route
+// requests through ScraperAPI; we build the URL in code.
+
+const SCRAPPER_API_KEY = process.env.SCRAPPER_API_KEY?.trim() || "";
+
+function buildFetchUrl(url: string): string {
+  if (!SCRAPPER_API_KEY) return url;
+  const base = "https://api.scraperapi.com";
+  const params = new URLSearchParams({ api_key: SCRAPPER_API_KEY, url });
+  return `${base}?${params.toString()}`;
+}
+
 // ── Common fetch helper ──────────────────────────────────
+
+const BROWSER_LIKE_HEADERS: Record<string, string> = {
+  "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+  "Sec-Ch-Ua-Mobile": "?0",
+  "Sec-Ch-Ua-Platform": '"macOS"',
+  "Sec-Fetch-Dest": "empty",
+  "Sec-Fetch-Mode": "cors",
+  "Sec-Fetch-Site": "same-origin",
+};
 
 function getHeaders(brand: string): Record<string, string> {
   const base = {
@@ -42,6 +64,7 @@ function getHeaders(brand: string): Record<string, string> {
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     Accept: "application/json",
     "Accept-Language": "en-US,en;q=0.9",
+    ...BROWSER_LIKE_HEADERS,
   };
 
   switch (brand) {
@@ -59,13 +82,23 @@ function getHeaders(brand: string): Record<string, string> {
 async function fetchJSON<T>(url: string, headers?: Record<string, string>): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
+  const fetchUrl = buildFetchUrl(url);
+  const effectiveHeaders = headers ?? getHeaders("");
 
   try {
-    const res = await fetch(url, {
+    const res = await fetch(fetchUrl, {
       signal: controller.signal,
-      headers: headers ?? getHeaders(""),
+      headers: effectiveHeaders,
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const body = await res.text();
+      logger.warn(`Scraper HTTP ${res.status} for ${url.slice(0, 60)}...`, {
+        usingProxy: !!SCRAPPER_API_KEY,
+        status: res.status,
+        bodySlice: body.slice(0, 200),
+      });
+      throw new Error(`HTTP ${res.status}`);
+    }
     return (await res.json()) as T;
   } finally {
     clearTimeout(timeout);
