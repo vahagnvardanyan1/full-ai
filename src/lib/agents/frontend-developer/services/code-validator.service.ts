@@ -322,33 +322,39 @@ export class CodeValidatorService {
     return parts.join("\n");
   }
 
-  async validate(repoDir: string, repoKnowledge?: RepoKnowledge): Promise<ValidationResult> {
-    log.info({ repoDir }, "Starting code validation pipeline");
+  async validate(repoDir: string, repoKnowledge?: RepoKnowledge, opts?: { skipInstall?: boolean; skipBuild?: boolean }): Promise<ValidationResult> {
+    log.info({ repoDir, opts }, "Starting code validation pipeline");
     const steps: ValidationStep[] = [];
 
-    // Step 1: Install dependencies
-    if (await this.fileExists(repoDir, "package.json")) {
-      steps.push(await this.runStep(repoDir, "install-deps", "npm install --prefer-offline --no-audit", 180_000));
-    } else if (await this.fileExists(repoDir, "requirements.txt")) {
-      steps.push(await this.runStep(repoDir, "install-deps", "pip install -r requirements.txt -q", 180_000));
+    // Step 1: Install dependencies (skip if already installed during clone)
+    if (!opts?.skipInstall) {
+      if (await this.fileExists(repoDir, "package.json")) {
+        steps.push(await this.runStep(repoDir, "install-deps", "npm install --prefer-offline --no-audit", 180_000));
+      } else if (await this.fileExists(repoDir, "requirements.txt")) {
+        steps.push(await this.runStep(repoDir, "install-deps", "pip install -r requirements.txt -q", 180_000));
+      }
     }
 
-    // Step 2: Type checking
-    if (await this.fileExists(repoDir, "tsconfig.json")) {
-      steps.push(await this.runStep(repoDir, "type-check", "npx tsc --noEmit --pretty 2>&1 || true"));
+    // Steps 2-4: Run tsc, lint, and format check in parallel
+    const [tscResult, lintResult, formatResult] = await Promise.all([
+      // Type checking
+      (await this.fileExists(repoDir, "tsconfig.json"))
+        ? this.runStep(repoDir, "type-check", "npx tsc --noEmit --pretty 2>&1 || true")
+        : null,
+      // Linting
+      this.detectAndRunLinter(repoDir, repoKnowledge),
+      // Formatting check
+      this.detectAndRunFormatter(repoDir),
+    ]);
+    if (tscResult) steps.push(tscResult);
+    if (lintResult) steps.push(lintResult);
+    if (formatResult) steps.push(formatResult);
+
+    // Step 5: Build (skip if opts.skipBuild — tsc+lint sufficient, QA handles build)
+    if (!opts?.skipBuild) {
+      const buildStep = await this.detectAndRunBuild(repoDir);
+      if (buildStep) steps.push(buildStep);
     }
-
-    // Step 3: Linting
-    const lintStep = await this.detectAndRunLinter(repoDir, repoKnowledge);
-    if (lintStep) steps.push(lintStep);
-
-    // Step 4: Formatting check
-    const formatStep = await this.detectAndRunFormatter(repoDir);
-    if (formatStep) steps.push(formatStep);
-
-    // Step 5: Build (catches framework-level errors tsc misses — e.g. Turbopack module resolution, Next.js export validation)
-    const buildStep = await this.detectAndRunBuild(repoDir);
-    if (buildStep) steps.push(buildStep);
 
     // Step 6: Run tests
     const testStep = await this.detectAndRunTests(repoDir, repoKnowledge);

@@ -364,7 +364,7 @@ async function syncChangesFromDisk(
 // Stages don't share mutable state — they receive context and
 // return results. The orchestrator function wires them together.
 
-async function stageOnboard(ctx: Pick<PipelineContext, "emit" | "openai" | "github" | "cache" | "onboarding" | "warnings" | "detailParts" | "toolCalls">): Promise<{
+async function stageOnboard(ctx: Pick<PipelineContext, "emit" | "openai" | "github" | "cache" | "onboarding" | "warnings" | "detailParts" | "toolCalls">, prefetchedRepoInfo?: RepoInfo, prefetchedRepoTree?: string[]): Promise<{
   repoInfo: RepoInfo;
   repoKnowledge: RepoKnowledge;
   repoContext: string;
@@ -376,23 +376,46 @@ async function stageOnboard(ctx: Pick<PipelineContext, "emit" | "openai" | "gith
 
   emit("onboarding", "Learning repository structure, language, and conventions...", p.start);
 
-  // Connect to GitHub
-  const repoInfo = await github.getRepoInfo();
+  // Use pre-fetched data or fetch fresh
+  const repoInfo = prefetchedRepoInfo ?? await github.getRepoInfo();
+  const repoTree = prefetchedRepoTree ?? await github.getRepoTree(repoInfo.defaultBranch);
 
-  // Onboard repo knowledge
-  let repoKnowledge: RepoKnowledge;
-  try {
-    repoKnowledge = await onboarding.getKnowledge(repoInfo);
-  } catch (err) {
-    logger.warn("Onboarding failed — using minimal defaults", { error: String(err) });
-    repoKnowledge = {
-      repoFullName: repoInfo.fullName, language: "TypeScript",
-      framework: "unknown", buildSystem: "npm", testFramework: "unknown",
-      linter: "unknown", conventions: [], architecture: "unknown",
-      keyFiles: {}, dependencies: [], linterRules: [], lastUpdated: new Date(),
-    };
-    warnings.push("Repo onboarding failed — using minimal defaults");
-  }
+  // Run knowledge + repo context in parallel (both are independent)
+  const [knowledgeResult, repoContextResult] = await Promise.all([
+    // Onboard repo knowledge
+    (async () => {
+      try {
+        return await onboarding.getKnowledge(repoInfo, repoTree);
+      } catch (err) {
+        logger.warn("Onboarding failed — using minimal defaults", { error: String(err) });
+        warnings.push("Repo onboarding failed — using minimal defaults");
+        return {
+          repoFullName: repoInfo.fullName, language: "TypeScript",
+          framework: "unknown", buildSystem: "npm", testFramework: "unknown",
+          linter: "unknown", conventions: [] as string[], architecture: "unknown",
+          keyFiles: {} as Record<string, string>, dependencies: [] as string[], linterRules: [] as string[], lastUpdated: new Date(),
+        } as RepoKnowledge;
+      }
+    })(),
+    // Get repo context
+    (async () => {
+      let repoContext = await cache.getRepoContext(repoInfo.fullName);
+      if (!repoContext) {
+        try {
+          repoContext = await github.getRepoContext(repoInfo, repoTree);
+          await cache.setRepoContext(repoInfo.fullName, repoContext);
+        } catch (err) {
+          logger.warn("Could not build full repo context", { error: String(err) });
+          repoContext = `Repository: ${repoInfo.fullName}\nDefault branch: ${repoInfo.defaultBranch}`;
+          warnings.push("Limited repo context — some API calls failed");
+        }
+      }
+      return repoContext;
+    })(),
+  ]);
+
+  const repoKnowledge = knowledgeResult;
+  const repoContext = repoContextResult;
 
   const knowledgeContext = [
     `Language: ${repoKnowledge.language}`,
@@ -413,27 +436,6 @@ async function stageOnboard(ctx: Pick<PipelineContext, "emit" | "openai" | "gith
     arguments: { repo: repoInfo.fullName },
     result: { language: repoKnowledge.language, framework: repoKnowledge.framework },
   });
-
-  // Get repo context & tree
-  let repoContext = await cache.getRepoContext(repoInfo.fullName);
-  if (!repoContext) {
-    try {
-      repoContext = await github.getRepoContext();
-      await cache.setRepoContext(repoInfo.fullName, repoContext);
-    } catch (err) {
-      logger.warn("Could not build full repo context", { error: String(err) });
-      repoContext = `Repository: ${repoInfo.fullName}\nDefault branch: ${repoInfo.defaultBranch}`;
-      warnings.push("Limited repo context — some API calls failed");
-    }
-  }
-
-  let repoTree: string[] = [];
-  try {
-    repoTree = await github.getRepoTree(repoInfo.defaultBranch);
-  } catch (err) {
-    logger.warn("Could not fetch repo tree", { error: String(err) });
-    warnings.push("Repo tree unavailable — context gathering will be limited");
-  }
 
   emit("onboarding", `Onboarded: ${repoKnowledge.language}/${repoKnowledge.framework}`, p.end);
 
@@ -520,17 +522,17 @@ async function stagePlan(ctx: Pick<PipelineContext, "emit" | "openai" | "github"
   return { issue, plan, existingScanContext, enrichedContext };
 }
 
-async function stageClone(ctx: Pick<PipelineContext, "emit" | "github" | "repoInfo" | "issue" | "toolCalls">): Promise<{
+async function stageClone(ctx: Pick<PipelineContext, "emit" | "github" | "repoInfo" | "toolCalls">, titleForBranch: string): Promise<{
   branchName: string;
   dir: string;
   git: SimpleGit;
 }> {
-  const { emit, github, repoInfo, issue, toolCalls } = ctx;
+  const { emit, github, repoInfo, toolCalls } = ctx;
   const p = CONFIG.progress.cloning;
 
   emit("cloning", "Cloning repository and creating feature branch...", p.start);
 
-  const branchName = makeBranchName({ type: "feat", title: issue.title });
+  const branchName = makeBranchName({ type: "feat", title: titleForBranch.slice(0, 120) });
   const cloneResult = await github.cloneRepo(repoInfo.defaultBranch);
   const { dir, git } = cloneResult;
   await github.createBranch(git, branchName);
@@ -602,32 +604,47 @@ async function stageCodeGeneration(ctx: Pick<PipelineContext, "emit" | "openai" 
   const codeSteps = plan.steps.filter((s) => s.action !== "test" && s.action !== "review");
   const totalSteps = codeSteps.length;
 
+  // Pre-fetch ALL step contexts + existing files in parallel
+  emit("coding", "Pre-fetching context for all steps...", p.start);
+  const prefetchedContexts = await Promise.all(
+    codeSteps.map(async (step) => {
+      const result: { fileContextStr: string; existingCode?: string } = { fileContextStr: "" };
+      if (!step.targetFile) return result;
+
+      const [ctxResult, fileResult] = await Promise.all([
+        // Gather deep context
+        (async () => {
+          try {
+            const fileCtx = await gatherer.gatherContext(step.targetFile!, repoTree, repoKnowledge);
+            return gatherer.formatForPrompt(fileCtx);
+          } catch (err) {
+            logger.warn(`Could not gather deep context for ${step.targetFile}`, { error: String(err) });
+            return "";
+          }
+        })(),
+        // Read existing file
+        (async () => {
+          try {
+            return await github.getFileContent(step.targetFile!);
+          } catch {
+            logger.debug(`File ${step.targetFile} not found in repo (new file)`);
+            return undefined;
+          }
+        })(),
+      ]);
+      result.fileContextStr = ctxResult;
+      result.existingCode = fileResult;
+      return result;
+    }),
+  );
+
   for (let si = 0; si < codeSteps.length; si++) {
     const step = codeSteps[si];
     const stepProgress = p.start + Math.round((si / totalSteps) * (p.end - p.start));
     emit("coding", `Coding step ${si + 1}/${totalSteps}: ${step.description.slice(0, 60)}...`, stepProgress);
 
-    // Gather deep context
-    let fileContextStr = "";
-    if (step.targetFile) {
-      try {
-        const fileCtx = await gatherer.gatherContext(step.targetFile, repoTree, repoKnowledge);
-        fileContextStr = gatherer.formatForPrompt(fileCtx);
-      } catch (err) {
-        logger.warn(`Could not gather deep context for ${step.targetFile}`, { error: String(err) });
-      }
-    }
-
-    // Read existing file
-    let existingCode: string | undefined;
-    if (step.targetFile) {
-      try {
-        existingCode = await github.getFileContent(step.targetFile);
-      } catch (err) {
-        // Expected for new files — only log at debug level
-        logger.debug(`File ${step.targetFile} not found in repo (new file)`, { error: String(err) });
-      }
-    }
+    // Use pre-fetched context and existing file
+    const { fileContextStr, existingCode } = prefetchedContexts[si];
 
     const fullContext = [
       `## Original User Request\n${userMessage}`,
@@ -712,15 +729,20 @@ async function stageCodeGeneration(ctx: Pick<PipelineContext, "emit" | "openai" 
     throw new Error("All generated files were filtered as out-of-scope.");
   }
 
-  // Meaningful-change verification
+  // Meaningful-change verification (parallel)
   const existingFileContents = new Map<string, string>();
-  for (const change of allChanges) {
-    try {
-      const content = await github.getFileContent(change.filename);
-      existingFileContents.set(change.filename, content);
-    } catch {
-      // New file — always meaningful
-    }
+  const existingContentsArr = await Promise.all(
+    allChanges.map(async (change) => {
+      try {
+        const content = await github.getFileContent(change.filename);
+        return { filename: change.filename, content };
+      } catch {
+        return null; // New file — always meaningful
+      }
+    }),
+  );
+  for (const entry of existingContentsArr) {
+    if (entry) existingFileContents.set(entry.filename, entry.content);
   }
 
   const { changed: meaningfulChanges, unchanged: unchangedFiles } = filterUnchangedFiles(allChanges, existingFileContents);
@@ -787,7 +809,7 @@ async function stageValidation(ctx: Pick<PipelineContext, "emit" | "github" | "v
   const stepResults: Record<string, boolean> = {};
 
   try {
-    const validation = await validator.validate(dir, repoKnowledge);
+    const validation = await validator.validate(dir, repoKnowledge, { skipInstall: true, skipBuild: true });
 
     for (const step of validation.steps) {
       if (!step.skipped) stepResults[step.name] = step.passed;
@@ -822,7 +844,7 @@ async function stageValidation(ctx: Pick<PipelineContext, "emit" | "github" | "v
 // (e.g. flagging valid redesigns as "only export/Tailwind changes").
 // QA agent handles real verification in a later phase instead.
 
-async function stagePushAndPR(ctx: Pick<PipelineContext, "emit" | "openai" | "github" | "cache" | "repoInfo" | "issue" | "plan" | "branchName" | "dir" | "git" | "validationPassed" | "stepResults" | "isDraft" | "warnings" | "detailParts" | "toolCalls">, allChanges: CodeGenerationResponse[]): Promise<{
+async function stagePushAndPR(ctx: Pick<PipelineContext, "emit" | "openai" | "github" | "cache" | "repoInfo" | "issue" | "plan" | "branchName" | "dir" | "git" | "validationPassed" | "stepResults" | "isDraft" | "warnings" | "detailParts" | "toolCalls">, allChanges: CodeGenerationResponse[], preGeneratedTitleInfo?: { title: string; type: string; scope: string }): Promise<{
   prNumber?: number;
   prUrl?: string;
   titleInfo: { title: string; type: string; scope: string };
@@ -846,17 +868,21 @@ async function stagePushAndPR(ctx: Pick<PipelineContext, "emit" | "openai" | "gi
     }
   }
 
-  // Commit & push
-  emit("pushing", "Generating commit title and pushing...", CONFIG.progress.pushing.start + 3);
+  // Commit & push — use pre-generated title if available, otherwise generate
+  emit("pushing", "Committing and pushing...", CONFIG.progress.pushing.start + 3);
   let titleInfo: { title: string; type: string; scope: string };
-  try {
-    titleInfo = await openai.generateCommitTitle(
-      `${issue.title}\n\n${issue.body}`,
-      allChanges.map((c) => ({ filename: c.filename, explanation: c.explanation })),
-    );
-  } catch {
-    titleInfo = { title: `feat: ${issue.title.slice(0, CONFIG.contextLimits.commitTitleLength).toLowerCase()}`, type: "feat", scope: "frontend" };
-    warnings.push("Commit title generation failed — using fallback");
+  if (preGeneratedTitleInfo) {
+    titleInfo = preGeneratedTitleInfo;
+  } else {
+    try {
+      titleInfo = await openai.generateCommitTitle(
+        `${issue.title}\n\n${issue.body}`,
+        allChanges.map((c) => ({ filename: c.filename, explanation: c.explanation })),
+      );
+    } catch {
+      titleInfo = { title: `feat: ${issue.title.slice(0, CONFIG.contextLimits.commitTitleLength).toLowerCase()}`, type: "feat", scope: "frontend" };
+      warnings.push("Commit title generation failed — using fallback");
+    }
   }
 
   await git.add(".");
@@ -1151,25 +1177,51 @@ export async function runFrontendDeveloper(
   }
 
   try {
-    // Stage 1: Onboard
-    const { repoInfo, repoKnowledge, repoContext, repoTree, knowledgeContext } =
-      await stageOnboard({ emit, openai, github, cache, onboarding: onboardingSvc, warnings, detailParts, toolCalls });
+    // Stage 0: Fetch repoInfo + repoTree ONCE at the top
+    const repoInfo = await github.getRepoInfo();
+    let repoTree: string[] = [];
+    try {
+      repoTree = await github.getRepoTree(repoInfo.defaultBranch);
+    } catch (err) {
+      logger.warn("Could not fetch repo tree", { error: String(err) });
+      warnings.push("Repo tree unavailable — context gathering will be limited");
+    }
 
-    // Stage 2: Plan
-    const { issue, plan, existingScanContext, enrichedContext } =
+    // Stage 1: Start clone in background (don't await yet — only needed before validation)
+    const clonePromise = stageClone({ emit, github, repoInfo, toolCalls }, userMessage);
+
+    // Stage 2: Onboard (pass pre-fetched repoInfo + repoTree)
+    const { repoKnowledge, repoContext, knowledgeContext } =
+      await stageOnboard({ emit, openai, github, cache, onboarding: onboardingSvc, warnings, detailParts, toolCalls }, repoInfo, repoTree);
+
+    // Stage 3: Plan
+    const { issue, plan, existingScanContext } =
       await stagePlan({ emit, openai, github, userMessage, repoTree, repoContext, knowledgeContext, warnings, detailParts, toolCalls });
 
-    // Stage 3: Clone & branch
-    const { branchName, dir, git } =
-      await stageClone({ emit, github, repoInfo, issue, toolCalls });
-
-    // Stage 4: Generate code
+    // Stage 4: Generate code (uses GitHub API, not local disk — clone not needed yet)
     let allChanges =
       await stageCodeGeneration({ emit, openai, github, gatherer, plan, repoKnowledge, repoContext, repoTree, knowledgeContext, existingScanContext, userMessage, warnings, toolCalls });
 
-    // Stage 5: Validate & fix (single pass — auto-fix + one LLM fix if needed)
-    const { changes: validatedChanges, validationPassed, stepResults } =
-      await stageValidation({ emit, github, validator, repoKnowledge, dir, git, warnings, detailParts, toolCalls }, allChanges);
+    // Stage 5: NOW await clone (should be done by now since it ran in background)
+    const { branchName, dir, git } = await clonePromise;
+
+    // Stage 6: Run validation + generate commit title in parallel
+    const [validationResult, titleInfo] = await Promise.all([
+      stageValidation({ emit, github, validator, repoKnowledge, dir, git, warnings, detailParts, toolCalls }, allChanges),
+      (async () => {
+        try {
+          return await openai.generateCommitTitle(
+            `${issue.title}\n\n${issue.body}`,
+            allChanges.map((c) => ({ filename: c.filename, explanation: c.explanation })),
+          );
+        } catch {
+          warnings.push("Commit title generation failed — using fallback");
+          return { title: `feat: ${issue.title.slice(0, CONFIG.contextLimits.commitTitleLength).toLowerCase()}`, type: "feat", scope: "frontend" };
+        }
+      })(),
+    ]);
+
+    const { changes: validatedChanges, validationPassed, stepResults } = validationResult;
     allChanges = validatedChanges;
 
     // Task-relevance check (non-LLM, non-blocking)
@@ -1187,9 +1239,9 @@ export async function runFrontendDeveloper(
       warnings.push(`DRAFT PR: ${failedChecks} failed after fix attempt.`);
     }
 
-    // Stage 6: Push & create PR
-    const { prNumber, prUrl, titleInfo } =
-      await stagePushAndPR({ emit, openai, github, cache, repoInfo, issue, plan, branchName, dir, git, validationPassed, stepResults, isDraft, warnings, detailParts, toolCalls }, allChanges);
+    // Stage 7: Push & create PR (pass pre-generated titleInfo)
+    const { prNumber, prUrl } =
+      await stagePushAndPR({ emit, openai, github, cache, repoInfo, issue, plan, branchName, dir, git, validationPassed, stepResults, isDraft, warnings, detailParts, toolCalls }, allChanges, titleInfo);
 
     return {
       agent: "frontend_developer",

@@ -22,7 +22,7 @@ export class OnboardingService {
     this.cache = cache;
   }
 
-  async getKnowledge(repo: RepoInfo): Promise<RepoKnowledge> {
+  async getKnowledge(repo: RepoInfo, existingTree?: string[]): Promise<RepoKnowledge> {
     const cached = await this.cache.getRepoKnowledge(repo.fullName);
     if (cached) {
       log.info({ repo: repo.fullName }, "Using cached repo knowledge");
@@ -30,16 +30,15 @@ export class OnboardingService {
     }
 
     log.info({ repo: repo.fullName }, "Onboarding new repository...");
-    const knowledge = await this.analyzeRepo(repo);
+    const knowledge = await this.analyzeRepo(repo, existingTree);
     await this.cache.setRepoKnowledge(repo.fullName, knowledge);
     log.info({ repo: repo.fullName, lang: knowledge.language }, "Repo onboarded");
 
     return knowledge;
   }
 
-  private async analyzeRepo(repo: RepoInfo): Promise<RepoKnowledge> {
-    const repoInfo = await this.github.getRepoInfo();
-    const tree = await this.github.getRepoTree(repoInfo.defaultBranch);
+  private async analyzeRepo(repo: RepoInfo, existingTree?: string[]): Promise<RepoKnowledge> {
+    const tree = existingTree ?? await this.github.getRepoTree(repo.defaultBranch);
 
     // Gather key files
     const keyFileNames = [
@@ -52,14 +51,19 @@ export class OnboardingService {
       "README.md", "CONTRIBUTING.md", "Makefile", ".env.example",
     ];
 
-    const keyFiles: Record<string, string> = {};
-    for (const name of keyFileNames) {
-      if (tree.includes(name)) {
+    // Read all key files in parallel
+    const presentFiles = keyFileNames.filter((name) => tree.includes(name));
+    const keyFileEntries = await Promise.all(
+      presentFiles.map(async (name) => {
         try {
           const content = await this.github.getFileContent(name);
-          keyFiles[name] = content.slice(0, 3000);
-        } catch {}
-      }
+          return { name, content: content.slice(0, 3000) };
+        } catch { return null; }
+      }),
+    );
+    const keyFiles: Record<string, string> = {};
+    for (const entry of keyFileEntries) {
+      if (entry) keyFiles[entry.name] = entry.content;
     }
 
     // Also grab a sample source file for style analysis

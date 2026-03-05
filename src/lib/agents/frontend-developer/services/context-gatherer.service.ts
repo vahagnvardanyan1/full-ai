@@ -34,66 +34,104 @@ export class ContextGathererService {
     }
 
     const dir = targetFile.substring(0, targetFile.lastIndexOf("/"));
+    const parentDir = dir.substring(0, dir.lastIndexOf("/"));
     const ext = targetFile.substring(targetFile.lastIndexOf("."));
     const baseName = targetFile.substring(targetFile.lastIndexOf("/") + 1, targetFile.lastIndexOf("."));
 
-    // 1. Find imports (what does this file use?)
-    if (ctx.existingCode) {
-      const importPaths = this.extractImportPaths(ctx.existingCode, ext);
-      for (const importPath of importPaths.slice(0, 5)) {
-        const resolved = this.resolveImportPath(importPath, dir, ext, repoTree);
-        if (resolved) {
-          try {
-            const content = await this.github.getFileContent(resolved);
-            ctx.imports.push({ filename: resolved, snippet: this.extractPublicAPI(content, ext).slice(0, 1500) });
-          } catch {}
+    // Run all 4 phases in parallel
+    const [importsResult, callersResult, testsResult, siblingsResult] = await Promise.all([
+      // Phase 1: Find imports (what does this file use?)
+      (async () => {
+        const imports: FileContext["imports"] = [];
+        if (ctx.existingCode) {
+          const importPaths = this.extractImportPaths(ctx.existingCode, ext);
+          const resolvedPaths = importPaths.slice(0, 5)
+            .map((p) => this.resolveImportPath(p, dir, ext, repoTree))
+            .filter((r): r is string => r !== null);
+          const contents = await Promise.all(
+            resolvedPaths.map(async (resolved) => {
+              try {
+                const content = await this.github.getFileContent(resolved);
+                return { filename: resolved, snippet: this.extractPublicAPI(content, ext).slice(0, 1500) };
+              } catch { return null; }
+            }),
+          );
+          for (const c of contents) { if (c) imports.push(c); }
         }
-      }
-    }
+        return imports;
+      })(),
 
-    // 2. Find callers (who imports this file?)
-    const possibleImportPatterns = [baseName, `./${baseName}`, `../${baseName}`];
-    const potentialCallers = repoTree.filter(
-      (f) => f !== targetFile && f.endsWith(ext) && !f.includes("node_modules") && !f.includes("dist"),
-    );
+      // Phase 2: Find callers (who imports this file?) — limited to same/parent directory
+      (async () => {
+        const importedBy: FileContext["importedBy"] = [];
+        const possibleImportPatterns = [baseName, `./${baseName}`, `../${baseName}`];
+        const potentialCallers = repoTree.filter(
+          (f) => f !== targetFile && f.endsWith(ext) &&
+            !f.includes("node_modules") && !f.includes("dist") &&
+            (f.startsWith(dir + "/") || (parentDir && f.startsWith(parentDir + "/"))),
+        ).slice(0, 10);
 
-    let callerCount = 0;
-    for (const caller of potentialCallers) {
-      if (callerCount >= 3) break;
-      try {
-        const content = await this.github.getFileContent(caller);
-        if (possibleImportPatterns.some((p) => content.includes(p))) {
-          ctx.importedBy.push({ filename: caller, snippet: this.extractRelevantLines(content, baseName).slice(0, 1000) });
-          callerCount++;
-        }
-      } catch {}
-    }
+        const callerContents = await Promise.all(
+          potentialCallers.map(async (caller) => {
+            try {
+              const content = await this.github.getFileContent(caller);
+              if (possibleImportPatterns.some((p) => content.includes(p))) {
+                return { filename: caller, snippet: this.extractRelevantLines(content, baseName).slice(0, 1000) };
+              }
+            } catch {}
+            return null;
+          }),
+        );
+        for (const c of callerContents) { if (c && importedBy.length < 3) importedBy.push(c); }
+        return importedBy;
+      })(),
 
-    // 3. Find related tests
-    const testPatterns = [
-      `${baseName}.test${ext}`, `${baseName}.spec${ext}`,
-      `${baseName}_test${ext}`, `test_${baseName}${ext}`,
-    ];
-    for (const testFile of repoTree) {
-      if (testPatterns.some((p) => testFile.endsWith(p))) {
-        try {
-          const content = await this.github.getFileContent(testFile);
-          ctx.relatedTests.push({ filename: testFile, snippet: content.slice(0, 2000) });
-        } catch {}
-      }
-    }
+      // Phase 3: Find related tests
+      (async () => {
+        const relatedTests: FileContext["relatedTests"] = [];
+        const testPatterns = [
+          `${baseName}.test${ext}`, `${baseName}.spec${ext}`,
+          `${baseName}_test${ext}`, `test_${baseName}${ext}`,
+        ];
+        const matchingTests = repoTree.filter((testFile) =>
+          testPatterns.some((p) => testFile.endsWith(p)),
+        );
+        const testContents = await Promise.all(
+          matchingTests.map(async (testFile) => {
+            try {
+              const content = await this.github.getFileContent(testFile);
+              return { filename: testFile, snippet: content.slice(0, 2000) };
+            } catch { return null; }
+          }),
+        );
+        for (const t of testContents) { if (t) relatedTests.push(t); }
+        return relatedTests;
+      })(),
 
-    // 4. Read sibling files for pattern matching
-    const siblings = repoTree.filter(
-      (f) => f !== targetFile && f.startsWith(dir + "/") && f.endsWith(ext) &&
-        f.split("/").length === targetFile.split("/").length,
-    );
-    for (const sibling of siblings.slice(0, 2)) {
-      try {
-        const content = await this.github.getFileContent(sibling);
-        ctx.siblingFiles.push({ filename: sibling, snippet: content.slice(0, 1500) });
-      } catch {}
-    }
+      // Phase 4: Read sibling files for pattern matching
+      (async () => {
+        const siblingFiles: FileContext["siblingFiles"] = [];
+        const siblings = repoTree.filter(
+          (f) => f !== targetFile && f.startsWith(dir + "/") && f.endsWith(ext) &&
+            f.split("/").length === targetFile.split("/").length,
+        ).slice(0, 2);
+        const siblingContents = await Promise.all(
+          siblings.map(async (sibling) => {
+            try {
+              const content = await this.github.getFileContent(sibling);
+              return { filename: sibling, snippet: content.slice(0, 1500) };
+            } catch { return null; }
+          }),
+        );
+        for (const s of siblingContents) { if (s) siblingFiles.push(s); }
+        return siblingFiles;
+      })(),
+    ]);
+
+    ctx.imports = importsResult;
+    ctx.importedBy = callersResult;
+    ctx.relatedTests = testsResult;
+    ctx.siblingFiles = siblingsResult;
 
     // 5. Build conventions summary
     ctx.conventionsSummary = this.buildConventionsSummary(ctx, repoKnowledge);

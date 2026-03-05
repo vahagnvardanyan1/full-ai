@@ -90,12 +90,12 @@ export class GitHubService {
     throw new Error(`Cannot read file: ${filePath}`);
   }
 
-  async getRepoContext(): Promise<string> {
+  async getRepoContext(existingRepoInfo?: RepoInfo, existingFiles?: string[]): Promise<string> {
     const { owner, repo } = ownerRepo();
     log.info({ owner, repo }, "Building repository context");
 
-    const repoInfo = await this.getRepoInfo();
-    const files = await this.getRepoTree(repoInfo.defaultBranch);
+    const repoInfo = existingRepoInfo ?? await this.getRepoInfo();
+    const files = existingFiles ?? await this.getRepoTree(repoInfo.defaultBranch);
 
     const contextFiles = [
       "README.md", "package.json", "tsconfig.json", ".eslintrc.json",
@@ -122,14 +122,21 @@ export class GitHubService {
       files.length > 200 ? `\n... and ${files.length - 200} more files` : "",
     ];
 
-    for (const cf of contextFiles) {
-      if (files.includes(cf)) {
+    // Read config files in parallel
+    const readableContextFiles = contextFiles.filter((cf) => files.includes(cf));
+    const fileContents = await Promise.all(
+      readableContextFiles.map(async (cf) => {
         try {
           const content = await this.getFileContent(cf);
-          contextParts.push(`\n--- ${cf} ---\n${content.slice(0, 2000)}`);
+          return { cf, content };
         } catch {
-          // skip unreadable files
+          return null;
         }
+      }),
+    );
+    for (const result of fileContents) {
+      if (result) {
+        contextParts.push(`\n--- ${result.cf} ---\n${result.content.slice(0, 2000)}`);
       }
     }
 
@@ -166,13 +173,18 @@ export class GitHubService {
     maxCharsPerFile = 3000,
   ): Promise<Map<string, string>> {
     const result = new Map<string, string>();
-    for (const filePath of filePaths) {
-      try {
-        const content = await this.getFileContent(filePath);
-        result.set(filePath, content.slice(0, maxCharsPerFile));
-      } catch {
-        // File unreadable — skip
-      }
+    const entries = await Promise.all(
+      filePaths.map(async (filePath) => {
+        try {
+          const content = await this.getFileContent(filePath);
+          return { filePath, content: content.slice(0, maxCharsPerFile) };
+        } catch {
+          return null;
+        }
+      }),
+    );
+    for (const entry of entries) {
+      if (entry) result.set(entry.filePath, entry.content);
     }
     return result;
   }
