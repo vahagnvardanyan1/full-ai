@@ -36,19 +36,35 @@ function setCache(key: string, products: ScrapedProduct[]): void {
 
 // ── Common fetch helper ──────────────────────────────────
 
-const HEADERS = {
-  "User-Agent":
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-  Accept: "application/json",
-  "Accept-Language": "en-US,en;q=0.9",
-};
+function getHeaders(brand: string): Record<string, string> {
+  const base = {
+    "User-Agent":
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    Accept: "application/json",
+    "Accept-Language": "en-US,en;q=0.9",
+  };
 
-async function fetchJSON<T>(url: string): Promise<T> {
+  switch (brand) {
+    case "zara":
+      return { ...base, Origin: "https://www.zara.com", Referer: "https://www.zara.com/" };
+    case "bershka":
+      return { ...base, Origin: "https://www.bershka.com", Referer: "https://www.bershka.com/" };
+    case "massimodutti":
+      return { ...base, Origin: "https://www.massimodutti.com", Referer: "https://www.massimodutti.com/" };
+    default:
+      return base;
+  }
+}
+
+async function fetchJSON<T>(url: string, headers?: Record<string, string>): Promise<T> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 25000);
 
   try {
-    const res = await fetch(url, { signal: controller.signal, headers: HEADERS });
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: headers ?? getHeaders(""),
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()) as T;
   } finally {
