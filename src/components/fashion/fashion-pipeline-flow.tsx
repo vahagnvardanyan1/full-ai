@@ -771,6 +771,15 @@ function buildMockGraph(mobile = false): { nodes: Node[]; edges: Edge[] } {
   return { nodes, edges };
 }
 
+// ── Exports for unified flow ────────────────────────────
+export {
+  ACCENT, ALL_BRANDS, Y_GAP, Y_GAP_MOBILE, X_GAP, X_GAP_MOBILE,
+  NODE_WIDTH, NODE_WIDTH_MOBILE,
+  cardStyle, handleStyle, StatusDots, NodeLabel,
+  nodeTypes, useIsMobile, useDotColor,
+};
+export type { PreferencesData, RetailerData, OutfitData, ImageData };
+
 export function FashionFlowPreview() {
   const mobile = useIsMobile();
   const { nodes, edges } = useMemo(() => buildMockGraph(mobile), [mobile]);

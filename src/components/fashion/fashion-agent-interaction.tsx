@@ -2,12 +2,11 @@
 
 import { useState, useCallback } from "react";
 
-import { FashionPreferencesForm } from "./fashion-preferences-form";
 import {
-  FashionPipelineFlow,
   FashionFlowPreview,
   type FashionFlowProps,
 } from "./fashion-pipeline-flow";
+import { FashionUnifiedFlow } from "./fashion-unified-flow";
 import { FashionHistoryPanel } from "./fashion-history-panel";
 import { useAgentHistory } from "@/hooks/use-agent-history";
 import type { IAgentRunDocument } from "@/lib/db/models/agent-run";
@@ -37,10 +36,6 @@ export function FashionAgentInteraction() {
   const [currentStage, setCurrentStage] = useState<Stage | null>(null);
   const [result, setResult] = useState<AgentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [submittedPhotoUrl, setSubmittedPhotoUrl] = useState<
-    string | undefined
-  >();
-
   // Pipeline flow state
   const [preferences, setPreferences] = useState<
     FashionFlowProps["preferences"] | undefined
@@ -66,7 +61,6 @@ export function FashionAgentInteraction() {
     setCurrentStage(null);
     setResult(null);
     setError(null);
-    setSubmittedPhotoUrl(undefined);
   }, []);
 
   // Pre-fills the form with a past run's input so the user can re-run the same style
@@ -86,7 +80,6 @@ export function FashionAgentInteraction() {
       setResult(null);
       setCurrentStage(null);
       resetFlow();
-      setSubmittedPhotoUrl(context.photoUrl);
 
       try {
         const res = await fetch("/api/fashion-stylist", {
@@ -218,7 +211,7 @@ export function FashionAgentInteraction() {
     [resetFlow, result, refreshHistory],
   );
 
-  const showFlow = view === "running" || view === "done";
+  const showUnifiedFlow = view === "form" || view === "running" || view === "done";
 
   const HistoryToggleButton = (
     <button
@@ -308,37 +301,21 @@ export function FashionAgentInteraction() {
         </div>
       )}
 
-      {/* Form: inline multi-step */}
-      {view === "form" && (
-        <FashionPreferencesForm
-          onSubmit={handleSubmit}
-          onClose={() => setView("idle")}
-        />
-      )}
-
-      {/* Running / Done: Pipeline flow */}
-      {showFlow && (
+      {/* Unified flow: form steps + pipeline in one ReactFlow */}
+      {showUnifiedFlow && (
         <div
           className="relative flex-1 min-h-0 flex flex-col"
           style={{ animation: "slide-in 0.3s ease-out" }}
         >
-          {/* Loading spinner before first SSE event */}
-          {view === "running" && !currentStage && !preferences && (
-            <div className="flex items-center gap-3 mb-4 px-1">
-              <div className="w-5 h-5 border-2 border-[#22c55e] border-t-transparent rounded-full animate-spin" />
-              <span className="text-[0.82rem] text-[var(--text-muted)]">
-                Starting fashion stylist...
-              </span>
-            </div>
-          )}
-
           <div className="flex-1 min-h-0">
-            <FashionPipelineFlow
+            <FashionUnifiedFlow
+              phase={view as "form" | "running" | "done"}
+              onSubmit={handleSubmit}
+              onClose={() => setView("idle")}
               preferences={preferences}
               retailers={retailers}
               outfit={outfit}
               image={generatedImage}
-              photoUrl={submittedPhotoUrl}
               currentStage={currentStage?.stage ?? "parsing_preferences"}
             />
           </div>
