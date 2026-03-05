@@ -32,6 +32,7 @@ import type { AgentRole, AgentResponse, StreamEvent } from "@/lib/agents/types";
 import { getSession, createSession, appendMessage } from "@/lib/session-store";
 import { connectDB, isDBEnabled } from "@/lib/db/connection";
 import { WorkflowRunModel } from "@/lib/db/models/workflow-run";
+import { saveAgentRun } from "@/lib/agents/agent-history";
 import { v4 as uuidv4 } from "uuid";
 
 // ── Planning step ────────────────────────────────────────
@@ -472,6 +473,13 @@ export const orchestrateStream = async (
     } catch (err) {
       logger.warn("Failed to finalize WorkflowRun", { error: String(err) });
     }
+
+    // Save lightweight entry to generic agent_runs for dashboard history
+    saveAgentRun({
+      agentType: "orchestrator",
+      status: "completed",
+      input: { userMessage, requestId, sessionId: sid },
+    }).catch(() => undefined);
   }
 
   logger.info("Orchestration complete", { requestId, agentCount: agentResults.length });

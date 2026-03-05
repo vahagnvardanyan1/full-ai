@@ -9,6 +9,8 @@ import { MOCK_AGENTS, MOCK_WORKSPACE } from "@/lib/dashboard/mock-data";
 import { useWorkspaceSummary } from "@/lib/dashboard/use-workspace-summary";
 import { getAgentDisplay, getUptimeColor } from "@/lib/dashboard/agent-display";
 import { formatRelativeTime, formatDuration } from "@/lib/format-relative-time";
+import { useAgentHistory } from "@/hooks/use-agent-history";
+import { AgentRunRow, AgentRunsSkeleton } from "@/components/agent-run-row";
 import type { PipelineRunItem } from "@/lib/dashboard/use-workspace-summary";
 
 /* ── Status dot ─────────────────────────────────────── */
@@ -249,6 +251,7 @@ export default function DashboardOverview() {
   const activeMembers = workspace.members.filter((m) => m.status === "active");
 
   const { data, loading } = useWorkspaceSummary();
+  const { runs: agentRuns, isLoading: agentRunsLoading } = useAgentHistory({});
 
   const totalTasks = data?.stats.totalTasks ?? 0;
   const totalRuns = data?.stats.totalRuns ?? 0;
@@ -442,6 +445,48 @@ export default function DashboardOverview() {
               <div className="flex flex-col gap-2.5">
                 {data.pipelineRuns.map((run) => (
                   <RunRow key={run.requestId} run={run} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Agent Runs */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[1rem] font-semibold text-[var(--text)]">
+                Agent Runs
+              </h2>
+              <Link
+                href="/dashboard/agents/agent-fashion"
+                className="text-[0.82rem] no-underline hover:text-[var(--text)] transition-colors"
+                style={{ color: "#ec4899" }}
+              >
+                View Fashion Stylist &rarr;
+              </Link>
+            </div>
+            {agentRunsLoading ? (
+              <AgentRunsSkeleton />
+            ) : agentRuns.length === 0 ? (
+              <div
+                className={cn(
+                  glassCard,
+                  "px-5 py-8 text-center text-[0.88rem] text-[var(--text-muted)]",
+                )}
+              >
+                No agent runs yet — try the{" "}
+                <Link
+                  href="/dashboard/agents/agent-fashion"
+                  className="no-underline font-medium"
+                  style={{ color: "#ec4899" }}
+                >
+                  Fashion Stylist
+                </Link>{" "}
+                to see results here.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2.5">
+                {agentRuns.slice(0, 5).map((run) => (
+                  <AgentRunRow key={String(run.runId)} run={run} />
                 ))}
               </div>
             )}

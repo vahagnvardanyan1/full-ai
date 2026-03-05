@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 import { useWorkspaceSession } from "@/hooks/use-workspace-session";
 import { useRunPolling } from "@/hooks/use-run-polling";
 import { WorkflowHistoryPanel } from "@/components/workflow-history-panel";
+import { FashionHistoryPanel } from "@/components/fashion/fashion-history-panel";
+import { useAgentHistory } from "@/hooks/use-agent-history";
 import type { HistoryEntry, StoredWorkflowRun } from "@/lib/workflow-replay";
 import { replayWorkflowRuns } from "@/lib/workflow-replay";
 import type {
@@ -344,8 +346,14 @@ export default function WorkspaceTeamPage({
   const [pollingRequestId, setPollingRequestId] = useState<string | null>(null);
   // History panel (workflow runs for this team only)
   const [showHistory, setShowHistory] = useState(false);
+  // Agent runs history panel (single-agent runs, e.g. fashion stylist)
+  const [showAgentHistory, setShowAgentHistory] = useState(false);
   // When set, shows a specific past run instead of the latest
   const [viewingEntryId, setViewingEntryId] = useState<string | null>(null);
+
+  const { runs: agentRuns, isLoading: isAgentHistoryLoading } = useAgentHistory(
+    { agentType: "fashion_stylist" },
+  );
 
   // Restore persisted state once the backend fetch completes
   useEffect(() => {
@@ -756,6 +764,39 @@ export default function WorkspaceTeamPage({
                 </span>
               </button>
             )}
+            {/* Style runs toggle — single-agent fashion stylist runs */}
+            {agentRuns.length > 0 && (
+              <button
+                className={cn(
+                  "px-[0.55rem] sm:px-[0.65rem] py-[0.3rem] rounded-full border text-[0.68rem] sm:text-[0.73rem] cursor-pointer font-medium transition-all duration-150 flex items-center gap-[0.3rem] shrink-0",
+                  showAgentHistory
+                    ? "bg-[rgba(236,72,153,0.12)] text-[#ec4899] border-[rgba(236,72,153,0.4)]"
+                    : "bg-[rgba(255,255,255,0.04)] text-[var(--text-muted)] border-[rgba(255,255,255,0.08)]",
+                )}
+                onClick={() => setShowAgentHistory((v) => !v)}
+              >
+                <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
+                  <circle
+                    cx="8"
+                    cy="8"
+                    r="6.2"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                  />
+                  <polyline
+                    points="8,4.5 8,8 10.2,9.4"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span className="hidden sm:inline">Style Runs</span>
+                <span className="text-[0.6rem] opacity-70">
+                  ({agentRuns.length})
+                </span>
+              </button>
+            )}
             {/* New Session — right end */}
             <button
               onClick={handleNewSession}
@@ -793,6 +834,17 @@ export default function WorkspaceTeamPage({
               onSelectRun={setViewingEntryId}
               onClose={() => setShowHistory(false)}
             />
+          )}
+          {/* Agent runs panel — fashion stylist runs */}
+          {showAgentHistory && (
+            <div className="absolute top-full right-0 mt-1 w-[280px] z-30">
+              <FashionHistoryPanel
+                runs={agentRuns}
+                isLoading={isAgentHistoryLoading}
+                onSelectRun={() => setShowAgentHistory(false)}
+                onClose={() => setShowAgentHistory(false)}
+              />
+            </div>
           )}
         </div>
       )}
