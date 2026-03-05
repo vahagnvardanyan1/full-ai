@@ -98,7 +98,7 @@ async function scrapeZara(query: string, gender: string): Promise<ScrapedProduct
     `&offset=0&limit=20&scope=default&origin=search&ajax=true`;
 
   try {
-    const data = await fetchJSON<ZaraSearchResponse>(url);
+    const data = await fetchJSON<ZaraSearchResponse>(url, getHeaders("zara"));
     const products: ScrapedProduct[] = [];
 
     for (const r of data.results ?? []) {
@@ -129,7 +129,8 @@ async function scrapeZara(query: string, gender: string): Promise<ScrapedProduct
     logger.info(`Zara API: found ${products.length} products`);
     return products;
   } catch (err) {
-    logger.warn(`Zara API failed: ${err instanceof Error ? err.message : String(err)}`);
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`Zara API failed for query="${query}" gender="${gender}": ${msg}`);
     return [];
   }
 }
@@ -171,7 +172,8 @@ async function scrapeBershka(query: string, _gender: string): Promise<ScrapedPro
       `https://www.bershka.com/itxrest/1/search/store/45009578/query` +
       `?query=${encodeURIComponent(query)}&locale=en_US&offset=0&limit=20&ajax=true`;
 
-    const searchData = await fetchJSON<ItxSearchResponse>(searchUrl);
+    const bershkaHeaders = getHeaders("bershka");
+    const searchData = await fetchJSON<ItxSearchResponse>(searchUrl, bershkaHeaders);
     const ids = (searchData.results ?? []).map((r) => r.id).slice(0, 20);
     if (ids.length === 0) return [];
 
@@ -180,7 +182,7 @@ async function scrapeBershka(query: string, _gender: string): Promise<ScrapedPro
       `https://www.bershka.com/itxrest/3/catalog/store/45009578/40259549/productsArray` +
       `?languageId=-15&appId=1&productIds=${ids.join(",")}`;
 
-    const detailData = await fetchJSON<ItxProductResponse>(detailUrl);
+    const detailData = await fetchJSON<ItxProductResponse>(detailUrl, bershkaHeaders);
     const products: ScrapedProduct[] = [];
 
     for (const p of detailData.products ?? []) {
@@ -216,7 +218,8 @@ async function scrapeBershka(query: string, _gender: string): Promise<ScrapedPro
     logger.info(`Bershka API: found ${products.length} products`);
     return products;
   } catch (err) {
-    logger.warn(`Bershka API failed: ${err instanceof Error ? err.message : String(err)}`);
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`Bershka API failed for query="${query}": ${msg}`);
     return [];
   }
 }
@@ -235,7 +238,8 @@ async function scrapeMassimoDutti(query: string, _gender: string): Promise<Scrap
       `https://www.massimodutti.com/itxrest/1/search/store/34009527/query` +
       `?query=${encodeURIComponent(query)}&locale=en&offset=0&limit=20&appId=1&languageId=-1`;
 
-    const searchData = await fetchJSON<ItxSearchResponse>(searchUrl);
+    const mdHeaders = getHeaders("massimodutti");
+    const searchData = await fetchJSON<ItxSearchResponse>(searchUrl, mdHeaders);
     const ids = (searchData.results ?? []).map((r) => r.id).slice(0, 20);
     if (ids.length === 0) return [];
 
@@ -244,7 +248,7 @@ async function scrapeMassimoDutti(query: string, _gender: string): Promise<Scrap
       `https://www.massimodutti.com/itxrest/3/catalog/store/34009527/30359506/productsArray` +
       `?languageId=-1&appId=1&productIds=${ids.join(",")}`;
 
-    const detailData = await fetchJSON<ItxProductResponse>(detailUrl);
+    const detailData = await fetchJSON<ItxProductResponse>(detailUrl, mdHeaders);
     const products: ScrapedProduct[] = [];
 
     for (const p of detailData.products ?? []) {
@@ -281,7 +285,8 @@ async function scrapeMassimoDutti(query: string, _gender: string): Promise<Scrap
     logger.info(`Massimo Dutti API: found ${products.length} products`);
     return products;
   } catch (err) {
-    logger.warn(`Massimo Dutti API failed: ${err instanceof Error ? err.message : String(err)}`);
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`Massimo Dutti API failed for query="${query}": ${msg}`);
     return [];
   }
 }
@@ -324,7 +329,21 @@ export class FashionScraperService {
     const successCount = results.filter(
       (r) => r.status === "fulfilled" && r.value.length > 0,
     ).length;
-    logger.info(`Fashion scraper total: ${products.length} products from ${successCount}/3 retailers`);
+    const rejectedCount = results.filter((r) => r.status === "rejected").length;
+    logger.info(`Fashion scraper total: ${products.length} products from ${successCount}/3 retailers (${rejectedCount} rejected)`);
+
+    if (products.length === 0) {
+      logger.error("All scrapers returned 0 products — APIs may be blocking serverless IPs");
+      for (const [i, result] of results.entries()) {
+        const brand = brandScrapers[i][0];
+        if (result.status === "rejected") {
+          logger.error(`  ${brand}: REJECTED — ${result.reason}`);
+        } else {
+          logger.error(`  ${brand}: fulfilled with ${result.value.length} products`);
+        }
+      }
+    }
+
     return products;
   }
 }
