@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/utils";
 import type { HistoryEntry } from "@/lib/workflow-replay";
+import { extractPipelineLinks } from "@/components/dashboard/pipeline-success-modal";
 
 // ── Time helper ───────────────────────────────────────────
 
@@ -85,14 +86,18 @@ const RunCard = ({
   entry,
   isSelected,
   onSelect,
+  onShowResults,
 }: {
   entry: HistoryEntry;
   isSelected: boolean;
   onSelect: () => void;
+  onShowResults?: () => void;
 }) => {
   const status = getStatus(entry);
   const cfg = STATUS_CONFIG[status];
   const taskCount = entry.outputs.reduce((n, o) => n + o.tasks.length, 0);
+  const links = status === "completed" ? extractPipelineLinks(entry.outputs) : null;
+  const hasLinks = !!(links?.prUrl || links?.vercelUrl);
 
   return (
     <button
@@ -118,6 +123,21 @@ const RunCard = ({
       <div className="flex items-center justify-between gap-2 pl-[15px]">
         <AgentPips entry={entry} />
         <div className="flex items-center gap-2 shrink-0">
+          {hasLinks && onShowResults && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onShowResults();
+              }}
+              className="text-[0.58rem] font-medium px-[0.4rem] py-[0.12rem] rounded-full cursor-pointer border-none transition-all hover:brightness-125"
+              style={{
+                color: "#34d399",
+                background: "rgba(34, 197, 94, 0.12)",
+              }}
+            >
+              Results
+            </button>
+          )}
           {taskCount > 0 && (
             <span className="text-[0.6rem] text-[var(--text-muted)]">
               {taskCount} task{taskCount !== 1 ? "s" : ""}
@@ -144,6 +164,7 @@ interface WorkflowHistoryPanelProps {
   history: HistoryEntry[];
   viewingId: string | null;
   onSelectRun: (id: string) => void;
+  onShowResults?: (id: string) => void;
   onClose: () => void;
 }
 
@@ -151,6 +172,7 @@ export const WorkflowHistoryPanel = ({
   history,
   viewingId,
   onSelectRun,
+  onShowResults,
   onClose,
 }: WorkflowHistoryPanelProps) => {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -218,6 +240,11 @@ export const WorkflowHistoryPanel = ({
                 onSelectRun(entry.id);
                 onClose();
               }}
+              onShowResults={onShowResults ? () => {
+                onSelectRun(entry.id);
+                onShowResults(entry.id);
+                onClose();
+              } : undefined}
             />
           ))
         )}

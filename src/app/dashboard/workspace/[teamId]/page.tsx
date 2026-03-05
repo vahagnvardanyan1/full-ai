@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useMemo, useEffect, useCallback, use } from "react";
+import { PipelineSuccessModal, extractPipelineLinks } from "@/components/dashboard/pipeline-success-modal";
 
 import { ChatInput } from "@/components/chat-input";
 import { AgentPipeline } from "@/components/agent-pipeline";
@@ -346,6 +347,9 @@ export default function WorkspaceTeamPage({
   const [showHistory, setShowHistory] = useState(false);
   // When set, shows a specific past run instead of the latest
   const [viewingEntryId, setViewingEntryId] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [dismissedSuccessRuns, setDismissedSuccessRuns] = useState<Set<string>>(new Set());
+  const liveRunIds = useRef<Set<string>>(new Set());
 
   // Restore persisted state once the backend fetch completes
   useEffect(() => {
@@ -386,6 +390,9 @@ export default function WorkspaceTeamPage({
     setPollingRequestId(null);
     setShowHistory(false);
     setViewingEntryId(null);
+    setShowSuccessModal(false);
+    setDismissedSuccessRuns(new Set());
+    liveRunIds.current.clear();
   }, [resetSession]);
 
   const showHistoryInHeader = history.length > 0;
@@ -444,6 +451,11 @@ export default function WorkspaceTeamPage({
     return map;
   }, [latestEntry]);
 
+  const pipelineLinks = useMemo(() => {
+    if (!latestEntry) return { prUrl: null, vercelUrl: null, vercelInspectorUrl: null };
+    return extractPipelineLinks(latestEntry.outputs);
+  }, [latestEntry]);
+
   const selectedOutput = selectedAgent ? agentOutputs.get(selectedAgent) : null;
 
   const patch = (
@@ -466,6 +478,35 @@ export default function WorkspaceTeamPage({
     }
   }, []);
 
+  // Auto-show success modal when pipeline completes
+  useEffect(() => {
+    if (
+      latestEntry?.done &&
+      !latestEntry.error &&
+      latestEntry.outputs.length > 0 &&
+      !dismissedSuccessRuns.has(latestEntry.id) &&
+      liveRunIds.current.has(latestEntry.id)
+    ) {
+      setShowSuccessModal(true);
+    }
+  }, [latestEntry?.done, latestEntry?.error, latestEntry?.id, latestEntry?.outputs.length, dismissedSuccessRuns]);
+
+  const handleSuccessModalClose = useCallback((open: boolean) => {
+    if (!open && latestEntry) {
+      setDismissedSuccessRuns((prev) => new Set(prev).add(latestEntry.id));
+    }
+    setShowSuccessModal(open);
+  }, [latestEntry]);
+
+  const handleShowResults = useCallback((entryId: string) => {
+    setDismissedSuccessRuns((prev) => {
+      const next = new Set(prev);
+      next.delete(entryId);
+      return next;
+    });
+    setShowSuccessModal(true);
+  }, []);
+
   const handleSubmit = async (message: string) => {
     setFollowUpHasText(false);
     if (!sessionId) return;
@@ -476,6 +517,7 @@ export default function WorkspaceTeamPage({
     setShowHistory(false);
 
     const entryId = crypto.randomUUID();
+    liveRunIds.current.add(entryId);
     setSelectedAgent(null);
     setShowKanban(false);
     setLastMessage(message);
@@ -791,6 +833,7 @@ export default function WorkspaceTeamPage({
               history={history}
               viewingId={viewingEntryId}
               onSelectRun={setViewingEntryId}
+              onShowResults={handleShowResults}
               onClose={() => setShowHistory(false)}
             />
           )}
@@ -864,6 +907,7 @@ export default function WorkspaceTeamPage({
               history={history}
               viewingId={viewingEntryId}
               onSelectRun={setViewingEntryId}
+              onShowResults={handleShowResults}
               onClose={() => setShowHistory(false)}
             />
           )}
@@ -1084,6 +1128,15 @@ export default function WorkspaceTeamPage({
           onClose={() => setSelectedAgent(null)}
         />
       )}
+
+      {/* Success modal */}
+      <PipelineSuccessModal
+        open={showSuccessModal}
+        onOpenChange={handleSuccessModalClose}
+        prUrl={pipelineLinks.prUrl}
+        vercelUrl={pipelineLinks.vercelUrl}
+        vercelInspectorUrl={pipelineLinks.vercelInspectorUrl}
+      />
 
       {/* Toasts */}
       {toasts.length > 0 && (
