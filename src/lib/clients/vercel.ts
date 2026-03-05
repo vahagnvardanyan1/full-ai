@@ -36,8 +36,7 @@ export async function getVercelPreviewUrl(
 ) {
   const { branch } = params;
 
-  logger.info("Looking up Vercel preview deployment", { branch });
-
+  logger.info(`Looking up Vercel preview deployment  ${JSON.stringify(getConfig())}`, { branch });
   if (!isConfigured()) {
     logger.warn(`Vercel not configured (VERCEL_TOKEN / VERCEL_PROJECT_ID missing) ${JSON.stringify(getConfig())}`);
     return { branch, found: false, simulated: true };
