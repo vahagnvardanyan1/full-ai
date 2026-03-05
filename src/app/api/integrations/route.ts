@@ -1,14 +1,16 @@
 // ──────────────────────────────────────────────────────────
 // /api/integrations — Integration status & management
 //
-// GET    → Returns connection status for all integrations
-// DELETE → Disconnect a specific service (?service=github)
+// GET    → Hydrates from MongoDB then returns connection status
+// DELETE → Disconnect a specific service and remove from DB
 // PATCH  → Update config for a service (e.g. select repo)
 // ──────────────────────────────────────────────────────────
 
 import { NextRequest, NextResponse } from "next/server";
+
 import {
   getIntegrationStatus,
+  hydrateFromDB,
   disconnectGitHub,
   disconnectJira,
   disconnectVercel,
@@ -17,29 +19,45 @@ import {
   getRuntimeJiraConfig,
   setRuntimeJiraConfig,
 } from "@/lib/clients/integration-store";
+import {
+  deleteIntegrationFromDB,
+  saveIntegrationToDB,
+} from "@/lib/clients/integration-persistence";
+import { revokeGitHubToken, revokeJiraToken } from "@/lib/clients/token-revocation";
 import { runWithDeviceId, getDeviceIdFromCookies } from "@/lib/request-context";
 
-export async function GET(request: NextRequest) {
+export const GET = async (request: NextRequest): Promise<NextResponse> => {
   const deviceId = getDeviceIdFromCookies(request.cookies);
-  return runWithDeviceId(deviceId, () => {
+  return runWithDeviceId(deviceId, async () => {
+    await hydrateFromDB(deviceId);
     const status = getIntegrationStatus();
     return NextResponse.json(status);
   });
-}
+};
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = async (request: NextRequest): Promise<NextResponse> => {
   const deviceId = getDeviceIdFromCookies(request.cookies);
-  return runWithDeviceId(deviceId, () => {
+  return runWithDeviceId(deviceId, async () => {
     const { searchParams } = new URL(request.url);
-    const service = searchParams.get("service");
+    const service = searchParams.get("service") as "github" | "jira" | "vercel" | null;
 
     switch (service) {
-      case "github":
+      case "github": {
+        const githubConfig = getRuntimeGitHubConfig();
+        if (githubConfig?.accessToken) {
+          await revokeGitHubToken(githubConfig.accessToken);
+        }
         disconnectGitHub();
         break;
-      case "jira":
+      }
+      case "jira": {
+        const jiraConfig = getRuntimeJiraConfig();
+        if (jiraConfig?.refreshToken) {
+          await revokeJiraToken(jiraConfig.refreshToken);
+        }
         disconnectJira();
         break;
+      }
       case "vercel":
         disconnectVercel();
         break;
@@ -47,15 +65,17 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: "Invalid service" }, { status: 400 });
     }
 
+    await deleteIntegrationFromDB({ deviceId, service });
+
     return NextResponse.json({ disconnected: service });
   });
-}
+};
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = async (request: NextRequest): Promise<NextResponse> => {
   const deviceId = getDeviceIdFromCookies(request.cookies);
   return runWithDeviceId(deviceId, async () => {
     const body = await request.json();
-    const { service, ...updates } = body;
+    const { service, ...updates } = body as { service: string; [key: string]: unknown };
 
     switch (service) {
       case "github": {
@@ -63,9 +83,14 @@ export async function PATCH(request: NextRequest) {
         if (!current) {
           return NextResponse.json({ error: "GitHub not connected" }, { status: 400 });
         }
-        if (updates.owner) current.owner = updates.owner;
-        if (updates.repo) current.repo = updates.repo;
+        if (updates.owner) current.owner = updates.owner as string;
+        if (updates.repo) current.repo = updates.repo as string;
         setRuntimeGitHubConfig(current);
+        await saveIntegrationToDB({
+          deviceId,
+          service: "github",
+          data: current as unknown as Record<string, unknown>,
+        });
         break;
       }
       case "jira": {
@@ -73,8 +98,13 @@ export async function PATCH(request: NextRequest) {
         if (!current) {
           return NextResponse.json({ error: "Jira not connected" }, { status: 400 });
         }
-        if (updates.projectKey) current.projectKey = updates.projectKey;
+        if (updates.projectKey) current.projectKey = updates.projectKey as string;
         setRuntimeJiraConfig(current);
+        await saveIntegrationToDB({
+          deviceId,
+          service: "jira",
+          data: current as unknown as Record<string, unknown>,
+        });
         break;
       }
       default:
@@ -83,4 +113,4 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ updated: service });
   });
-}
+};

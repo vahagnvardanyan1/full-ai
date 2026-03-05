@@ -3,11 +3,13 @@
 //
 // Redirects the user to GitHub's authorization page.
 // After the user authorizes, GitHub redirects to /api/auth/github/callback.
+// The disconnect flow deletes the full authorization grant so GitHub
+// always shows a fresh auth screen on the next connect attempt.
 // ──────────────────────────────────────────────────────────
 
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export const GET = (): NextResponse => {
   const clientId = process.env.GITHUB_CLIENT_ID;
 
   if (!clientId) {
@@ -28,4 +30,4 @@ export async function GET() {
   });
 
   return NextResponse.redirect(`https://github.com/login/oauth/authorize?${params.toString()}`);
-}
+};

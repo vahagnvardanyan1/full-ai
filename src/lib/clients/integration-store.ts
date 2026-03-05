@@ -2,16 +2,23 @@
 // Runtime integration store
 //
 // Holds OAuth tokens configured at runtime through the
-// Settings → Integrations UI. GitHub is runtime-only (no
-// env var fallback). Jira and Vercel still fall back to
-// env vars when not connected via OAuth.
+// Settings → Integrations UI. The in-memory Map acts as a
+// write-through cache: every mutation is also persisted to
+// MongoDB via integration-persistence.ts so connections
+// survive server restarts.
 //
-// In-memory for now (same pattern as session-store.ts).
-// Swap with Redis / DB for production persistence.
+// Hydration: call hydrateFromDB(deviceId) once per request
+// before reading config (the GET /api/integrations handler
+// does this automatically).
 // ──────────────────────────────────────────────────────────
 
 import { logger } from "@/lib/logger";
 import { getCurrentDeviceId } from "@/lib/request-context";
+import {
+  loadIntegrationsFromDB,
+  saveIntegrationToDB,
+  deleteIntegrationFromDB,
+} from "./integration-persistence";
 
 // ── Types ───────────────────────────────────────────────
 
@@ -56,43 +63,52 @@ export interface IntegrationStatus {
 }
 
 // ── Store ───────────────────────────────────────────────
-// Use globalThis to survive Next.js HMR module re-evaluation
-// in development mode. Without this, connecting one service
-// resets the Map and disconnects the other.
+// Use globalThis to survive Next.js HMR module re-evaluation.
 
 const globalStore = globalThis as unknown as {
   __integrationStore?: Map<string, IntegrationConfig>;
 };
 const store = (globalStore.__integrationStore ??= new Map<string, IntegrationConfig>());
 
-function getConfig(): IntegrationConfig {
+const getConfig = (): IntegrationConfig => {
   const key = getCurrentDeviceId();
   return store.get(key) ?? {};
-}
+};
 
-function setConfig(config: IntegrationConfig) {
+const setConfig = (config: IntegrationConfig): void => {
   const key = getCurrentDeviceId();
   store.set(key, config);
-}
+};
+
+// ── DB Hydration ─────────────────────────────────────────
+// Call once at the top of any GET handler that reads config.
+// Skipped if the device already has data in memory.
+
+export const hydrateFromDB = async (deviceId: string): Promise<void> => {
+  if (store.has(deviceId)) return;
+
+  const dbConfig = await loadIntegrationsFromDB(deviceId);
+  if (dbConfig) {
+    store.set(deviceId, dbConfig as IntegrationConfig);
+    logger.info("Integrations hydrated from DB", { deviceId });
+  }
+};
 
 // ── GitHub disconnect callbacks ──────────────────────────
-// Modules that cache GitHub-related state (e.g. Octokit instances)
-// register cleanup callbacks here to avoid circular imports.
 
 const gitHubDisconnectCallbacks: Array<() => void> = [];
 
-export function onGitHubDisconnect(callback: () => void) {
+export const onGitHubDisconnect = (callback: () => void): void => {
   gitHubDisconnectCallbacks.push(callback);
-}
+};
 
 // ── GitHub ──────────────────────────────────────────────
 
-export function getRuntimeGitHubConfig(): GitHubIntegration | null {
-  const config = getConfig();
-  return config.github ?? null;
-}
+export const getRuntimeGitHubConfig = (): GitHubIntegration | null => {
+  return getConfig().github ?? null;
+};
 
-export function setRuntimeGitHubConfig(github: GitHubIntegration) {
+export const setRuntimeGitHubConfig = (github: GitHubIntegration): void => {
   const config = getConfig();
   config.github = github;
   setConfig(config);
@@ -101,32 +117,30 @@ export function setRuntimeGitHubConfig(github: GitHubIntegration) {
     owner: github.owner,
     repo: github.repo,
   });
-}
+};
 
-export function disconnectGitHub() {
+export const disconnectGitHub = (): void => {
   const config = getConfig();
   delete config.github;
   setConfig(config);
   for (const cb of gitHubDisconnectCallbacks) cb();
   logger.info("GitHub integration disconnected");
-}
+};
 
 // ── Jira ────────────────────────────────────────────────
 
-export function getRuntimeJiraConfig(): JiraIntegration | null {
+export const getRuntimeJiraConfig = (): JiraIntegration | null => {
   const config = getConfig();
   if (!config.jira) return null;
 
-  // Check if token is about to expire (within 60s)
   if (config.jira.expiresAt < Date.now() + 60_000) {
     logger.warn("Jira OAuth token expired, needs refresh");
-    // Caller should trigger refresh flow
   }
 
   return config.jira;
-}
+};
 
-export function setRuntimeJiraConfig(jira: JiraIntegration) {
+export const setRuntimeJiraConfig = (jira: JiraIntegration): void => {
   const config = getConfig();
   config.jira = jira;
   setConfig(config);
@@ -135,41 +149,49 @@ export function setRuntimeJiraConfig(jira: JiraIntegration) {
     email: jira.email,
     projectKey: jira.projectKey,
   });
-}
+};
 
-export function updateJiraTokens(accessToken: string, refreshToken: string, expiresIn: number) {
+export const updateJiraTokens = async ({
+  accessToken,
+  refreshToken,
+  expiresIn,
+}: {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+}): Promise<void> => {
   const config = getConfig();
-  if (config.jira) {
-    config.jira.accessToken = accessToken;
-    config.jira.refreshToken = refreshToken;
-    config.jira.expiresAt = Date.now() + expiresIn * 1000;
-    setConfig(config);
-    logger.info("Jira tokens refreshed");
-  }
-}
+  if (!config.jira) return;
+
+  config.jira.accessToken = accessToken;
+  config.jira.refreshToken = refreshToken;
+  config.jira.expiresAt = Date.now() + expiresIn * 1000;
+  setConfig(config);
+
+  await saveIntegrationToDB({
+    deviceId: getCurrentDeviceId(),
+    service: "jira",
+    data: config.jira as unknown as Record<string, unknown>,
+  });
+
+  logger.info("Jira tokens refreshed");
+};
 
 // ── Jira Token Refresh ─────────────────────────────────
 
-let refreshInFlight: Promise<JiraIntegration | null> | null = null;
+let jiraRefreshInFlight: Promise<JiraIntegration | null> | null = null;
 
-/**
- * Return the current Jira config, automatically refreshing the
- * OAuth token if it is about to expire. A single in-flight promise
- * prevents concurrent refresh race conditions.
- */
-export async function refreshJiraTokenIfNeeded(): Promise<JiraIntegration | null> {
+export const refreshJiraTokenIfNeeded = async (): Promise<JiraIntegration | null> => {
   const config = getConfig();
   if (!config.jira) return null;
 
-  // Token still fresh — return as-is
   if (config.jira.expiresAt > Date.now() + 60_000) {
     return config.jira;
   }
 
-  // Deduplicate concurrent refresh calls
-  if (refreshInFlight) return refreshInFlight;
+  if (jiraRefreshInFlight) return jiraRefreshInFlight;
 
-  refreshInFlight = (async () => {
+  jiraRefreshInFlight = (async () => {
     try {
       const clientId = process.env.JIRA_CLIENT_ID;
       const clientSecret = process.env.JIRA_CLIENT_SECRET;
@@ -204,52 +226,58 @@ export async function refreshJiraTokenIfNeeded(): Promise<JiraIntegration | null
         expires_in: number;
       };
 
-      updateJiraTokens(data.access_token, data.refresh_token, data.expires_in);
+      await updateJiraTokens({
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresIn: data.expires_in,
+      });
+
       logger.info("Jira token refreshed successfully");
       return getConfig().jira!;
     } catch (err) {
-      logger.error("Jira token refresh error", { error: err instanceof Error ? err.message : String(err) });
+      logger.error("Jira token refresh error", {
+        error: err instanceof Error ? err.message : String(err),
+      });
       return config.jira!;
     } finally {
-      refreshInFlight = null;
+      jiraRefreshInFlight = null;
     }
   })();
 
-  return refreshInFlight;
-}
+  return jiraRefreshInFlight;
+};
 
-export function disconnectJira() {
+export const disconnectJira = (): void => {
   const config = getConfig();
   delete config.jira;
   setConfig(config);
-  refreshInFlight = null;
+  jiraRefreshInFlight = null;
   logger.info("Jira integration disconnected");
-}
+};
 
 // ── Vercel ──────────────────────────────────────────────
 
-export function getRuntimeVercelConfig(): VercelIntegration | null {
-  const config = getConfig();
-  return config.vercel ?? null;
-}
+export const getRuntimeVercelConfig = (): VercelIntegration | null => {
+  return getConfig().vercel ?? null;
+};
 
-export function setRuntimeVercelConfig(vercel: VercelIntegration) {
+export const setRuntimeVercelConfig = (vercel: VercelIntegration): void => {
   const config = getConfig();
   config.vercel = vercel;
   setConfig(config);
   logger.info("Vercel integration connected", { projectId: vercel.projectId });
-}
+};
 
-export function disconnectVercel() {
+export const disconnectVercel = (): void => {
   const config = getConfig();
   delete config.vercel;
   setConfig(config);
   logger.info("Vercel integration disconnected");
-}
+};
 
 // ── Status ──────────────────────────────────────────────
 
-export function getIntegrationStatus(): IntegrationStatus {
+export const getIntegrationStatus = (): IntegrationStatus => {
   const config = getConfig();
 
   return {
@@ -261,9 +289,8 @@ export function getIntegrationStatus(): IntegrationStatus {
           owner: config.github.owner,
           repo: config.github.repo,
         }
-      : {
-          connected: false,
-        },
+      : { connected: false },
+
     jira: config.jira
       ? {
           connected: true,
@@ -271,7 +298,17 @@ export function getIntegrationStatus(): IntegrationStatus {
           siteName: config.jira.siteName,
           projectKey: config.jira.projectKey,
         }
-      : { connected: false },
+      : {
+          connected: !!(
+            process.env.JIRA_BASE_URL &&
+            process.env.JIRA_EMAIL &&
+            process.env.JIRA_API_TOKEN &&
+            process.env.JIRA_PROJECT_KEY
+          ),
+          email: process.env.JIRA_EMAIL,
+          projectKey: process.env.JIRA_PROJECT_KEY,
+        },
+
     vercel: config.vercel
       ? {
           connected: true,
@@ -279,4 +316,4 @@ export function getIntegrationStatus(): IntegrationStatus {
         }
       : { connected: false },
   };
-}
+};

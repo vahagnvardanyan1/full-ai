@@ -8,7 +8,9 @@
 // ──────────────────────────────────────────────────────────
 
 import { NextRequest } from "next/server";
+
 import { setRuntimeGitHubConfig } from "@/lib/clients/integration-store";
+import { saveIntegrationToDB } from "@/lib/clients/integration-persistence";
 import { runWithDeviceId, getDeviceIdFromCookies } from "@/lib/request-context";
 import { logger } from "@/lib/logger";
 
@@ -61,14 +63,23 @@ export async function GET(request: NextRequest) {
 
       const userData = await userRes.json();
 
-      // 3. Store the integration (owner/repo will be selected in UI)
-      setRuntimeGitHubConfig({
+      const integration = {
         accessToken,
         owner: userData.login,
         repo: "", // Will be selected via UI
         login: userData.login,
         avatarUrl: userData.avatar_url,
         connectedAt: Date.now(),
+      };
+
+      // 3. Store the integration (owner/repo will be selected in UI)
+      setRuntimeGitHubConfig(integration);
+
+      // 4. Persist to MongoDB
+      await saveIntegrationToDB({
+        deviceId,
+        service: "github",
+        data: integration as unknown as Record<string, unknown>,
       });
 
       logger.info("GitHub OAuth completed", { login: userData.login });

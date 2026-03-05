@@ -6,7 +6,9 @@
 // ──────────────────────────────────────────────────────────
 
 import { NextRequest } from "next/server";
+
 import { setRuntimeJiraConfig } from "@/lib/clients/integration-store";
+import { saveIntegrationToDB } from "@/lib/clients/integration-persistence";
 import { runWithDeviceId, getDeviceIdFromCookies } from "@/lib/request-context";
 import { logger } from "@/lib/logger";
 
@@ -80,8 +82,7 @@ export async function GET(request: NextRequest) {
 
       const meData = meRes.ok ? await meRes.json() : { email: "unknown" };
 
-      // 4. Store integration (project key will be selected in UI)
-      setRuntimeJiraConfig({
+      const integration = {
         accessToken: access_token,
         refreshToken: refresh_token,
         cloudId,
@@ -91,6 +92,16 @@ export async function GET(request: NextRequest) {
         email: meData.email ?? meData.account_id ?? "unknown",
         connectedAt: Date.now(),
         expiresAt: Date.now() + (expires_in ?? 3600) * 1000,
+      };
+
+      // 4. Store integration (project key will be selected in UI)
+      setRuntimeJiraConfig(integration);
+
+      // 5. Persist to MongoDB
+      await saveIntegrationToDB({
+        deviceId,
+        service: "jira",
+        data: integration as unknown as Record<string, unknown>,
       });
 
       logger.info("Jira OAuth completed", { siteName, cloudId, email: meData.email });

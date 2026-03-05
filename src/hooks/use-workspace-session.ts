@@ -17,7 +17,7 @@
 // can start polling for live updates.
 // ──────────────────────────────────────────────────────────
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import { replayWorkflowRuns } from "@/lib/workflow-replay";
 import type { HistoryEntry, StoredWorkflowRun } from "@/lib/workflow-replay";
@@ -37,6 +37,8 @@ interface UseWorkspaceSessionResult {
    * when this session was loaded. Non-null triggers live polling.
    */
   activeRunRequestId: string | null;
+  /** Clears current session and starts a fresh one. */
+  resetSession: () => void;
 }
 
 const buildStorageKey = (teamId: string) => `workspace-session-${teamId}`;
@@ -89,11 +91,22 @@ export const useWorkspaceSession = ({ teamId }: { teamId: string }): UseWorkspac
       .finally(() => setIsRestoring(false));
   }, [teamId]);
 
+  const resetSession = useCallback(() => {
+    const newId = crypto.randomUUID();
+    localStorage.setItem(buildStorageKey(teamId), newId);
+    setSessionId(newId);
+    setRestoredHistory([]);
+    setRestoredTasks([]);
+    setActiveRunRequestId(null);
+    setIsRestoring(false);
+  }, [teamId]);
+
   return {
     sessionId,
     isRestoring,
     restoredHistory,
     restoredTasks,
     activeRunRequestId,
+    resetSession,
   };
 };
