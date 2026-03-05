@@ -33,10 +33,10 @@ const RunCard = ({ run, onRerun }: RunCardProps) => {
     <div
       className="flex gap-2.5 p-2.5 rounded-xl border transition-colors"
       style={{
-        background: "var(--surface-hover, rgba(255,255,255,0.03))",
+        background: "var(--surface-hover)",
         borderColor: isFailed
           ? "rgba(239,68,68,0.15)"
-          : "rgba(255,255,255,0.07)",
+          : "var(--surface-border)",
       }}
     >
       {/* Status dot */}
@@ -124,8 +124,8 @@ export const FashionHistoryPanel = ({
   <div
     className="absolute inset-0 z-30 flex flex-col rounded-[var(--radius-lg)] overflow-hidden"
     style={{
-      background: "var(--panel-bg, rgba(10,10,14,0.97))",
-      border: "1px solid var(--glass-border, rgba(255,255,255,0.08))",
+      background: "var(--panel-bg)",
+      border: "1px solid var(--glass-border)",
       backdropFilter: "blur(20px)",
       WebkitBackdropFilter: "blur(20px)",
     }}
@@ -133,7 +133,7 @@ export const FashionHistoryPanel = ({
     {/* Header */}
     <div
       className="flex items-center justify-between px-4 py-3 shrink-0"
-      style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+      style={{ borderBottom: "1px solid var(--surface-border)" }}
     >
       <div className="flex items-center gap-2">
         <svg width={14} height={14} viewBox="0 0 16 16" fill="none">
@@ -153,7 +153,7 @@ export const FashionHistoryPanel = ({
       <button
         onClick={onClose}
         className="flex items-center justify-center w-6 h-6 rounded-lg cursor-pointer transition-colors text-[var(--text-muted)] hover:text-[var(--text)]"
-        style={{ background: "rgba(255,255,255,0.04)" }}
+        style={{ background: "var(--surface-hover)" }}
         aria-label="Close history"
       >
         <svg width={10} height={10} viewBox="0 0 12 12" fill="none">

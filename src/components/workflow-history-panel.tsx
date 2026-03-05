@@ -69,9 +69,9 @@ const AgentPips = ({ entry }: { entry: HistoryEntry }) => {
               isDone    ? "opacity-100" : isWorking ? "opacity-80 animate-pulse" : "opacity-25",
             )}
             style={{
-              background: isDone || isWorking ? `${color}22` : "rgba(255,255,255,0.04)",
-              border: `1px solid ${isDone || isWorking ? color : "rgba(255,255,255,0.08)"}`,
-              color: isDone || isWorking ? color : "rgba(255,255,255,0.3)",
+              background: isDone || isWorking ? `${color}22` : "var(--surface-hover)",
+              border: `1px solid ${isDone || isWorking ? color : "var(--surface-border)"}`,
+              color: isDone || isWorking ? color : "var(--text-muted)",
             }}
           >
             {agentInitial(role)}
@@ -105,8 +105,8 @@ const RunCard = ({
       className={cn(
         "w-full text-left px-3 py-2.5 rounded-[10px] border transition-all duration-150 flex flex-col gap-1.5 cursor-pointer",
         isSelected
-          ? "bg-[rgba(255,255,255,0.07)] border-[rgba(255,255,255,0.15)]"
-          : "bg-[rgba(255,255,255,0.02)] border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.1)]",
+          ? "bg-[var(--surface-hover)] border-[var(--glass-border)]"
+          : "bg-[var(--surface-raised)] border-[var(--surface-border)] hover:bg-[var(--surface-hover)] hover:border-[var(--glass-border)]",
       )}
     >
       {/* Row 1: status dot + message + time */}
@@ -194,22 +194,22 @@ export const WorkflowHistoryPanel = ({
   return (
     <div
       ref={panelRef}
-      className="absolute top-14 right-2 sm:right-4 z-[110] w-[280px] sm:w-[320px] flex flex-col rounded-[14px] border border-[rgba(255,255,255,0.1)] shadow-[0_8px_40px_rgba(0,0,0,0.4),0_0_0_0.5px_rgba(255,255,255,0.05)_inset] overflow-hidden"
+      className="absolute top-14 right-2 sm:right-4 z-[110] w-[280px] sm:w-[320px] flex flex-col rounded-[14px] border border-[var(--glass-border)] shadow-[0_8px_40px_rgba(0,0,0,0.15)] overflow-hidden"
       style={{
-        background: "rgba(10,10,10,0.88)",
+        background: "var(--panel-bg)",
         backdropFilter: "blur(24px) saturate(1.4)",
         WebkitBackdropFilter: "blur(24px) saturate(1.4)",
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3.5 pt-3 pb-2 border-b border-[rgba(255,255,255,0.07)]">
+      <div className="flex items-center justify-between px-3.5 pt-3 pb-2 border-b border-[var(--surface-border)]">
         <div className="flex items-center gap-2">
           <svg width={13} height={13} viewBox="0 0 16 16" fill="none" className="text-[var(--text-muted)]">
             <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3" />
             <polyline points="8,4.5 8,8 10.5,9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <span className="text-[0.75rem] font-semibold text-[var(--text)]">Run History</span>
-          <span className="text-[0.65rem] text-[var(--text-muted)] bg-[rgba(255,255,255,0.06)] px-[0.4rem] py-[0.1rem] rounded-full">
+          <span className="text-[0.65rem] text-[var(--text-muted)] bg-[var(--surface-hover)] px-[0.4rem] py-[0.1rem] rounded-full">
             {history.length}
           </span>
         </div>
@@ -252,7 +252,7 @@ export const WorkflowHistoryPanel = ({
 
       {/* Footer hint */}
       {sorted.length > 0 && (
-        <div className="px-3.5 py-2 border-t border-[rgba(255,255,255,0.05)] text-[0.62rem] text-[var(--text-muted)]">
+        <div className="px-3.5 py-2 border-t border-[var(--surface-border)] text-[0.62rem] text-[var(--text-muted)]">
           Click a run to view its pipeline
         </div>
       )}
