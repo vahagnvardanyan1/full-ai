@@ -208,6 +208,30 @@ interface AgentData {
   skills: { name: string; level: string }[];
 }
 
+function BrandBadge({ brand, size = 32 }: { brand: string; size?: number }) {
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-lg"
+      style={{ width: size * 1.6, height: size, overflow: "hidden", background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.18)", boxShadow: "0 0 10px rgba(34,197,94,0.05)" }}
+    >
+      <svg width={size * 1.4} height={size * 0.7} viewBox="0 0 48 20" fill="none">
+        {brand === "Zara" && (
+          <text x="50%" y="54%" textAnchor="middle" dominantBaseline="central" fill="var(--text)" fontSize="13" fontWeight="900" fontFamily="serif" letterSpacing="-0.5">ZARA</text>
+        )}
+        {brand === "Bershka" && (
+          <text x="50%" y="54%" textAnchor="middle" dominantBaseline="central" fill="var(--text)" fontSize="8" fontWeight="800" fontFamily="sans-serif" letterSpacing="1.5">BERSHKA</text>
+        )}
+        {brand === "Massimo Dutti" && (
+          <>
+            <text x="50%" y="35%" textAnchor="middle" dominantBaseline="central" fill="var(--text)" fontSize="7" fontWeight="700" fontFamily="serif" letterSpacing="0.5">MASSIMO</text>
+            <text x="50%" y="70%" textAnchor="middle" dominantBaseline="central" fill="var(--text)" fontSize="7" fontWeight="700" fontFamily="serif" letterSpacing="0.5">DUTTI</text>
+          </>
+        )}
+      </svg>
+    </span>
+  );
+}
+
 function FashionAgentPage({ agent }: { agent: AgentData }) {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -286,13 +310,8 @@ function FashionAgentPage({ agent }: { agent: AgentData }) {
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                {["Zara", "Bershka", "M. Dutti"].map((brand) => (
-                  <span
-                    key={brand}
-                    className="px-2 py-0.5 rounded-md text-[0.58rem] font-semibold uppercase tracking-wide bg-[var(--surface-raised)] border border-[var(--surface-border)] text-[var(--text-muted)]"
-                  >
-                    {brand}
-                  </span>
+                {["Zara", "Bershka", "Massimo Dutti"].map((brand) => (
+                  <BrandBadge key={brand} brand={brand} size={28} />
                 ))}
               </div>
             </div>
@@ -309,13 +328,8 @@ function FashionAgentPage({ agent }: { agent: AgentData }) {
               </span>
             </div>
             <div className="flex items-center gap-1">
-              {["Zara", "Bershka", "M. Dutti"].map((brand) => (
-                <span
-                  key={brand}
-                  className="px-1.5 py-0.5 rounded text-[0.5rem] font-semibold uppercase tracking-wide bg-[var(--surface-raised)] border border-[var(--surface-border)] text-[var(--text-muted)]"
-                >
-                  {brand}
-                </span>
+              {["Zara", "Bershka", "Massimo Dutti"].map((brand) => (
+                <BrandBadge key={brand} brand={brand} size={22} />
               ))}
             </div>
           </div>

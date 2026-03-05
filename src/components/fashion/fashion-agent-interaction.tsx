@@ -252,41 +252,100 @@ export function FashionAgentInteraction() {
           className="relative rounded-[var(--radius-lg)] border border-[var(--glass-border)] overflow-hidden flex-1 min-h-0 bg-[var(--flow-bg)]"
           style={{ animation: "slide-in 0.4s ease-out" }}
         >
-          {/* Live animated flow background */}
-          <div className="absolute inset-0">
+          {/* Live animated flow background — dimmed */}
+          <div className="absolute inset-0" style={{ opacity: 7 }}>
             <FashionFlowPreview />
           </div>
-          {/* Compact center vignette */}
+
+          {/* Full overlay gradient for readability */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              background:
-                "radial-gradient(ellipse 40% 45% at center, var(--flow-bg) 0%, rgba(0,0,0,0) 100%)",
+              background: [
+                "radial-gradient(ellipse 60% 55% at center, var(--flow-bg) 0%, transparent 100%)",
+                "linear-gradient(to bottom, transparent 0%, var(--flow-bg) 85%)",
+                "linear-gradient(to top, transparent 0%, var(--flow-bg) 85%)",
+              ].join(", "),
             }}
           />
+
           {/* History toggle — top-right corner */}
           <div className="absolute top-3 right-3 z-10">
             {HistoryToggleButton}
           </div>
+
           {/* CTA content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 pointer-events-none">
-            <div className="text-[2rem] sm:text-[2.5rem] mb-2 sm:mb-3">✦</div>
-            <h2 className="text-[1.1rem] sm:text-[1.3rem] font-bold text-[var(--text)] mb-1.5 sm:mb-2">
-              Ready to find your look?
-            </h2>
-            <p className="text-[0.78rem] sm:text-[0.85rem] text-[var(--text-muted)] mb-5 sm:mb-8 max-w-[420px] leading-relaxed">
-              Tell us your style, occasion, and budget — our AI will search real
-              products from top retailers and curate a complete outfit for you.
-            </p>
-            <button
-              onClick={() => setView("form")}
-              className="pointer-events-auto px-7 sm:px-10 py-3 sm:py-3.5 rounded-2xl border-none font-semibold text-white text-[0.85rem] sm:text-[0.9rem] cursor-pointer transition-all shadow-[0_4px_24px_rgba(34,197,94,0.3)] hover:shadow-[0_4px_32px_rgba(34,197,94,0.5)] hover:scale-[1.02] active:scale-[0.98]"
+            {/* Icon */}
+            <div
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-4 sm:mb-5"
               style={{
-                background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                background: "linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04))",
+                border: "1px solid rgba(34,197,94,0.15)",
+                boxShadow: "0 0 40px rgba(34,197,94,0.08)",
               }}
             >
-              Start Styling
+              <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.38 3.46L16 2 12 5 8 2 3.62 3.46a2 2 0 01-.76 2.14L7 8.5V21a1 1 0 001 1h8a1 1 0 001-1V8.5l4.14-2.9a2 2 0 01-.76-2.14z" />
+              </svg>
+            </div>
+
+            <h2 className="text-[1.15rem] sm:text-[1.4rem] font-bold text-[var(--text)] mb-2 sm:mb-2.5 leading-tight">
+              Ready to find your look?
+            </h2>
+            <p className="text-[0.78rem] sm:text-[0.85rem] text-[var(--text-muted)] mb-6 sm:mb-8 max-w-[380px] leading-relaxed">
+              Tell us your style, occasion, and budget — our AI will curate a
+              complete outfit from top retailers.
+            </p>
+
+            {/* CTA button */}
+            <button
+              onClick={() => setView("form")}
+              className="pointer-events-auto group relative px-8 sm:px-10 py-3 sm:py-3.5 rounded-2xl border-none font-semibold text-white text-[0.85rem] sm:text-[0.9rem] cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+              style={{
+                background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                boxShadow: "0 4px 24px rgba(34,197,94,0.25), 0 0 0 1px rgba(34,197,94,0.1)",
+              }}
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                Start Styling
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </span>
             </button>
+
+            {/* Brand icons */}
+            <div className="flex items-center gap-2.5 mt-5 sm:mt-6">
+              {[
+                { name: "Zara", fontSize: "11", fontWeight: "900", fontFamily: "serif", letterSpacing: "-0.5", lines: ["ZARA"] },
+                { name: "Bershka", fontSize: "6.5", fontWeight: "800", fontFamily: "sans-serif", letterSpacing: "1.2", lines: ["BERSHKA"] },
+                { name: "Massimo Dutti", fontSize: "5.5", fontWeight: "700", fontFamily: "serif", letterSpacing: "0.4", lines: ["MASSIMO", "DUTTI"] },
+              ].map((brand) => (
+                <span
+                  key={brand.name}
+                  className="inline-flex items-center justify-center rounded-lg"
+                  style={{
+                    width: 62,
+                    height: 34,
+                    background: "rgba(34,197,94,0.06)",
+                    border: "1px solid rgba(34,197,94,0.18)",
+                    boxShadow: "0 0 12px rgba(34,197,94,0.06)",
+                  }}
+                >
+                  <svg width={48} height={18} viewBox="0 0 48 18" fill="none">
+                    {brand.lines.length === 1 ? (
+                      <text x="50%" y="54%" textAnchor="middle" dominantBaseline="central" fill="var(--text-muted)" fontSize={brand.fontSize} fontWeight={brand.fontWeight} fontFamily={brand.fontFamily} letterSpacing={brand.letterSpacing}>{brand.lines[0]}</text>
+                    ) : (
+                      <>
+                        <text x="50%" y="34%" textAnchor="middle" dominantBaseline="central" fill="var(--text-muted)" fontSize={brand.fontSize} fontWeight={brand.fontWeight} fontFamily={brand.fontFamily} letterSpacing={brand.letterSpacing}>{brand.lines[0]}</text>
+                        <text x="50%" y="72%" textAnchor="middle" dominantBaseline="central" fill="var(--text-muted)" fontSize={brand.fontSize} fontWeight={brand.fontWeight} fontFamily={brand.fontFamily} letterSpacing={brand.letterSpacing}>{brand.lines[1]}</text>
+                      </>
+                    )}
+                  </svg>
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* History panel overlay */}
